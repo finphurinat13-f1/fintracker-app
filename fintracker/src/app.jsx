@@ -45,9 +45,10 @@ const LOCK_GRACE_MS = 5 * 60_000;   // 5 นาที
 const lockTouch = () => { try{ localStorage.setItem('ft-lock-until', String(Date.now()+LOCK_GRACE_MS)); }catch{} };
 const lockDrop  = () => { try{ localStorage.removeItem('ft-lock-until'); }catch{} };
 const lockFresh = () => { try{ return Date.now() < (parseInt(localStorage.getItem('ft-lock-until')||'0',10)||0); }catch{ return false; } };
+let _hideAmt = localStorage.getItem('ft-hideamt') === '1';
 let _privacy = localStorage.getItem('ft-privacy') === '1' || (_locked && !lockFresh());
-const fmt   = n => _privacy ? '฿ •••••' : '฿' + Math.abs(n).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
-const fmtNW = n => _privacy ? '฿ •••••' : '฿' + Math.abs(n).toLocaleString('th-TH',{minimumFractionDigits:0,maximumFractionDigits:0});
+const fmt   = n => (_privacy||_hideAmt) ? '฿ •••••' : '฿' + Math.abs(n).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtNW = n => (_privacy||_hideAmt) ? '฿ •••••' : '฿' + Math.abs(n).toLocaleString('th-TH',{minimumFractionDigits:0,maximumFractionDigits:0});
 // fmt() strips the sign (amounts pair with a separate +/- prefix). For real
 // balances that can legitimately go negative, fmtSigned keeps the minus sign.
 const fmtSigned = n => (n<0?'-':'') + fmt(n);
@@ -1120,7 +1121,7 @@ const useConfirm = (dk=false) => {
 };
 
 // ── DASHBOARD ──────────────────────────────────────────────
-const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets=[], user=null, debts=[], custodial=[], privacy=false, onTogglePrivacy }) => {
+const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets=[], user=null, debts=[], custodial=[], privacy=false, hideAmt=false, onToggleHide }) => {
   const dk = theme==='dark';
   const [recentOpen, setRecentOpen] = useState(false);
   const now = new Date();
@@ -1131,12 +1132,8 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
   const savRate = income>0?((income-expense)/income*100):0;
 
   // ── Net Worth ──
-  // Two controls, two jobs, and now two icons so they cannot be mistaken for
-  //   each other: the eye here covers the figures on this screen for a
-  //   screenshot, and the padlock in the header is the one with the passcode
-  //   behind it. They were both eyes once, which is why pressing the obvious
-  //   one left half the page uncovered.
-  const [hideAmt, setHideAmt] = useState(false);
+  // Both controls live in the header now; this is the same flag, so the eye on
+  // this card and the one up there cannot disagree.
   const mask = v => hideAmt ? '฿ •••••' : v;
   const usdRate = parseFloat(localStorage.getItem('ft-usdrate')||'35');
   // canonical net worth = every asset (incl. tags) + every wallet's cash (cash-asset dedup)
@@ -1316,7 +1313,7 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
               <div className="flex items-center gap-2 mb-2">
                 <div className={`text-xs font-medium uppercase tracking-widest ${dk?'text-slate-400':'text-slate-500'}`}>Net Worth · มูลค่าทรัพย์สินสุทธิ <span title="เงินสด + สินทรัพย์ทั้งหมด หักหนี้สิน = เงินที่เป็นของคุณจริงๆ (เงินที่ถือแทนคนอื่นแสดงแยกไว้ ไม่รวมในยอดนี้)" style={{cursor:'help',opacity:.7}}>ⓘ</span></div>
               </div>
-              <button data-hint="คลิกซ่อน/แสดงจำนวนเงิน" onClick={()=>setHideAmt(h=>!h)} className={`flex items-center gap-2 group cursor-pointer text-left`}>
+              <button data-hint="คลิกซ่อน/แสดงจำนวนเงิน" onClick={()=>onToggleHide&&onToggleHide()} className={`flex items-center gap-2 group cursor-pointer text-left`}>
                 <div className={`text-3xl font-bold tracking-wide ${dk?'text-white':'text-slate-800'}`}>
                   {mask(fmtNW(animNetWorth))}
                 </div>
@@ -7792,6 +7789,11 @@ const App = () => {
   const [dataKey,setDataKey]     = useState(0);
   const [sidebarOpen,setSidebarOpen] = useState(false);
   const [privacy,setPrivacy]     = useState(_privacy);
+  // Separate from the padlock on purpose: this one only covers figures so a
+  // screen can be shown to somebody, and asking for a passcode to undo that
+  // would make every screenshot cost three steps.
+  const [hideAmt,setHideAmt]     = useState(_hideAmt);
+  const toggleHideAmt = () => { const v=!_hideAmt; _hideAmt=v; try{localStorage.setItem('ft-hideamt',v?'1':'0');}catch{} setHideAmt(v); };
   const [lockOn,setLockOn]       = useState(_locked);
   const [pinGate,setPinGate]     = useState(null);   // 'unlock' | 'set' | 'off'
   // The padlock is the security control, not the one used to tidy a screen for
@@ -8919,10 +8921,6 @@ const App = () => {
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span title={syncTip} className={`inline-flex items-center px-1 ${syncStatus==='err'?'text-rose-400':syncStatus==='saving'?'text-yellow-400':'text-emerald-400'}`}><Ic n={syncStatus==='err'?'alert':'sync'} s={15} cls={syncStatus==='saving'?'animate-spin':''}/></span>
             <button onClick={togglePrivacy} title={privacy?'ปลดล็อกตัวเลข':'ล็อกตัวเลข'} className={`p-2 rounded-xl transition-colors ${privacy?(dk?'bg-gold-500/20 text-gold-300':'bg-gold-50 text-gold-500'):(dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-700')}`}>
-              {/* A padlock, not an eye. The Net Worth card carries an eye for
-                  covering figures on that screen, and two identical eyes doing
-                  different jobs is what let somebody hide the numbers and leave
-                  the timeline printing them underneath. */}
               <Ic n={privacy?'lock':'lockopen'} s={15}/>
             </button>
             {isAdmin&&<button onClick={()=>{setPage('admin');localStorage.setItem('ft-page','admin');}} title="Users" className={`p-2 rounded-xl transition-colors text-sm leading-none ${page==='admin'?(dk?'bg-gold-500/20':'bg-gold-50'):(dk?'hover:bg-white/10':'hover:bg-slate-100')}`}>👤</button>}
@@ -9118,7 +9116,7 @@ const App = () => {
             having none. So while a PIN is set and the figures are hidden,
             nothing renders until it is entered. */}
         {privacy && lockOn ? <LockedPanel dk={theme==='dark'} onUnlock={()=>setPinGate('unlock')}/> : (<>
-        {page==='dashboard'    && <Dashboard     txs={txs} assets={assets} theme={theme} onEdit={openEdit} onDelete={delOne} nwHistory={nwHistory} wallets={wallets} user={user} debts={debts} custodial={custodial} privacy={privacy} onTogglePrivacy={togglePrivacy}/>}
+        {page==='dashboard'    && <Dashboard     txs={txs} assets={assets} theme={theme} onEdit={openEdit} onDelete={delOne} nwHistory={nwHistory} wallets={wallets} user={user} debts={debts} custodial={custodial} privacy={privacy} hideAmt={hideAmt} onToggleHide={toggleHideAmt}/>}
         {page==='transactions' && <TxPage        txs={txs}    theme={theme} onEdit={openEdit} onAdd={()=>setModal({open:true,editData:null})} onDelete={delOne} onBulkDelete={delBulk} onExport={()=>exportCSV(txs)} wallets={wallets} assets={assets} onAddRecurring={openQuickRecur} onRecordRecurring={addRecur} onQuickEdit={quickEditTx} favKeys={favKeys}/>}
         {page==='assets'       && <AssetsPage    assets={assets} theme={theme} onEdit={editAsset} onDelete={delAsset} onAdd={()=>setAModal({open:true,editData:null})} onTransfer={()=>setUnifiedOpen({open:true,from:null,to:null})} onInvest={assetId=>setUnifiedOpen({open:true,from:null,to:typeof assetId==='number'?`a-${assetId}`:null})} onPriceUpdate={updatePrices} onQuickPrice={quickPriceEdit} onDCA={a=>setDcaModal({open:true,asset:a})} onAddAssetTx={addAssetTx} onDeleteAssetTx={delAssetTx} onTopUpAsset={topUpAsset} onDeleteMove={deleteAssetMove} onRenameMove={renameAssetMove} onAddItem={addAssetItem} onDelItem={delAssetItem} wallets={wallets} txs={txs}/>}
         {page==='budget'       && <BudgetPage    key={`budget-${dataKey}`}    txs={txs}    theme={theme} onEdit={openEdit} onRenameCategory={renameCategoryInTxs}/>}
