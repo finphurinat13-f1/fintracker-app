@@ -883,10 +883,17 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[], c
               const clr = (ASSET_TYPES.find(t=>t.v===g.type)||ASSET_TYPES[4]).c;
               return (
                 <tr key={g.type} className={`border-t ${dk?'border-white/5':'border-slate-50'}`}>
-                  <td className="py-2 pr-3">
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 rounded-sm" style={{width:`${g.share}%`,backgroundColor:clr,opacity:0.14}}/>
-                      <div className="relative flex items-center gap-2 py-0.5">
+                  {/* The share fill needs a visible track behind it or it is
+                      not a bar. Without one it was drawn across a cell only as
+                      wide as the word in it, so 35.8% of "Crypto" stopped
+                      mid-word and read as highlighting that failed rather than
+                      as a proportion — nothing on screen said what the 100%
+                      would have been. Fixed cell width plus a faint full-width
+                      track gives it something to be a fraction of. */}
+                  <td className="py-2 pr-3" style={{width:'34%',minWidth:'132px'}}>
+                    <div className={`relative rounded-sm overflow-hidden ${dk?'bg-white/[0.04]':'bg-slate-100'}`}>
+                      <div className="absolute inset-y-0 left-0" style={{width:`${g.share}%`,backgroundColor:clr,opacity:0.20}}/>
+                      <div className="relative flex items-center gap-2 py-1 px-1.5">
                         <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{backgroundColor:clr}}/>
                         <span className={dk?'text-slate-300':'text-slate-600'}>{g.label}</span>
                       </div>
