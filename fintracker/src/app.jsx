@@ -658,7 +658,7 @@ const Modal = ({ open, onClose, onSave, editData, theme, wallets=[], assets=[], 
   const overDraw = f.type==='transfer' && availFrom!==null && (parseFloat(f.amount)||0) > availFrom + 0.01;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData?'แก้ไขรายการ':'เพิ่มรายการใหม่'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -982,7 +982,7 @@ const BudgetMetricCard = ({ cat, spent, budget, dk, onEdit }) => {
       </div>
       <div className="absolute bottom-0 left-0 right-0">
         <button onClick={()=>onEdit(cat,budget)}
-          className={`h-8 w-full flex items-center gap-1.5 px-3 text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors ${dk?'bg-white/5':'bg-slate-50 border-t border-slate-100'}`}>
+          className={`h-8 w-full flex items-center gap-1.5 px-3 text-xs font-medium transition-colors ${dk?'text-gold-400 hover:text-gold-300 bg-white/5':'text-gold-600 hover:text-gold-700 bg-slate-50 border-t border-slate-100'}`}>
           <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           แก้ไข Budget
         </button>
@@ -1923,7 +1923,7 @@ const TxPage = ({ txs, theme, onEdit, onAdd, onDelete, onBulkDelete, onExport, w
               const done=doneIds.has(r.id),off=!r.enabled;
               return (
                 <div key={r.id} className={`flex items-center gap-3 px-4 py-3 border-t group transition-colors ${dk?'border-white/5 hover:bg-white/[0.03]':'border-slate-100 hover:bg-slate-50/60'} ${off?'opacity-40':''}`}>
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-sm ${done?'bg-emerald-500/20 text-emerald-400':r.type==='expense'?'bg-rose-500/15 text-rose-400':'bg-blue-500/15 text-blue-400'}`}>{done?'✓':<CatGlyph v={r.emoji||catIcon(r.category)} s={17}/>}</div>
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-sm ${done?'bg-emerald-500/20 text-emerald-400':r.type==='expense'?'bg-rose-500/15 text-rose-400':'bg-gold-500/15 text-gold-400'}`}>{done?'✓':<CatGlyph v={r.emoji||catIcon(r.category)} s={17}/>}</div>
                   <div className="flex-1 min-w-0">
                     <div className={`text-sm font-medium truncate ${dk?'text-white':'text-slate-700'}`}>{r.title}</div>
                     <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>{r.category} · วันที่ {r.day} ทุกเดือน</div>
@@ -2110,7 +2110,7 @@ const Analytics = ({ txs, theme }) => {
       {/* Budget Edit Modal */}
       {editCat&&(
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={()=>setEditCat(null)}>
-          <div className={`w-full max-w-sm rounded-2xl p-6 shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+          <div className={`w-full max-w-sm rounded-2xl p-6 shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
             <h3 className={`text-base font-semibold mb-1 ${dk?'text-white':'text-slate-800'}`}>Update Budget</h3>
             <p className={`text-sm mb-5 ${dk?'text-slate-400':'text-slate-500'}`}>งบประมาณสำหรับหมวด <span className="font-medium" style={{color:catClr(editCat)}}>{editCat}</span></p>
             <div>
@@ -2536,7 +2536,7 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
   const showTabs = !editData && defaultWalletId;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData?'Edit Asset':'Add Asset'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -3469,7 +3469,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
           <div onClick={()=>searchInputRef.current?.focus()} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border flex-1 max-w-sm cursor-text flex-wrap ${dk?'border-white/10 bg-white/5':'border-slate-200 bg-white'}`}>
             <Ic n="search" s={12} cls={dk?'text-slate-500':'text-slate-400'}/>
             {searchTags.map(tag=>(
-              <span key={tag} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium ${dk?'bg-blue-500/20 text-blue-300':'bg-blue-100 text-blue-600'}`}>
+              <span key={tag} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium ${dk?'bg-gold-500/20 text-gold-300':'bg-gold-100 text-gold-600'}`}>
                 {tag}
                 <button onClick={e=>{e.stopPropagation();setSearchTags(ts=>ts.filter(t=>t!==tag));}} className="opacity-60 hover:opacity-100">
                   <Ic n="x" s={9}/>
@@ -5161,7 +5161,7 @@ const DebtModal = ({ open, onClose, onSave, editData, theme }) => {
   return (
     <Portal>
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 modal-bg">
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData?'แก้ไขรายการหนี้':'เพิ่มรายการหนี้ใหม่'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -5415,7 +5415,7 @@ const WalletModal = ({ open, onClose, onSave, editData, theme }) => {
   const lbl = `text-xs font-medium mb-1.5 block ${dk?'text-slate-400':'text-slate-500'}`;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData?'แก้ไขกระเป๋าเงิน':'เพิ่มกระเป๋าเงินใหม่'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -5562,7 +5562,7 @@ const DCAModal = ({open, onClose, asset, usdRate=35, theme}) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <div>
             <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>🧮 DCA Calculator</h2>
@@ -6647,7 +6647,7 @@ const RecurringModal = ({open, onClose, onSave, editData, theme, wallets=[], add
   return (
     <Portal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData&&!addLabel?'แก้ไขรายการประจำ':'เพิ่มรายการประจำ'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -6846,7 +6846,7 @@ const TrashModal = ({open, onClose, theme, trash, wallets, assets, onRestore, on
   const typeLbl = t => t.type==='transfer'?'โยกเงิน':t.type==='income'?'รายรับ':t.type==='adjustment'?'ปรับยอด':t.type==='dividend'?'ปันผล':'รายจ่าย';
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>🗑 ถังขยะ <span className={`text-xs font-normal ${dk?'text-slate-500':'text-slate-400'}`}>({trash.length})</span></h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -7013,7 +7013,7 @@ const BackupModal = ({open, onClose, onRestore, theme, txs, assets, wallets, deb
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>💾 Backup & Restore</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -7154,7 +7154,7 @@ const ImportModal = ({open, onClose, onImport, theme}) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-lg rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-lg rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>📥 นำเข้าข้อมูล</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -7241,7 +7241,7 @@ const VerifyEmail = ({ user, dk, addToast }) => {
 
   return (
     <div className={`min-h-screen flex items-center justify-center p-6 ${dk?'bg-app':'bg-slate-50'}`}>
-      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`}>
+      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
         <div className="text-4xl mb-4">📧</div>
         {/* The first screen a stranger meets, so it reads as a system notice
             rather than as a message from a person. */}
@@ -8788,7 +8788,7 @@ const App = () => {
   // ── Auth guard ──
   if (kickedOut) return (
     <div className="min-h-screen flex items-center justify-center" style={bgStyle}>
-      <div className={`w-full max-w-sm rounded-2xl shadow-2xl scale-in p-8 text-center ${theme==='dark'?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`}>
+      <div className={`w-full max-w-sm rounded-2xl shadow-2xl scale-in p-8 text-center ${theme==='dark'?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
         <div className="text-5xl mb-4">⚠️</div>
         <h2 className={`text-lg font-bold mb-2 ${theme==='dark'?'text-white':'text-slate-800'}`}>ออกจากระบบอัตโนมัติ</h2>
         <p className={`text-sm mb-6 ${theme==='dark'?'text-slate-400':'text-slate-500'}`}>บัญชีนี้ถูกเข้าสู่ระบบจากอุปกรณ์อื่น<br/>กรุณาเข้าสู่ระบบใหม่อีกครั้ง</p>
@@ -8846,7 +8846,7 @@ const App = () => {
 
   if (user && userStatus === 'pending') return (
     <div className={`min-h-screen flex items-center justify-center ${dk?'bg-app':'bg-slate-50'}`}>
-      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`}>
+      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
         {/* A wait with no stated length, no reason and no next step reads as
             being stonewalled. All three are cheap to give, and the page now
             watches the registry, so it lets itself in the moment approval
@@ -8867,7 +8867,7 @@ const App = () => {
 
   if (userStatus === 'rejected') return (
     <div className={`min-h-screen flex items-center justify-center ${dk?'bg-app':'bg-slate-50'}`}>
-      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`}>
+      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
         <div className="text-5xl mb-4">🚫</div>
         <h2 className={`text-lg font-bold mb-2 ${dk?'text-white':'text-slate-800'}`}>ไม่ได้รับอนุญาต</h2>
         {/* Two lines rather than one wrapped paragraph: the single line broke
@@ -8900,7 +8900,7 @@ const App = () => {
     <div className="min-h-screen transition-colors duration-300" style={bgStyle} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
 
       {/* ── DESKTOP: Top Navbar (lg+) ── */}
-      <nav className={`hidden lg:block sticky top-0 z-40 border-b no-print ${dk?'bg-[#080f1e]/97 border-blue-900/30 backdrop-blur-2xl':'bg-white/85 border-blue-100 backdrop-blur-xl'}`}>
+      <nav className={`hidden lg:block sticky top-0 z-40 border-b no-print ${dk?'bg-[#080f1e]/97 border-gold-500/18 backdrop-blur-2xl':'bg-white/85 border-gold-100 backdrop-blur-xl'}`}>
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
           <div className="flex items-center gap-2.5 flex-shrink-0">
             <LogoSvg size={34}/>
@@ -9030,7 +9030,7 @@ const App = () => {
 
       {/* Mobile top bar */}
       <header className={`lg:hidden sticky top-0 z-30 h-14 flex items-center justify-between px-4 border-b no-print
-        ${dk?'bg-[#080f1e]/97 border-blue-900/30 backdrop-blur-2xl':'bg-white/85 border-blue-100 backdrop-blur-xl'}`}>
+        ${dk?'bg-[#080f1e]/97 border-gold-500/18 backdrop-blur-2xl':'bg-white/85 border-gold-100 backdrop-blur-xl'}`}>
         <div className="flex items-center gap-2">
           <button onClick={()=>setSidebarOpen(true)} aria-label="เปิดเมนู" className={`p-2.5 rounded-xl ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-700'}`}>
             <Ic n="menu" s={18}/>
@@ -9141,7 +9141,7 @@ const App = () => {
 
       {/* ── Bottom Navigation Bar (Mobile Only) ── */}
       <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 no-print border-t
-        ${dk?'bg-[#080f1e]/98 border-blue-900/25 backdrop-blur-2xl':'bg-white/95 border-slate-200 backdrop-blur-xl'}`}
+        ${dk?'bg-[#080f1e]/98 border-gold-500/15 backdrop-blur-2xl':'bg-white/95 border-slate-200 backdrop-blur-xl'}`}
         style={{paddingBottom:'env(safe-area-inset-bottom)'}}>
         <div className="flex items-center justify-around px-1 pt-2 pb-2">
           {[
@@ -9153,8 +9153,8 @@ const App = () => {
             const active = page===k;
             return (
               <button key={k} onClick={()=>{setPage(k);localStorage.setItem('ft-page',k);}}
-                className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-2xl transition-all active:scale-90 ${active?(dk?'text-blue-400':'text-blue-600'):(dk?'text-slate-500':'text-slate-400')}`}>
-                <div className={`p-1.5 rounded-xl transition-all ${active?(dk?'bg-blue-500/15':'bg-blue-50'):''}`}>
+                className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-2xl transition-all active:scale-90 ${active?(dk?'text-gold-400':'text-gold-600'):(dk?'text-slate-500':'text-slate-400')}`}>
+                <div className={`p-1.5 rounded-xl transition-all ${active?(dk?'bg-gold-500/15':'bg-gold-50'):''}`}>
                   <Ic n={i} s={20}/>
                 </div>
                 <span className={`text-[10px] font-medium ${active?'font-semibold':''}`}>{l}</span>
@@ -9163,8 +9163,8 @@ const App = () => {
           })}
           {/* More button → opens sidebar */}
           <button onClick={()=>setSidebarOpen(true)}
-            className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-2xl transition-all active:scale-90 ${['budget','debt','summary'].includes(page)?(dk?'text-blue-400':'text-blue-600'):(dk?'text-slate-500':'text-slate-400')}`}>
-            <div className={`p-1.5 rounded-xl transition-all ${['budget','debt','summary'].includes(page)?(dk?'bg-blue-500/15':'bg-blue-50'):''}`}>
+            className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-2xl transition-all active:scale-90 ${['budget','debt','summary'].includes(page)?(dk?'text-gold-400':'text-gold-600'):(dk?'text-slate-500':'text-slate-400')}`}>
+            <div className={`p-1.5 rounded-xl transition-all ${['budget','debt','summary'].includes(page)?(dk?'bg-gold-500/15':'bg-gold-50'):''}`}>
               <Ic n="menu" s={20}/>
             </div>
             <span className="text-[10px] font-medium">เพิ่มเติม</span>
@@ -9181,7 +9181,7 @@ const App = () => {
       {isEmptyData && !onboardDone && (
         <Portal>
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-            <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in p-6 text-center ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`}>
+            <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in p-6 text-center ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
               <div className="text-5xl mb-3">👋</div>
               <h2 className={`text-lg font-bold mb-1 ${dk?'text-white':'text-slate-800'}`}>ยินดีต้อนรับสู่ FinTracker</h2>
               <p className={`text-sm mb-6 ${dk?'text-slate-400':'text-slate-500'}`}>ติดตามเงิน กระเป๋า สินทรัพย์ และงบประมาณ ในที่เดียว</p>
