@@ -7656,6 +7656,7 @@ const PinModal = ({mode, onClose, onDone, dk}) => {
 // ── APP ────────────────────────────────────────────────────
 const AdminPage = ({ theme }) => {
   const dk = theme==='dark';
+  const [confirmEl, ask] = useConfirm(dk);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const card = `rounded-2xl ${dk?'card-solid':'bg-white shadow-sm border border-slate-100'}`;
@@ -7676,22 +7677,23 @@ const AdminPage = ({ theme }) => {
     await db.collection('registry').doc(uid).update({ status });
   };
 
-  const askThen = (title, body, run) => { if (window.confirm(`${title}\n\n${body}`)) run(); };
+  // The app's own dialog, not window.confirm — the browser's box is titled with
+  // the domain and looks like something that arrived from outside the page,
+  // which is the last impression an admin screen about access should give.
+  const approve = (u) => ask('อนุมัติผู้ใช้',
+    `${u.email} จะเข้าใช้งานได้ทันที และข้อมูลจะถูกเก็บบนระบบ`,
+    ()=>setStatus(u.id,'approved'), { confirmLabel:'อนุมัติ', destructive:false });
 
-  const approve = (u) => askThen('อนุมัติผู้ใช้',
-    `${u.email}\n\nจะเข้าใช้งานได้ทันที และข้อมูลจะถูกเก็บบนระบบ`,
-    ()=>setStatus(u.id,'approved'));
-
-  const suspend = (u) => askThen(u.status==='approved' ? 'ระงับผู้ใช้' : 'ปฏิเสธผู้ใช้',
-    `${u.email}\n\nจะเข้าใช้งานไม่ได้ทันที ข้อมูลที่บันทึกไว้ยังอยู่ และเปิดสิทธิ์คืนได้ภายหลัง`,
-    ()=>setStatus(u.id,'rejected'));
+  const suspend = (u) => ask(u.status==='approved' ? 'ระงับผู้ใช้' : 'ปฏิเสธผู้ใช้',
+    `${u.email} จะเข้าใช้งานไม่ได้ทันที ข้อมูลที่บันทึกไว้ยังอยู่ และเปิดสิทธิ์คืนได้ภายหลัง`,
+    ()=>setStatus(u.id,'rejected'), { confirmLabel: u.status==='approved' ? 'ระงับ' : 'ปฏิเสธ' });
 
   // Removes the entry, not the account. Firebase Auth is a separate system and
   // deleting from it needs the Admin SDK — so a removed person who signs in
   // again lands back here as pending rather than vanishing. Said out loud in
   // the prompt, because a delete that does not delete is worse than no delete.
-  const removeUser = (u) => askThen('ลบออกจากรายการ',
-    `${u.email}\n\nจะหายจากรายการนี้ และเข้าใช้งานไม่ได้\nหากผู้ใช้ล็อกอินอีกครั้ง จะกลับมาอยู่ในสถานะรอการอนุมัติ`,
+  const removeUser = (u) => ask('ลบออกจากรายการ',
+    `${u.email} จะหายจากรายการนี้และเข้าใช้งานไม่ได้ — หากผู้ใช้ล็อกอินอีกครั้ง จะกลับมาอยู่ในสถานะรอการอนุมัติ`,
     ()=>db.collection('registry').doc(u.id).delete());
 
   const STATUS_BADGE = {
@@ -7760,6 +7762,7 @@ const AdminPage = ({ theme }) => {
           </div>
         )}
       </div>
+      {confirmEl}
     </div>
   );
 };
