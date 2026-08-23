@@ -118,6 +118,26 @@ const db   = firebase.firestore();
      separates them once they are no longer a pixel apart from the line below. */
   .uppercase { letter-spacing: 0.06em; }
 
+  /* ── Amber monochrome (dark) ─────────────────────────────────────────────
+     One hue, four brightnesses — the way an amber CRT actually worked. The
+     screen was never a single gold: hierarchy came from how hot the phosphor
+     was driven, and that is what is copied here. Text was slate-blue at 565
+     call sites, which is a second palette running underneath the gold one and
+     the reason nothing looked like it belonged together.
+
+     Gains and losses keep green and red on purpose. Those are not decoration:
+     they are the only thing on the screen that says which direction the money
+     went, and a monochrome that eats them has traded reading for looking.
+
+     Dark only. On the light theme this reads as faded ink, not phosphor.
+     Delete this block to undo the whole idea. */
+  .dark .text-white          { color: #f5e6c8 !important; }
+  .dark .text-slate-200      { color: #e6d3a8 !important; }
+  .dark .text-slate-300      { color: #d4bd8a !important; }
+  .dark .text-slate-400      { color: #a8905c !important; }
+  .dark .text-slate-500      { color: #857249 !important; }
+  .dark .text-slate-600      { color: #6b5c3b !important; }
+
   /* ── Liquid Glass Cards (reserved for hero + modals only) ── */
   .card-hero {
     position: relative; overflow: hidden;
