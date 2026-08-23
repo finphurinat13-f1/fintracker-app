@@ -158,11 +158,10 @@ const db   = firebase.firestore();
     border: 1px solid rgba(180,150,80,0.2);
     box-shadow: inset 0 1px 0 rgba(255,244,210,0.1), 0 0 60px rgba(168,134,47,0.1), 0 8px 48px rgba(0,0,0,0.65);
   }
-  /* Glows follow the muted gain/loss pair from the Tailwind config. A halo is
-     the one place a saturated colour does the most damage, since it bleeds
-     past the card edge onto the page itself. */
-  .card-income-g { border-color: rgba(122,171,138,0.35) !important; box-shadow: inset 0 1px 0 rgba(122,171,138,0.3), 0 0 45px rgba(95,144,112,0.12), 0 8px 32px rgba(0,0,0,0.38) !important; }
-  .card-expense-g { border-color: rgba(201,114,106,0.35) !important; box-shadow: inset 0 1px 0 rgba(201,114,106,0.3), 0 0 45px rgba(173,90,83,0.12), 0 8px 32px rgba(0,0,0,0.38) !important; }
+  /* .card-income-g and .card-expense-g were removed with their last callers.
+     They tinted a card's border and hung a coloured halo off it to say gain or
+     loss — the fourth and fifth encoding of one bit that the figure inside the
+     card already states in the same colours. */
 
   /* ── Text Colors ── */
   .tg-brand   { color: #c9a94b; text-shadow: 0 0 18px rgba(201,169,74,0.3); }

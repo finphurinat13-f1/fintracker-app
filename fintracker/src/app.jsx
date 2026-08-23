@@ -1446,8 +1446,13 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="ยอดคงเหลือ"  val={mask(fmt(balance))}     sub={balance>=0?'✓ เป็นบวก':'⚠ ติดลบ'}  icon={<Ic n="wallet" s={15} cls="text-gold-300"/>} accent="bg-gold-500/15" extra="" valCls={dk?'tg-white':'text-slate-800'}/>
-        <StatCard label="รายรับรวม"   val={mask(fmt(income))}      sub={`${txs.filter(t=>t.type==='income').length} รายการ`}  icon={<Ic n="up" s={15} cls="text-emerald-400"/>} accent="bg-emerald-500/15" extra={dk?'card-income-g':''} valCls={dk?'tg-emerald':'text-slate-800'}/>
-        <StatCard label="รายจ่ายรวม"  val={mask(fmt(expense))}     sub={`${txs.filter(t=>t.type==='expense').length} รายการ`} icon={<Ic n="down" s={15} cls="text-rose-400"/>} accent="bg-rose-500/15" extra={dk?'card-expense-g':''} valCls={dk?'tg-red':'text-slate-800'}/>
+        {/* No tinted border or glow. Income vs expense was being encoded five
+            times over on one card — figure colour, icon colour, icon backing,
+            border tint and an outer halo — for a single bit the number states
+            outright. The card keeps the shared gold hairline; the figure and
+            the icon still carry the colour. */}
+        <StatCard label="รายรับรวม"   val={mask(fmt(income))}      sub={`${txs.filter(t=>t.type==='income').length} รายการ`}  icon={<Ic n="up" s={15} cls="text-emerald-400"/>} accent="bg-emerald-500/15" valCls={dk?'tg-emerald':'text-slate-800'}/>
+        <StatCard label="รายจ่ายรวม"  val={mask(fmt(expense))}     sub={`${txs.filter(t=>t.type==='expense').length} รายการ`} icon={<Ic n="down" s={15} cls="text-rose-400"/>} accent="bg-rose-500/15" valCls={dk?'tg-red':'text-slate-800'}/>
         <StatCard label="อัตราออม"    val={hideAmt?'••%':`${savRate.toFixed(1)}%`} sub={savRate>=20?'✓ ดีมาก':'↑ เพิ่มได้อีก'} icon={<Ic n="chart" s={15} cls="text-amber-400"/>} accent="bg-amber-500/15" valCls={dk?'tg-gold':'text-slate-800'}/>
       </div>
 
@@ -3538,8 +3543,8 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
         {[
           {label:'มูลค่าพอร์ต (฿)', val:fmt(totVal),    cls:dk?'text-2xl font-bold tracking-wide tg-white':'text-2xl font-bold tracking-wide text-slate-800',                                        note:'ราคาปัจจุบันรวม',    extra:wallets.length>0?'':(dk?'card-hero':'')},
           {label:'ต้นทุนรวม (฿)',   val:fmt(totCost),   cls:`text-2xl font-bold tracking-wide ${dk?'text-slate-300':'text-slate-600'}`,                                                  note:'เงินที่ลงทุนไป',     extra:''},
-          {label:'กำไร/ขาดทุน (฿)',val:(totPL>=0?'+':'')+fmt(totPL), cls:dk?`text-2xl font-bold tracking-wide ${totPL>=0?'tg-emerald':'tg-red'}`:`text-2xl font-bold tracking-wide ${totPL>=0?'text-emerald-500':'text-rose-500'}`, note:totPL>=0?'✓ กำไร':'⚠ ขาดทุน', extra:dk?(totPL>=0?'card-income-g':'card-expense-g'):''},
-          {label:'% เปลี่ยนแปลง', val:`${totPLPct>=0?'+':''}${totPLPct.toFixed(2)}%`, cls:dk?`text-2xl font-bold tracking-wide ${totPLPct>=0?'tg-emerald':'tg-red'}`:`text-2xl font-bold tracking-wide ${totPLPct>=0?'text-emerald-500':'text-rose-500'}`, note:`จากต้นทุน ${fmt(totCost)}`, extra:dk?(totPLPct>=0?'card-income-g':'card-expense-g'):''},
+          {label:'กำไร/ขาดทุน (฿)',val:(totPL>=0?'+':'')+fmt(totPL), cls:dk?`text-2xl font-bold tracking-wide ${totPL>=0?'tg-emerald':'tg-red'}`:`text-2xl font-bold tracking-wide ${totPL>=0?'text-emerald-500':'text-rose-500'}`, note:totPL>=0?'✓ กำไร':'⚠ ขาดทุน'},
+          {label:'% เปลี่ยนแปลง', val:`${totPLPct>=0?'+':''}${totPLPct.toFixed(2)}%`, cls:dk?`text-2xl font-bold tracking-wide ${totPLPct>=0?'tg-emerald':'tg-red'}`:`text-2xl font-bold tracking-wide ${totPLPct>=0?'text-emerald-500':'text-rose-500'}`, note:`จากต้นทุน ${fmt(totCost)}`},
         ].map(({label,val,cls,note,extra})=>(
           <div key={label} className={`${card} ${extra} p-5`}>
             <div className={`text-xs font-medium mb-2 uppercase tracking-wide ${dk?'text-slate-400':'text-slate-500'}`}>{label}</div>
@@ -5243,10 +5248,10 @@ const DebtPage = ({ theme, debts, setDebts }) => {
     <div className="space-y-4 fade-up">
       {debts.length>0&&(
         <div className="grid grid-cols-3 gap-4">
-          {[{l:'หนี้คงเหลือ',v:fmt(totals.remaining),c:dk?'tg-red':'text-rose-500',g:dk?'card-expense-g':''},
-            {l:'จ่ายไปแล้ว',v:fmt(totals.paid),c:dk?'tg-emerald':'text-emerald-600',g:dk?'card-income-g':''},
-            {l:'ดอกเบี้ยรวม',v:fmt(totals.interest),c:dk?'tg-gold':'text-amber-500',g:dk?'card-hero':''}].map(({l,v,c,g})=>(
-            <div key={l} className={`${card} ${g} p-5`}>
+          {[{l:'หนี้คงเหลือ',v:fmt(totals.remaining),c:dk?'tg-red':'text-rose-500'},
+            {l:'จ่ายไปแล้ว',v:fmt(totals.paid),c:dk?'tg-emerald':'text-emerald-600'},
+            {l:'ดอกเบี้ยรวม',v:fmt(totals.interest),c:dk?'tg-gold':'text-amber-500'}].map(({l,v,c})=>(
+            <div key={l} className={`${card} p-5`}>
               <div className={`text-xs font-medium mb-2 uppercase tracking-wide ${dk?'text-slate-400':'text-slate-500'}`}>{l}</div>
               <div className={`text-xl font-bold ${c}`}>{v}</div>
             </div>))}
