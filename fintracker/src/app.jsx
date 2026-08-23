@@ -7669,9 +7669,30 @@ const AdminPage = ({ theme }) => {
     return unsub;
   },[]);
 
+  // Each of these decides whether somebody can reach their own records, and
+  // the three buttons sit a few pixels apart — so each one says who it is
+  // about and what will happen before it happens.
   const setStatus = async (uid, status) => {
     await db.collection('registry').doc(uid).update({ status });
   };
+
+  const askThen = (title, body, run) => { if (window.confirm(`${title}\n\n${body}`)) run(); };
+
+  const approve = (u) => askThen('อนุมัติผู้ใช้',
+    `${u.email}\n\nจะเข้าใช้งานได้ทันที และข้อมูลจะถูกเก็บบนระบบ`,
+    ()=>setStatus(u.id,'approved'));
+
+  const suspend = (u) => askThen(u.status==='approved' ? 'ระงับผู้ใช้' : 'ปฏิเสธผู้ใช้',
+    `${u.email}\n\nจะเข้าใช้งานไม่ได้ทันที ข้อมูลที่บันทึกไว้ยังอยู่ และเปิดสิทธิ์คืนได้ภายหลัง`,
+    ()=>setStatus(u.id,'rejected'));
+
+  // Removes the entry, not the account. Firebase Auth is a separate system and
+  // deleting from it needs the Admin SDK — so a removed person who signs in
+  // again lands back here as pending rather than vanishing. Said out loud in
+  // the prompt, because a delete that does not delete is worse than no delete.
+  const removeUser = (u) => askThen('ลบออกจากรายการ',
+    `${u.email}\n\nจะหายจากรายการนี้ และเข้าใช้งานไม่ได้\nหากผู้ใช้ล็อกอินอีกครั้ง จะกลับมาอยู่ในสถานะรอการอนุมัติ`,
+    ()=>db.collection('registry').doc(u.id).delete());
 
   const STATUS_BADGE = {
     pending:  { label:'รอการอนุมัติ', cls:'bg-amber-500/15 text-amber-400' },
@@ -7713,23 +7734,25 @@ const AdminPage = ({ theme }) => {
                   </div>
                   <div className="flex justify-center gap-1.5">
                     {u.status!=='approved' && (
-                      <button onClick={()=>setStatus(u.id,'approved')}
+                      <button onClick={()=>approve(u)}
                         className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 transition-colors">
                         ✓ อนุมัติ
                       </button>
                     )}
+                    {/* One button, worded for the state it is in: turning
+                        somebody away and cutting off somebody already working
+                        are different enough to name differently, and showing
+                        both at once was two buttons doing one thing. */}
                     {u.status!=='rejected' && (
-                      <button onClick={()=>setStatus(u.id,'rejected')}
+                      <button onClick={()=>suspend(u)}
                         className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 transition-colors">
-                        ✕ ปฏิเสธ
+                        {u.status==='approved' ? 'ระงับ' : '✕ ปฏิเสธ'}
                       </button>
                     )}
-                    {u.status==='approved' && (
-                      <button onClick={()=>setStatus(u.id,'rejected')}
-                        className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 transition-colors">
-                        ระงับ
-                      </button>
-                    )}
+                    <button onClick={()=>removeUser(u)} title="ลบออกจากรายการ"
+                      className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors ${dk?'text-slate-500 hover:text-rose-400 hover:bg-rose-500/10':'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}`}>
+                      🗑
+                    </button>
                   </div>
                 </div>
               );
