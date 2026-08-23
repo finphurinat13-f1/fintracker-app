@@ -832,7 +832,7 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[] })
           line under it does the explaining, which is the part a translated
           heading was never going to do on its own. */}
       <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>Unrealized P/L</div>
-      <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>กำไร/ขาดทุนของที่ถืออยู่ · ยังไม่ได้ขาย จึงยังไม่เป็นเงินจริง</div>
+      <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>กำไร/ขาดทุนของที่ถืออยู่</div>
 
       <div className="flex items-baseline gap-3 flex-wrap mt-4">
         <div className={`text-3xl font-bold tracking-wider ${tone(up)}`}>{f(totPl)}</div>
