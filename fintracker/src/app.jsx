@@ -766,7 +766,7 @@ const Modal = ({ open, onClose, onSave, editData, theme, wallets=[], assets=[], 
 // movement. The formula is lifted from the assets page rather than rewritten —
 // a second definition of "profit" that disagreed with the first over some
 // rounding rule would be worse than showing nothing.
-const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[] }) => {
+const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[], cashTotal=0 }) => {
   const dk = theme==='dark';
   // English here, Thai everywhere else in the app. Not an inconsistency that
   // slipped in — the list already had "Crypto" sitting next to "ทองคำ" and
@@ -774,29 +774,47 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[] })
   // languages is what read as wrong, so the column picks one. Local to this
   // card: the assets page, filters and forms still label these in Thai, where
   // they are ordinary words rather than terms sitting beside Cost and P/L.
-  const LBL = {stock:'Stocks', etf:'ETF', fund:'Funds', bond:'Bonds', crypto:'Crypto', gold:'Gold', property:'Property', other:'Other'};
+  const LBL = {stock:'Stocks', etf:'ETF', fund:'Funds', bond:'Bonds', crypto:'Crypto', gold:'Gold', property:'Property', other:'Other', cash:'Cash'};
 
-  const { rows, totCost, totVal, totPl } = useMemo(()=>{
-    // Cash is excluded, not because it is uninteresting but because it has no
-    // cost basis to subtract — its "profit" is definitionally zero and a row of
-    // zeroes just dilutes the ones that mean something.
+  // The allocation breakdown that used to be its own card on the assets page
+  // now shares these rows. The two panels were splitting one table in half: the
+  // assets page listed value, cost and P/L per type and called it allocation,
+  // this card listed P/L per type and called it performance. Same grouping,
+  // same arithmetic, two places to read and two places to keep correct.
+  const { rows, allocTot, totCost, totVal, totPl } = useMemo(()=>{
     const by = {}; let tc=0, tv=0;
     assets.filter(a=>a.type!=='cash').forEach(a=>{
       const mult = a.currency==='USD' ? usdRate : 1;
       const {taggedIn, taggedOut} = assetTagged(txs, a.id);
       const val  = (a.qty*a.currentPrice + taggedIn - taggedOut) * mult;
       const cost = (a.qty*a.avgCost) * mult;
-      if(!by[a.type]) by[a.type] = {type:a.type, label:LBL[a.type]||a.type, cost:0, val:0, n:0};
-      by[a.type].cost += cost; by[a.type].val += val; by[a.type].n++;
+      if(!by[a.type]) by[a.type] = {type:a.type, label:LBL[a.type]||a.type, cost:0, val:0};
+      by[a.type].cost += cost; by[a.type].val += val;
       tc += cost; tv += val;
     });
+    // Cash joins for the allocation column only, and is deliberately left out of
+    // the P/L totals above it. It has no cost basis to subtract, so its profit
+    // is zero by definition — but a share of the portfolio that omitted the
+    // cash would never reach 100%, which is the one thing an allocation column
+    // has to do. Wallet cash and cash-type assets both count; walletCash()
+    // already excludes transactions attributed to the latter, so nothing is
+    // counted twice.
+    const cashAssets = assets.filter(a=>a.type==='cash')
+      .reduce((s,a)=>s+assetVal(a,txs,usdRate), 0);
+    const cash = cashTotal + cashAssets;
+    if(Math.abs(cash) > 0.01) by.cash = {type:'cash', label:LBL.cash, cost:cash, val:cash};
+
+    const at = Object.values(by).reduce((s,g)=>s+g.val, 0);
     // Biggest mover first, gain or loss alike — a large loss is at least as
-    // worth seeing at the top as a large gain.
+    // worth seeing at the top as a large gain. Not sorted by size of holding:
+    // the card's headline is performance, so the rows answer to that and the
+    // allocation column reads down whatever order performance produced.
     const list = Object.values(by)
-      .map(g=>({...g, pl:g.val-g.cost, pct:g.cost>0?((g.val-g.cost)/g.cost*100):0}))
+      .map(g=>({...g, pl:g.val-g.cost, pct:g.cost>0?((g.val-g.cost)/g.cost*100):0,
+                share: at>0 ? g.val/at*100 : 0}))
       .sort((a,b)=>Math.abs(b.pl)-Math.abs(a.pl));
-    return { rows:list, totCost:tc, totVal:tv, totPl:tv-tc };
-  },[assets,txs,usdRate]);
+    return { rows:list, allocTot:at, totCost:tc, totVal:tv, totPl:tv-tc };
+  },[assets,txs,usdRate,cashTotal]);
 
   // Month-on-month needs a cost basis recorded alongside each snapshot, which
   // only began when this card was built. Earlier months carry no `cost` at all,
@@ -842,15 +860,59 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[] })
         Cost {fv(totCost)} → Market Value {fv(totVal)}
       </div>
 
-      <div className={`mt-4 pt-3 border-t space-y-2.5 ${dk?'border-white/5':'border-slate-100'}`}>
-        {rows.map(g=>(
-          <div key={g.type} className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{backgroundColor:(ASSET_TYPES.find(t=>t.v===g.type)||ASSET_TYPES[4]).c}}/>
-            <span className={`text-xs flex-1 ${dk?'text-slate-300':'text-slate-600'}`}>{g.label}</span>
-            <span className={`text-xs tabular-nums font-semibold ${tone(g.pl>=0)}`}>{f(g.pl)}</span>
-            <span className={`text-xs tabular-nums w-16 text-right ${tone(g.pl>=0)}`}>{fp(g.pct)}</span>
-          </div>
-        ))}
+      {/* The headline above is what this card is for, so the table under it
+          stays at one type size and lets colour do the separating: only the P/L
+          column is tinted, value and cost sit in muted grey, and the share bar
+          is drawn at low opacity behind the type name rather than as its own
+          column of colour. No donut — the net worth card higher up the page
+          already draws this same split as a segmented bar, and a third
+          rendering of one fact would out-shout the number the card exists for. */}
+      <div className={`mt-4 pt-1 border-t overflow-x-auto ${dk?'border-white/5':'border-slate-100'}`}>
+        <table className="w-full text-xs" style={{minWidth:'440px'}}>
+          <thead>
+            <tr className={dk?'text-slate-500':'text-slate-400'}>
+              <th className="py-2 text-left font-medium">ประเภท</th>
+              <th className="py-2 pl-3 text-right font-medium">มูลค่า</th>
+              <th className="py-2 pl-3 text-right font-medium">ต้นทุน</th>
+              <th className="py-2 pl-3 text-right font-medium">P/L</th>
+              <th className="py-2 pl-3 text-right font-medium">สัดส่วน</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(g=>{
+              const clr = (ASSET_TYPES.find(t=>t.v===g.type)||ASSET_TYPES[4]).c;
+              return (
+                <tr key={g.type} className={`border-t ${dk?'border-white/5':'border-slate-50'}`}>
+                  <td className="py-2 pr-3">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 rounded-sm" style={{width:`${g.share}%`,backgroundColor:clr,opacity:0.14}}/>
+                      <div className="relative flex items-center gap-2 py-0.5">
+                        <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{backgroundColor:clr}}/>
+                        <span className={dk?'text-slate-300':'text-slate-600'}>{g.label}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className={`py-2 pl-3 text-right tabular-nums ${dk?'text-slate-300':'text-slate-600'}`}>{fv(g.val)}</td>
+                  <td className={`py-2 pl-3 text-right tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{fv(g.cost)}</td>
+                  <td className={`py-2 pl-3 text-right tabular-nums font-semibold ${g.type==='cash'?(dk?'text-slate-600':'text-slate-300'):tone(g.pl>=0)}`}>
+                    {/* Cash has no cost basis, so a P/L of exactly zero here
+                        would be a fact about arithmetic rather than about the
+                        holding. A dash says the column does not apply. */}
+                    {g.type==='cash' ? '—' : <>{f(g.pl)}<div className="font-normal opacity-80">{fp(g.pct)}</div></>}
+                  </td>
+                  <td className={`py-2 pl-3 text-right tabular-nums font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>{g.share.toFixed(1)}%</td>
+                </tr>
+              );
+            })}
+          </tbody>
+          <tfoot>
+            <tr className={`border-t ${dk?'border-white/10 text-slate-400':'border-slate-200 text-slate-500'}`}>
+              <td className="py-2 pr-3 font-medium">รวม</td>
+              <td className="py-2 pl-3 text-right tabular-nums font-semibold">{fv(allocTot)}</td>
+              <td colSpan={3}/>
+            </tr>
+          </tfoot>
+        </table>
       </div>
 
       <div className={`text-xs mt-3.5 pt-3 border-t ${dk?'border-white/5 text-slate-500':'border-slate-100 text-slate-400'}`}>
@@ -1399,7 +1461,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           ever be the worse of the two — and it carried its own edit and delete
           buttons, which meant a second place to change data that had to be
           kept in step with the real one for no gain. */}
-      <UnrealizedPL assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy} nwHistory={nwHistory}/>
+      <UnrealizedPL assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy} nwHistory={nwHistory} cashTotal={walletCashTotal}/>
     </div>
   );
 };
@@ -2785,94 +2847,11 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
 
 // (TransferModal & WalletToInvestModal merged into UnifiedTransferModal)
 
-const AllocationPieChart = ({byType, totVal, dk}) => {
-  const canvasRef = useRef(null);
-  const chartRef  = useRef(null);
-  useEffect(()=>{
-    if (!canvasRef.current || !byType.length) return;
-    if (chartRef.current) { chartRef.current.destroy(); chartRef.current=null; }
-    chartRef.current = new Chart(canvasRef.current, {
-      type:'doughnut',
-      data:{
-        labels: byType.map(b=>typeInfo(b.type).l.substring(3)),
-        datasets:[{
-          data: byType.map(b=>b.val),
-          backgroundColor: byType.map(b=>typeInfo(b.type).c+'bb'),
-          borderColor:      byType.map(b=>typeInfo(b.type).c),
-          borderWidth:2, hoverBorderWidth:3, hoverOffset:8,
-        }]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false, cutout:'70%',
-        plugins:{
-          legend:{display:false},
-          tooltip:{
-            callbacks:{ label: ctx=>{ const p=totVal>0?(ctx.raw/totVal*100).toFixed(1):'0'; return ` ${p}%  (${fmt(ctx.raw)})`; } },
-            backgroundColor: dk?'rgba(15,23,42,0.95)':'rgba(255,255,255,0.95)',
-            titleColor: dk?'#e2e8f0':'#1e293b',
-            bodyColor:  dk?'#94a3b8':'#64748b',
-            borderColor: dk?'rgba(255,255,255,0.1)':'rgba(0,0,0,0.08)',
-            borderWidth:1, padding:10,
-          }
-        }
-      }
-    });
-    return ()=>{ if(chartRef.current){chartRef.current.destroy();chartRef.current=null;} };
-  },[byType,totVal,dk]);
-  return (
-    <div className="flex flex-col lg:flex-row gap-6 items-center">
-      {/* Donut chart */}
-      <div className="relative flex-shrink-0 mx-auto lg:mx-4" style={{width:180,height:180}}>
-        <canvas ref={canvasRef}/>
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <div className={`text-[9px] uppercase tracking-wider ${dk?'text-slate-400':'text-slate-500'}`}>รวม</div>
-          <div className={`text-sm font-bold ${dk?'text-white':'text-slate-800'}`}>{fmt(totVal)}</div>
-        </div>
-      </div>
-      {/* Terminal-style list */}
-      <div className="flex-1 w-full min-w-0">
-        {/* Header row */}
-        <div className={`grid gap-2 px-3 pb-2 border-b text-[10px] uppercase tracking-wider font-medium ${dk?'border-white/8 text-slate-500':'border-slate-100 text-slate-400'}`}
-          style={{gridTemplateColumns:'1fr 90px 90px 90px 80px'}}>
-          <span>ประเภท</span>
-          <span className="text-right">มูลค่า</span>
-          <span className="text-right">ต้นทุน</span>
-          <span className="text-right">กำไร/ขาดทุน</span>
-          <span className="text-right">สัดส่วน</span>
-        </div>
-        {/* Data rows */}
-        {byType.map(({type,val,cost,pl,plPct,plUSD,hasUSD},i)=>{
-          const ti=typeInfo(type);
-          const pct=totVal>0?(val/totVal*100):0;
-          return (
-            <div key={type}
-              className={`grid gap-2 px-3 py-2.5 items-center transition-colors ${dk?(i%2===0?'bg-white/[0.01] hover:bg-white/[0.05]':'bg-black/[0.06] hover:bg-white/[0.04]'):(i%2===0?'bg-white hover:bg-slate-50':'bg-slate-50/50 hover:bg-slate-100/60')}`}
-              style={{gridTemplateColumns:'1fr 90px 90px 90px 80px'}}>
-              {/* Name + color dot + bar */}
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{background:ti.c}}/>
-                <span className={`text-xs font-medium w-16 flex-shrink-0 truncate ${dk?'text-slate-200':'text-slate-700'}`}>{ti.l.substring(3)}</span>
-                <div className={`flex-1 h-1.5 rounded-full overflow-hidden ${dk?'bg-white/5':'bg-slate-200'}`}>
-                  <div className="h-full rounded-full transition-all duration-700" style={{width:`${pct}%`,background:ti.c+'99'}}/>
-                </div>
-              </div>
-              <div className={`text-right text-xs font-semibold tabular-nums ${dk?'text-white':'text-slate-800'}`}>{fmt(val)}</div>
-              <div className={`text-right text-xs tabular-nums ${dk?'text-slate-400':'text-slate-500'}`}>{fmt(cost)}</div>
-              <div className={`text-right text-xs font-medium tabular-nums ${pl>=0?'text-emerald-400':'text-rose-400'}`}>
-                {pl>=0?'+':''}{fmtSigned(pl)}
-                <span className="block text-[10px] opacity-70">{pl>=0?'+':''}{plPct.toFixed(1)}%</span>
-                {hasUSD&&plUSD!=null&&<span className="block text-[10px] opacity-60">{plUSD>=0?'+$':'-$'}{Math.abs(plUSD).toLocaleString('en-US',{maximumFractionDigits:0})}</span>}
-              </div>
-              <div className="text-right">
-                <span className="text-xs font-bold tabular-nums" style={{color:ti.c}}>{pct.toFixed(1)}%</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
+// AllocationPieChart lived here — a donut plus a five-column table of value,
+// cost, P/L and share per type. Both halves moved into the Unrealized P/L card,
+// except the donut: the net worth card on that page already draws the same
+// split as a segmented bar, and a third rendering of one fact would have
+// out-shouted the number the card is there for.
 
 // ── ASSET RELATED-TX PANEL BODY (shared by cash card + table views) ──
 const AssetRelBody = ({a, investTxs, dk, onAddTx, onDeleteTx, onTopUp, wallets=[], onDeleteMove, onRenameMove, onAddItem, onDelItem, usdRate=35}) => {
@@ -3434,29 +3413,6 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
   // It is one question, so it gets one number, matching what the dashboard has
   // always shown. Cash has no cost basis distinct from its value, so it adds to
   // both and leaves the P/L column alone.
-  const byType = useMemo(()=>{
-    const m={};
-    enriched.forEach(a=>{
-      if(!m[a.type]) m[a.type]={val:0,cost:0,plUSD:0,hasUSD:false};
-      m[a.type].val  += a.valTHB;
-      m[a.type].cost += a.costTHB;
-      if(a.currency==='USD'){ m[a.type].plUSD += a.pl; m[a.type].hasUSD=true; }
-    });
-    // …but only when cash is actually on screen. Folding it in unconditionally
-    // put a เงินสด slice on the Crypto tab and made the panel's total disagree
-    // with the list under it. A wallet filter narrows the rows too, and this
-    // figure is every wallet's cash, so it belongs to the unfiltered view only.
-    const cashInView = (assetTab==='all' || assetTab==='cash') && walletFilter==='all';
-    if(cashInView && Math.abs(looseCash)>0.01){
-      if(!m.cash) m.cash={val:0,cost:0,plUSD:0,hasUSD:false};
-      m.cash.val += looseCash; m.cash.cost += looseCash;
-    }
-    return Object.entries(m).map(([type,{val,cost,plUSD,hasUSD}])=>({
-      type, val, cost, pl:val-cost, plPct:cost>0?(val-cost)/cost*100:0, plUSD, hasUSD
-    })).sort((a,b)=>b.val-a.val);
-  },[enriched,looseCash,assetTab,walletFilter]);
-  const maxType = byType[0]?.val||1;
-  const allocTot = useMemo(()=>byType.reduce((s,t)=>s+t.val,0),[byType]);
 
   const card = `rounded-2xl ${dk?'card-solid':'glass-light shadow-sm'}`;
   const sub  = `text-xs ${dk?'text-slate-400':'text-slate-500'}`;
@@ -3578,20 +3534,11 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
         ))}
       </div>
 
-      {/* Breakdown - horizontal */}
-      {byType.length>0&&(
-        <div className={`${card} p-5`}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>สัดส่วนตามประเภท</h3>
-            {/* allocTot, not totVal: this breakdown now includes wallet cash, and
-                percentages against a total that leaves it out would not reach 100.
-                totVal stays the portfolio figure every other panel here reports. */}
-            <span className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>มูลค่ารวม <span className={`font-bold ${dk?'text-white':'text-slate-800'}`}>{fmt(allocTot)}</span></span>
-          </div>
-          <AllocationPieChart byType={byType} totVal={allocTot} dk={dk}/>
-        </div>
-      )}
-
+      {/* สัดส่วนตามประเภท used to sit here, with a donut and a per-type table of
+          value, cost, P/L and share. It has moved into the Unrealized P/L card
+          on the dashboard, which was grouping by the same types and computing
+          the same P/L already — the two panels were one table split across two
+          pages, each having to be kept correct separately. */}
 
       {/* Table - full width */}
       <div className={`${card} overflow-hidden`}>
