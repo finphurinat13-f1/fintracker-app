@@ -2188,12 +2188,21 @@ const AddressChip = ({address, dk}) => {
     </button>
   );
 };
+// One hue at five brightnesses rather than five hues. The old set was gold,
+// yellow, bitcoin orange, emerald and slate — colours picked one at a time for
+// what each asset "is", which is how a five-segment bar ends up looking like a
+// flag. Nothing was ever decided by the fact that crypto is orange; the split
+// is the information, and a single ramp carries it while letting the segments
+// stay distinguishable.
+//
+// Ordered brightest to dimmest by how much attention the type usually wants —
+// the traded holdings first, then cash, with everything uncategorised last.
 const ASSET_TYPES = [
-  {v:'stock', l:'📈 หุ้น',    c:'#c9a94b', icon:'📈'},
-  {v:'gold',  l:'🪙 ทองคำ',  c:'#eab308', icon:<GoldIcon/>},
-  {v:'crypto',l:'🟠 Crypto', c:'#F7931A', icon:<BtcIcon/>},
-  {v:'cash',  l:'💵 เงินสด', c:'#10b981', icon:'💵'},
-  {v:'other', l:'📦 อื่นๆ',   c:'#94a3b8', icon:'📦'},
+  {v:'stock', l:'📈 หุ้น',    c:'#e8cf90', icon:'📈'},
+  {v:'crypto',l:'🟠 Crypto', c:'#c9a94b', icon:<BtcIcon/>},
+  {v:'gold',  l:'🪙 ทองคำ',  c:'#a8894a', icon:<GoldIcon/>},
+  {v:'cash',  l:'💵 เงินสด', c:'#7d6a3f', icon:'💵'},
+  {v:'other', l:'📦 อื่นๆ',   c:'#584b31', icon:'📦'},
 ];
 const BUDGET_DEFAULTS = {'อาหาร':7000,'การเดินทาง':2000,'Home & Utilities':8000,'ช้อปปิ้ง':1500,'อินเตอร์เน็ต/โทรศัพท์':500,'สุขภาพ':1000,'Subscription':500,'การศึกษา':1000,'บันเทิง':1500,'ลงทุน/ปันผล':2000,'อื่นๆ':1000};
 // Empty on purpose. This list used to ship the author's real standing
@@ -6053,12 +6062,15 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
   const [filterType, setFilterType] = useState('all');
   const card = `rounded-2xl ${dk?'card-solid':'glass-light shadow-sm'}`;
 
+  // Same ramp as ASSET_TYPES, for the same reason: five hues across five wallet
+  // kinds made the page look like a chart legend before it looked like money.
+  // Each card already names its own type, so the colour was never carrying it.
   const TYPE_META = {
-    bank:   { label:'บัญชีธนาคาร',  color:'#10b981' },
-    cash:   { label:'เงินสด',        color:'#c9a94b', icon:<CashIcon s={22}/> },
-    stock:  { label:'พอร์ตหุ้น',     color:'#8b5cf6', icon:'📈' },
-    credit: { label:'บัตรเครดิต',    color:'#f43f5e', icon:'💳' },
-    crypto: { label:'Crypto Wallet', color:'#f97316', icon:'🔐' },
+    bank:   { label:'บัญชีธนาคาร',  color:'#e8cf90' },
+    stock:  { label:'พอร์ตหุ้น',     color:'#c9a94b', icon:'📈' },
+    crypto: { label:'Crypto Wallet', color:'#a8894a', icon:'🔐' },
+    cash:   { label:'เงินสด',        color:'#7d6a3f', icon:<CashIcon s={22}/> },
+    credit: { label:'บัตรเครดิต',    color:'#584b31', icon:'💳' },
   };
 
   const now = new Date();
@@ -6292,7 +6304,6 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {walletData.filter(w=>filterType==='all'||(filterType==='cash-group'&&(w.type==='bank'||w.type==='cash'||w.type==='credit'))||(filterType===w.type)).map(w=>{
             const meta = TYPE_META[w.type] || { label:w.type, color:'#c9a94b' };
-            const portPct = totalBalance>0 ? w.balance/totalBalance*100 : 0;
             const trendUp = w.trendPct >= 0;
             return (
               <div key={w.id}
@@ -6374,18 +6385,11 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                       <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg ${dk?'bg-emerald-500/15 text-emerald-400':'bg-emerald-50 text-emerald-700'}`}>💚 เงินเรา {fmt(w.balance - custByWallet[w.id])}</span>
                     </div>
                   )}
-                  {/* % of total progress bar */}
-                  {totalBalance>0&&(
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>% ของยอดรวม</span>
-                        <span className="text-xs font-semibold" style={{color:meta.color}}>{portPct.toFixed(1)}%</span>
-                      </div>
-                      <div className={`h-1.5 rounded-full overflow-hidden ${dk?'bg-white/10':'bg-slate-100'}`}>
-                        <div className="h-full rounded-full transition-all duration-700" style={{width:`${portPct}%`,background:meta.color}}/>
-                      </div>
-                    </div>
-                  )}
+                  {/* The share-of-total row is gone. Nothing is decided by
+                      knowing one wallet holds 1.8% of everything — the bar at
+                      the top of the page already carries the split, and here it
+                      was a coloured line per card competing with the balance
+                      above it. */}
                   {/* Month stats */}
                   <div className={`flex gap-3 pt-3 border-t ${dk?'border-white/8':'border-slate-100'}`}>
                     <div className="flex-1">
