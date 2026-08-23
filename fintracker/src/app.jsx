@@ -8804,7 +8804,13 @@ const App = () => {
   // The card colour rides along with the background so the two are chosen
   // together; .card-solid reads it through inheritance.
   const _th = THEMES.find(t=>t.id===colorTheme) || THEMES[0];
-  const bgStyle = { background: _th[dk?'dark':'light'], '--card-bg': _th.card || '#0b1220' };
+  // backgroundAttachment pins the glow to the viewport instead of to the
+  // document. Without it the gradient is sized to the whole scrolling page, so
+  // "15% from the top" lands 15% down a page many screens tall — the warmth
+  // sat in the header and everything below it was flat black. Fixed keeps the
+  // same glow in view the whole way down. iOS Safari ignores this and falls
+  // back to the old scroll behaviour, which is merely what we had before.
+  const bgStyle = { background: _th[dk?'dark':'light'], backgroundAttachment:'fixed', '--card-bg': _th.card || '#0b1220' };
 
   // ── Auth guard ──
   if (kickedOut) return (

@@ -26,7 +26,7 @@ export const THEMES = [
   // two: cards now read as raised surfaces rather than as slightly different
   // black. The teal in the second glow went with it for the same reason.
   { id:'terminal', icon:'💹', label:'Terminal', note:'ทองบนดำ — ธีมหลัก',
-    dark:  'radial-gradient(ellipse 70% 50% at 5% 15%,rgba(212,160,23,.07) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 95% 85%,rgba(160,120,40,.04) 0%,transparent 55%),#030304',
+    dark:  'radial-gradient(ellipse 95% 65% at 6% 8%,rgba(212,160,23,.075) 0%,transparent 62%),radial-gradient(ellipse 75% 55% at 94% 92%,rgba(160,120,40,.05) 0%,transparent 58%),#030304',
     light: 'radial-gradient(ellipse 60% 55% at 15% 10%,rgba(212,160,23,.05) 0%,transparent 65%),#f6f4ef',
     card: '#0d0d10',
   },

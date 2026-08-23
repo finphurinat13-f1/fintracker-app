@@ -76,9 +76,22 @@ const db   = firebase.firestore();
      one was not — a green page with blue cards on it. Inherited through a
      custom property set alongside the page background, so the two are decided
      in the same place and cannot drift apart. */
+  /* Each card carries its own light. The page has a warm glow behind it, but
+     an opaque card paints straight over it, so the gold only ever reached the
+     gaps between cards — the left margin — while every surface holding actual
+     content stayed flat. Waiting on the page glow also meant cards further
+     down the page could never receive any of it. A gradient on the card itself
+     is independent of where the card sits, so the fifth one down is lit like
+     the first. Kept under 6% so it reads as a surface catching light rather
+     than as a coloured panel.
+
+     The hairline went warm at the same time: a white border on a gold theme is
+     the same mistake the blue ground was. */
   .card-solid {
-    background: var(--card-bg, #0b1220);
-    border: 1px solid rgba(255,255,255,0.07);
+    background:
+      linear-gradient(152deg, rgba(212,160,23,0.055) 0%, rgba(212,160,23,0.020) 36%, rgba(212,160,23,0.000) 64%),
+      var(--card-bg, #0b1220);
+    border: 1px solid rgba(212,160,23,0.11);
     box-shadow: none;
     transition: border-color 0.15s ease;
   }
