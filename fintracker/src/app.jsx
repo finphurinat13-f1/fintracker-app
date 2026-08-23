@@ -1265,17 +1265,32 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
     return ms;
   },[]);
 
-  const barData = useMemo(()=>({
-    labels: months6.map(m=>{ const[,mo]=m.split('-'); return MONTHS_TH[parseInt(mo)-1]; }),
-    income:  months6.map(m=>sumTxMonth(txs,'income',m)),
-    expense: months6.map(m=>sumTxMonth(txs,'expense',m)),
-  }),[txs,months6]);
+  const barData = useMemo(()=>{
+    const income  = months6.map(m=>sumTxMonth(txs,'income',m));
+    const expense = months6.map(m=>sumTxMonth(txs,'expense',m));
+    // Months before the first transaction are dropped. They rendered as blank
+    // columns that still took their full share of the width, so on an account a
+    // few months old the bars were squeezed into the right-hand half of the
+    // chart and pushed up against the donut beside it. If nothing has any
+    // activity at all there is nothing to trim to, so the full six stay and the
+    // axis renders empty rather than the chart collapsing to no columns.
+    const first = income.findIndex((v,i)=>v!==0||expense[i]!==0);
+    const from  = first<0 ? 0 : first;
+    return {
+      labels: months6.slice(from).map(m=>{ const[,mo]=m.split('-'); return MONTHS_TH[parseInt(mo)-1]; }),
+      income:  income.slice(from),
+      expense: expense.slice(from),
+    };
+  },[txs,months6]);
 
   const statsCards = useMemo(()=>{
-    const ci=barData.income[5], pi=barData.income[4];
-    const ce=barData.expense[5], pe=barData.expense[4];
+    // Counted from the end, not from index 5. The array is no longer always six
+    // long, and a fixed index would have quietly read the wrong month — or
+    // undefined — the moment the leading blanks were trimmed.
+    const ci=barData.income.at(-1)??0, pi=barData.income.at(-2)??0;
+    const ce=barData.expense.at(-1)??0, pe=barData.expense.at(-2)??0;
     const netD=barData.income.map((v,i)=>v-barData.expense[i]);
-    const cn=netD[5], pn=netD[4];
+    const cn=netD.at(-1)??0, pn=netD.at(-2)??0;
     const momI=pi>0?(ci-pi)/pi*100:0;
     const momE=pe>0?(ce-pe)/pe*100:0;
     const momN=pn!==0?(cn-pn)/Math.abs(pn)*100:0;
@@ -1464,7 +1479,10 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={card}>
-          <h3 className={`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-700'}`}>รายรับ-รายจ่ายรายเดือน (6 เดือน)</h3>
+          {/* The count follows the bars. It read "6 เดือน" while showing four,
+              which was the heading describing the window asked for rather than
+              the one on screen. */}
+          <h3 className={`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-700'}`}>รายรับ-รายจ่ายรายเดือน ({barData.labels.length} เดือน)</h3>
           <div className="h-52"><BarChart data={barData} theme={theme} hide={hideAmt||privacy}/></div>
         </div>
         <div className={card}>
