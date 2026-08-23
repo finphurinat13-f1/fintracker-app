@@ -80,6 +80,8 @@ const Ic = ({ n, s=18, cls='', fill='none' }) => {
     list:     <><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></>,
     chart:    <><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></>,
     plus:     <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+    lock:     <><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
+    lockopen: <><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></>,
     sun:      <><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></>,
     moon:     <><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></>,
     x:        <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
@@ -363,7 +365,7 @@ const BarChart = ({ data, theme, privacy=false }) => {
         scales:{
           x:{ grid:{display:false}, border:{display:false}, ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Chakra Petch',sans-serif"}} },
           y:{ grid:{color:dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)'}, border:{display:false},
-              ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Chakra Petch',sans-serif"}, callback:v=>privacy?'':(v>=1000?(v/1000).toFixed(0)+'K':v)} }
+              ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Chakra Petch',sans-serif"}, callback:v=>v>=1000?(v/1000).toFixed(0)+(privacy?'':'K'):v} }
         }
       }
     });
@@ -790,7 +792,7 @@ const NwTimeline = ({ nwHistory, theme, wallets=[], privacy=false }) => {
           x:{ grid:{color:dk?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.06)'}, border:{display:false}, ticks:{color:dk?'#4d6282':'#94a3b8',font:{size:10,family:"'Chakra Petch',sans-serif"}} },
           y:{ grid:{color:dk?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.06)'}, border:{display:false},
               ticks:{color:dk?'#4d6282':'#94a3b8',font:{size:10,family:"'Chakra Petch',sans-serif"},
-                callback:v=>privacy?'':v>=1000000?'฿'+(v/1000000).toFixed(1)+'M':v>=1000?'฿'+(v/1000).toFixed(0)+'K':'฿'+v } } } } });
+                callback:v=>privacy?(v>=1000000?(v/1000000).toFixed(1):v>=1000?(v/1000).toFixed(0):v):(v>=1000000?'฿'+(v/1000000).toFixed(1)+'M':v>=1000?'฿'+(v/1000).toFixed(0)+'K':'฿'+v) } } } } });
     return ()=>ch.current?.destroy();
   },[sorted,theme,privacy]);
 
@@ -1126,11 +1128,12 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
   const savRate = income>0?((income-expense)/income*100):0;
 
   // ── Net Worth ──
- // Was a second, page-local eye that masked only what this screen drew — so
- // pressing it left the timeline table and both chart axes printing the same
- // figures it had just hidden. One control, one meaning: this follows the
- // header toggle, and the button below drives that instead of a private copy.
- const hideAmt = privacy;
+  // Two controls, two jobs, and now two icons so they cannot be mistaken for
+  //   each other: the eye here covers the figures on this screen for a
+  //   screenshot, and the padlock in the header is the one with the passcode
+  //   behind it. They were both eyes once, which is why pressing the obvious
+  //   one left half the page uncovered.
+  const [hideAmt, setHideAmt] = useState(false);
   const mask = v => hideAmt ? '฿ •••••' : v;
   const usdRate = parseFloat(localStorage.getItem('ft-usdrate')||'35');
   // canonical net worth = every asset (incl. tags) + every wallet's cash (cash-asset dedup)
@@ -1310,7 +1313,7 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
               <div className="flex items-center gap-2 mb-2">
                 <div className={`text-xs font-medium uppercase tracking-widest ${dk?'text-slate-400':'text-slate-500'}`}>Net Worth · มูลค่าทรัพย์สินสุทธิ <span title="เงินสด + สินทรัพย์ทั้งหมด หักหนี้สิน = เงินที่เป็นของคุณจริงๆ (เงินที่ถือแทนคนอื่นแสดงแยกไว้ ไม่รวมในยอดนี้)" style={{cursor:'help',opacity:.7}}>ⓘ</span></div>
               </div>
-              <button data-hint="คลิกซ่อน/แสดงจำนวนเงิน" onClick={()=>onTogglePrivacy&&onTogglePrivacy()} className={`flex items-center gap-2 group cursor-pointer text-left`}>
+              <button data-hint="คลิกซ่อน/แสดงจำนวนเงิน" onClick={()=>setHideAmt(h=>!h)} className={`flex items-center gap-2 group cursor-pointer text-left`}>
                 <div className={`text-3xl font-bold tracking-wide ${dk?'text-white':'text-slate-800'}`}>
                   {mask(fmtNW(animNetWorth))}
                 </div>
@@ -7788,8 +7791,10 @@ const App = () => {
   const [privacy,setPrivacy]     = useState(_privacy);
   const [lockOn,setLockOn]       = useState(_locked);
   const [pinGate,setPinGate]     = useState(null);   // 'unlock' | 'set' | 'off'
-  // Hiding on purpose ends the grace at once — pressing 👁 to put the numbers
-  // away should not leave a thirty-second window where they come back for free.
+  // The padlock is the security control, not the one used to tidy a screen for
+  // a screenshot — that is the eye on the Net Worth card. So hiding still ends
+  // the grace at once: somebody who locks up because a person walked over
+  // should not have left that person a button that opens it again.
   const applyPrivacy = on => {
     _privacy=on;
     try{localStorage.setItem('ft-privacy',on?'1':'0');}catch{}
@@ -8910,11 +8915,12 @@ const App = () => {
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span title={syncTip} className={`inline-flex items-center px-1 ${syncStatus==='err'?'text-rose-400':syncStatus==='saving'?'text-yellow-400':'text-emerald-400'}`}><Ic n={syncStatus==='err'?'alert':'sync'} s={15} cls={syncStatus==='saving'?'animate-spin':''}/></span>
-            <button onClick={togglePrivacy} title={privacy?'แสดงตัวเลข':'ซ่อนตัวเลข'} className={`p-2 rounded-xl transition-colors ${privacy?(dk?'bg-gold-500/20 text-gold-300':'bg-gold-50 text-gold-500'):(dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-700')}`}>
-              {privacy
-                ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              }
+            <button onClick={togglePrivacy} title={privacy?'ปลดล็อกตัวเลข':'ล็อกตัวเลข'} className={`p-2 rounded-xl transition-colors ${privacy?(dk?'bg-gold-500/20 text-gold-300':'bg-gold-50 text-gold-500'):(dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-700')}`}>
+              {/* A padlock, not an eye. The Net Worth card carries an eye for
+                  covering figures on that screen, and two identical eyes doing
+                  different jobs is what let somebody hide the numbers and leave
+                  the timeline printing them underneath. */}
+              <Ic n={privacy?'lock':'lockopen'} s={15}/>
             </button>
             {isAdmin&&<button onClick={()=>{setPage('admin');localStorage.setItem('ft-page','admin');}} title="Users" className={`p-2 rounded-xl transition-colors text-sm leading-none ${page==='admin'?(dk?'bg-gold-500/20':'bg-gold-50'):(dk?'hover:bg-white/10':'hover:bg-slate-100')}`}>👤</button>}
             <button onClick={()=>setAcctOpen(true)} title="บัญชี" className={`p-2 rounded-xl transition-colors ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-700'}`}><Ic n="settings" s={15}/></button>
@@ -9038,12 +9044,9 @@ const App = () => {
           <span className={`font-bold text-sm ${dk?'text-white':'text-slate-800'}`}>FinTracker</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <button onClick={togglePrivacy} title={privacy?'แสดงตัวเลข':'ซ่อนตัวเลข'} aria-label={privacy?'แสดงตัวเลข':'ซ่อนตัวเลข'}
+          <button onClick={togglePrivacy} title={privacy?'ปลดล็อกตัวเลข':'ล็อกตัวเลข'} aria-label={privacy?'ปลดล็อกตัวเลข':'ล็อกตัวเลข'}
             className={`p-2.5 rounded-lg transition-all active:scale-90 ${privacy?(dk?'text-gold-400':'text-gold-500'):(dk?'text-slate-400':'text-slate-700')}`}>
-            {privacy
-              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            }
+            <Ic n={privacy?'lock':'lockopen'} s={16}/>
           </button>
           <button onClick={()=>{ syncToCloud(); addToast('↻ กำลังซิงค์...'); }} title={syncTip} aria-label="ซิงค์ข้อมูล"
             className={`p-2.5 rounded-lg active:scale-90 transition-transform ${syncStatus==='err'?'text-rose-400':syncStatus==='saving'?'text-yellow-400':'text-emerald-400'}`}>
