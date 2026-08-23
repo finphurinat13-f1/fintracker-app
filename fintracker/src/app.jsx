@@ -1259,43 +1259,48 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
     }));
   },[assets,txs,usdRate,netWorth,walletCashTotal]);
 
-  const months6 = useMemo(()=>{
-    const ms=[];
-    for(let i=5;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); ms.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`); }
-    return ms;
-  },[]);
+  const mKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 
-  const barData = useMemo(()=>{
-    const income  = months6.map(m=>sumTxMonth(txs,'income',m));
-    const expense = months6.map(m=>sumTxMonth(txs,'expense',m));
-    // Months before the first transaction are dropped. They rendered as blank
-    // columns that still took their full share of the width, so on an account a
-    // few months old the bars were squeezed into the right-hand half of the
-    // chart and pushed up against the donut beside it. If nothing has any
-    // activity at all there is nothing to trim to, so the full six stay and the
-    // axis renders empty rather than the chart collapsing to no columns.
-    const first = income.findIndex((v,i)=>v!==0||expense[i]!==0);
-    const from  = first<0 ? 0 : first;
-    return {
-      labels: months6.slice(from).map(m=>{ const[,mo]=m.split('-'); return MONTHS_TH[parseInt(mo)-1]; }),
-      income:  income.slice(from),
-      expense: expense.slice(from),
-    };
-  },[txs,months6]);
+  // Always six columns, anchored so the empty ones fall on the right. A plain
+  // trailing window put the blanks before the first transaction on the left,
+  // where they pushed the bars into the right half of the chart and up against
+  // the donut beside it. Starting the window at the first month with activity
+  // packs the bars left and lets the months not yet arrived hold the empty space
+  // instead — the same six columns, with the gap on the side that reads as "not
+  // yet" rather than "nothing here".
+  //
+  // Once history outgrows six months the anchor stops mattering and it becomes
+  // an ordinary trailing window ending on the current month, so the chart never
+  // scrolls off into the past or grows past six.
+  const chartMonths = useMemo(()=>{
+    const firstTx = txs.reduce((min,t)=>(t.date&&(!min||t.date<min))?t.date:min, null);
+    const startAt = firstTx ? new Date(+firstTx.slice(0,4), +firstTx.slice(5,7)-1, 1) : null;
+    const trailing = new Date(now.getFullYear(), now.getMonth()-5, 1);
+    // Whichever is later: six months back, or the month the records begin.
+    const base = (startAt && startAt > trailing) ? startAt : trailing;
+    return Array.from({length:6},(_,i)=>mKey(new Date(base.getFullYear(), base.getMonth()+i, 1)));
+  },[txs]);
+
+  const barData = useMemo(()=>({
+    labels: chartMonths.map(m=>{ const[,mo]=m.split('-'); return MONTHS_TH[parseInt(mo)-1]; }),
+    income:  chartMonths.map(m=>sumTxMonth(txs,'income',m)),
+    expense: chartMonths.map(m=>sumTxMonth(txs,'expense',m)),
+  }),[txs,chartMonths]);
 
   const statsCards = useMemo(()=>{
-    // Counted from the end, not from index 5. The array is no longer always six
-    // long, and a fixed index would have quietly read the wrong month — or
-    // undefined — the moment the leading blanks were trimmed.
-    const ci=barData.income.at(-1)??0, pi=barData.income.at(-2)??0;
-    const ce=barData.expense.at(-1)??0, pe=barData.expense.at(-2)??0;
+    // Read from the calendar, not from the end of the chart. The last column is
+    // now often a month that has not happened yet, so .at(-1) would have shown
+    // ฿0 on "รายรับเดือนนี้" from the day the window started reaching forward.
+    const prevM = mKey(new Date(now.getFullYear(), now.getMonth()-1, 1));
+    const ci=sumTxMonth(txs,'income',curM),  pi=sumTxMonth(txs,'income',prevM);
+    const ce=sumTxMonth(txs,'expense',curM), pe=sumTxMonth(txs,'expense',prevM);
     const netD=barData.income.map((v,i)=>v-barData.expense[i]);
-    const cn=netD.at(-1)??0, pn=netD.at(-2)??0;
+    const cn=ci-ce, pn=pi-pe;
     const momI=pi>0?(ci-pi)/pi*100:0;
     const momE=pe>0?(ce-pe)/pe*100:0;
     const momN=pn!==0?(cn-pn)/Math.abs(pn)*100:0;
     return { netD, ci, ce, cn, momI, momE, momN };
-  },[barData]);
+  },[txs,curM,barData]);
 
   const donutData = useMemo(()=>{
     const exp=txs.filter(t=>t.type==='expense'&&t.date.startsWith(curM));
@@ -1479,10 +1484,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={card}>
-          {/* The count follows the bars. It read "6 เดือน" while showing four,
-              which was the heading describing the window asked for rather than
-              the one on screen. */}
-          <h3 className={`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-700'}`}>รายรับ-รายจ่ายรายเดือน ({barData.labels.length} เดือน)</h3>
+          <h3 className={`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-700'}`}>รายรับ-รายจ่ายรายเดือน (6 เดือน)</h3>
           <div className="h-52"><BarChart data={barData} theme={theme} hide={hideAmt||privacy}/></div>
         </div>
         <div className={card}>
