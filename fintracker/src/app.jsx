@@ -441,16 +441,15 @@ const DonutChart = ({ data, theme, centerValue, hideAmt=false }) => {
       </div>
     );
   });
+  // minHeight, not height. The wide layout was pinned to 200px with the legend
+  // set to overflow:hidden, so a month with more categories than fit simply lost
+  // the last few — and they were the small ones at the bottom, which is exactly
+  // where an unfamiliar charge hides. The row grows with the legend now.
+  //
+  // The donut takes a fixed 200px square rather than height:100%, which would
+  // have made it grow to match the legend: thirteen categories would have
+  // inflated it to a 300px circle to no purpose.
   return (
-    {/* minHeight, not height. The wide layout was pinned to 200px with the
-        legend set to overflow:hidden, so a month with more categories than fit
-        simply lost the last few — and they were the small ones at the bottom,
-        which is exactly where an unfamiliar charge hides. The row grows with
-        the legend now.
-
-        The donut takes a fixed 200px square rather than height:100%, which
-        would have made it grow to match the legend: thirteen categories would
-        have inflated it to a 300px circle to no purpose. */}
     <div ref={containerRef} style={narrow?{display:'flex',flexDirection:'column',gap:'10px'}:{display:'flex',minHeight:'200px',alignItems:'center',gap:'12px'}}>
       <div style={narrow?{height:'160px',width:'160px',margin:'0 auto',flexShrink:0}:{flex:'0 0 auto',height:'200px',width:'200px'}}>
         <canvas ref={ref} style={{height:'100%',width:'100%'}}/>
@@ -4193,13 +4192,12 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
         ))}
       </div>
 
-      {/* Dividend summary */}
+      {/* Dividend summary. Compact: the card was giving two text-2xl figures a
+          row each and then a two-line block per asset, which came to roughly the
+          height of the P/L card for a total two orders of magnitude smaller. The
+          figures now share one line with the heading, and each asset is one row
+          with its bar in the middle instead of stacked underneath. */}
       {divTxs.length>0 && (
-        {/* Compact. The card was giving two text-2xl figures a row each and then
-            a two-line block per asset, which came to roughly the height of the
-            P/L card for a total two orders of magnitude smaller. The figures now
-            share one line with the heading, and each asset is one row with its
-            bar in the middle instead of stacked underneath. */}
         <div className={`${card} p-4`}>
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>💰 เงินปันผลรับ</div>
