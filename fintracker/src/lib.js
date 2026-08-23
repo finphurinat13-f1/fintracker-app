@@ -695,6 +695,19 @@ export const decryptBackup = async (env, pass) => {
 // shape and the initials had to be spelled out to tell them apart. Hashing the
 // ticker gives each one a colour it keeps forever — recognisable at a glance,
 // with no network call and nothing to load.
+
+// What to call the person signed in. Signing up with an email address leaves
+// displayName empty, and the fallback used to be a literal name — so every
+// account in the world was greeted as the author. The address is the only name
+// the account has; +alias is routing rather than identity, and a bare greeting
+// beats a wrong one when there is nothing usable at all.
+export const whoAmI = (user) => {
+  const shown = (user?.displayName || '').trim();
+  if (shown) return shown;
+  const local = (user?.email || '').split('@')[0].split('+')[0].trim();
+  return local || '';
+};
+
 export const tickerClr = t => CAT_PALETTE[hashCat((t || '?').toUpperCase()) % CAT_PALETTE.length];
 
 // ── Realized profit ──────────────────────────────────────────────────────────

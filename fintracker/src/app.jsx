@@ -1,5 +1,5 @@
 import {
-  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, CAT_ICON, getCatMeta, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, encryptBackup, decryptBackup, isEncryptedBackup
+  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, CAT_ICON, getCatMeta, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, encryptBackup, decryptBackup, isEncryptedBackup
 } from "./lib.js";
 
 
@@ -1259,7 +1259,11 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
             <LogoSvg size={40}/>
             <div>
               <div className={`text-sm font-bold tracking-wide ${dk?'text-white':'text-slate-800'}`}>FinTracker</div>
-              <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>{greeting}, {user?.displayName||'Fin'} 👋</div>
+              {/* Signing up with an email address sets no displayName, so the
+                  fallback here was every user's name — and it was 'Fin'. The
+                  address is the only name the account actually has; the +alias
+                  suffix comes off because it is routing, not identity. */}
+              <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>{greeting}{whoAmI(user) ? `, ${whoAmI(user)}` : ''} 👋</div>
             </div>
           </div>
 
@@ -4603,7 +4607,12 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
   // Which categories are "irregular" (ไม่ประจำ — big one-time-ish spends like a car repair, not
   // daily-ish like food/water/transport). Stored the same shape+sync pattern as budgets: a plain
   // {catName: true} map, local-authoritative, synced via uploadNow/download exactly like budgets.
-  const [irregularCats, setIrregularCats] = useState(()=>{try{return JSON.parse(localStorage.getItem('ft-cat-irregular')||'null')||{};}catch{return {};}});
+  // "อื่นๆ" is the bucket for whatever did not fit a category, which is the
+  // definition of an irregular expense — filing it under ประจำ by default makes
+  // the daily figure include money that was never going to arrive daily. Only a
+  // starting position: the per-category toggle still decides, and an install
+  // that has already chosen keeps its own answer.
+  const [irregularCats, setIrregularCats] = useState(()=>{try{return JSON.parse(localStorage.getItem('ft-cat-irregular')||'null')||{'อื่นๆ':true};}catch{return {'อื่นๆ':true};}});
   const irregularMounted = useRef(false);
   useEffect(()=>{
     localStorage.setItem('ft-cat-irregular', JSON.stringify(irregularCats));
@@ -6739,7 +6748,7 @@ const AccountModal = ({open, onClose, theme, setTheme, colorTheme, setColorTheme
           <div className="mb-4">
             <div className={`text-xs mb-1.5 font-medium ${dk?'text-slate-400':'text-slate-500'}`}>ชื่อที่แสดง</div>
             <div className="flex gap-2">
-              <input value={dispName} onChange={e=>{ setDispName(e.target.value); setNameSaved(false); }} placeholder="เช่น Fin"
+              <input value={dispName} onChange={e=>{ setDispName(e.target.value); setNameSaved(false); }} placeholder="ชื่อที่อยากให้แอปเรียก"
                 className={`flex-1 px-3 py-2 rounded-xl text-sm border outline-none transition-colors ${dk?'bg-white/5 border-white/10 text-white placeholder-slate-500 focus:border-gold-500':'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:border-gold-400'}`}/>
               <button onClick={saveDispName} className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors ${nameSaved?'bg-emerald-500/20 text-emerald-400':'bg-gold-500 hover:bg-gold-600'}`}>{nameSaved?<Ic n="check" s={14}/>:'บันทึก'}</button>
             </div>
@@ -7853,6 +7862,7 @@ const App = () => {
   const initDone               = useRef(false);
   const downloadPending        = useRef(0);
   const sessionTimer           = useRef(null);
+  const regUnsub               = useRef(null);   // registry watcher — approval arrives from another screen
   const lastUploadedAt         = useRef(null);
   const firestoreUnsub         = useRef(null);
   // baseline of what was last in sync with the cloud — drives the 3-way merge.
@@ -7935,18 +7945,26 @@ const App = () => {
         try { localStorage.setItem('ft-owner', u.uid); } catch { /* private mode */ }
       }
       setUser(u); setAuthL(false);
-      if (!u) { setDataL(false); setUserStatus(null); clearInterval(sessionTimer.current); }
+      if (!u) { setDataL(false); setUserStatus(null); clearInterval(sessionTimer.current); if(regUnsub.current){ regUnsub.current(); regUnsub.current=null; } }
       else {
         if (u.email === ADMIN_EMAIL) {
           setUserStatus('approved');
         } else {
-          const doc = await db.collection('registry').doc(u.uid).get();
+          // Watched rather than read once. Approval happens on somebody else's
+          // screen, minutes or hours later, and a single read left the waiting
+          // person on the same notice forever — with nothing on it suggesting
+          // a refresh would help. Now the moment an admin approves, the page
+          // they left open lets them in.
+          const ref = db.collection('registry').doc(u.uid);
+          const doc = await ref.get();
           if (!doc.exists) {
-            await db.collection('registry').doc(u.uid).set({ email: u.email, status:'pending', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-            setUserStatus('pending');
-          } else {
-            setUserStatus(doc.data().status || 'pending');
+            await ref.set({ email: u.email, status:'pending', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
           }
+          if (regUnsub.current) regUnsub.current();
+          regUnsub.current = ref.onSnapshot(
+            s => setUserStatus(s.exists ? (s.data().status || 'pending') : 'pending'),
+            () => setUserStatus('pending'),   // rules deny reads before approval on some paths
+          );
         }
         manageSession(u);
       }
@@ -8777,9 +8795,19 @@ const App = () => {
   if (user && userStatus === 'pending') return (
     <div className={`min-h-screen flex items-center justify-center ${dk?'bg-app':'bg-slate-50'}`}>
       <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`}>
+        {/* A wait with no stated length, no reason and no next step reads as
+            being stonewalled. All three are cheap to give, and the page now
+            watches the registry, so it lets itself in the moment approval
+            lands rather than asking anyone to guess that a refresh helps. */}
         <div className="text-5xl mb-4">⏳</div>
         <h2 className={`text-lg font-bold mb-2 ${dk?'text-white':'text-slate-800'}`}>รอการอนุมัติ</h2>
-        <p className={`text-sm mb-6 ${dk?'text-slate-400':'text-slate-500'}`}>บัญชี <span className="font-medium">{user.email}</span> กำลังรอการอนุมัติจากผู้ดูแลระบบค่ะ</p>
+        <p className={`text-sm mb-4 ${dk?'text-slate-400':'text-slate-500'}`}>ยืนยันอีเมลเรียบร้อยแล้ว</p>
+        <p className={`text-sm font-medium mb-5 ${dk?'text-gold-300':'text-gold-600'}`}>{user.email}</p>
+        <div className={`text-xs leading-relaxed space-y-2 mb-6 text-left rounded-xl p-3.5 ${dk?'bg-white/5 text-slate-400':'bg-slate-50 text-slate-500'}`}>
+          <p>ขั้นตอนสุดท้ายคือรอผู้ดูแลระบบเปิดสิทธิ์ให้ โดยปกติภายใน 1 วัน</p>
+          <p>ระบบเปิดรับผู้ใช้ทีละน้อยเพื่อควบคุมค่าใช้จ่ายของเซิร์ฟเวอร์ จึงต้องอนุมัติทีละบัญชี</p>
+          <p className={dk?'text-slate-300':'text-slate-600'}>เปิดหน้านี้ทิ้งไว้ได้เลย เมื่อได้รับอนุมัติระบบจะพาเข้าสู่หน้าใช้งานโดยอัตโนมัติ</p>
+        </div>
         <button onClick={()=>auth.signOut()} className={`text-sm ${dk?'text-slate-400 hover:text-white':'text-slate-500 hover:text-slate-700'}`}>ออกจากระบบ</button>
       </div>
     </div>
@@ -8914,10 +8942,10 @@ const App = () => {
             <button onClick={()=>{setAcctOpen(true);setSidebarOpen(false);}}
               className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-1 transition-colors ${dk?'bg-white/[0.04] hover:bg-white/[0.08]':'bg-slate-50 hover:bg-slate-100'}`}>
               <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${dk?'bg-gold-500/30 text-gold-300':'bg-gold-100 text-gold-600'}`}>
-                {(user.displayName||user.email||'F')[0].toUpperCase()}
+                {(whoAmI(user)||user.email||'?')[0].toUpperCase()}
               </div>
               <div className="min-w-0 flex-1 text-left">
-                <div className={`text-xs font-semibold truncate ${dk?'text-slate-200':'text-slate-700'}`}>{user.displayName||'Fin'}</div>
+                <div className={`text-xs font-semibold truncate ${dk?'text-slate-200':'text-slate-700'}`}>{whoAmI(user)||user.email}</div>
                 <div className={`text-[10px] truncate ${dk?'text-slate-400':'text-slate-500'}`}>{user.email}</div>
               </div>
               <Ic n="settings" s={14} cls={dk?'text-slate-500':'text-slate-400'}/>

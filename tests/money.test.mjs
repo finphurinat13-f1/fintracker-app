@@ -18,7 +18,7 @@ globalThis.localStorage = {
 const {
   walletCash, assetVal, walletDelta, runningBalances, mergeArrById, systemCashByDay, txSign, txAmtCls, revertMove,
   isUntouchedBudgets, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, realizedByYear,
-  encryptBackup, decryptBackup, isEncryptedBackup, assetCashFlow,
+  encryptBackup, decryptBackup, isEncryptedBackup, assetCashFlow, whoAmI,
   impliedTicker, catOptions, renameCatInStores, priceAge,
 } = await import('../fintracker/src/lib.js');
 
@@ -879,4 +879,22 @@ test('a first sign-in keeps what is already there', () => {
   const s = wipeOnSwitch({ 'ft-txs':'[…]' }, 'uid-A');
   assert.equal(s['ft-txs'], '[…]', 'ไม่มีเจ้าของเดิมบันทึกไว้ = ไม่ใช่การสลับบัญชี');
   assert.equal(s['ft-owner'], 'uid-A');
+});
+
+// ── Who the greeting names ───────────────────────────────────────────────────
+// The fallback here used to be a literal name, so every account that signed up
+// with an email address — which sets no displayName — was greeted as somebody
+// else entirely.
+test('the greeting never calls somebody by another person’s name', () => {
+  assert.equal(whoAmI({ email:'somebody@gmail.com' }), 'somebody');
+  assert.equal(whoAmI({ displayName:'Nok', email:'other@gmail.com' }), 'Nok', 'ชื่อที่ตั้งไว้ต้องมาก่อน');
+  assert.equal(whoAmI({ email:'user+test1@gmail.com' }), 'user', '+alias เป็นการกำหนดเส้นทาง ไม่ใช่ชื่อ');
+  assert.equal(whoAmI({ displayName:'   ', email:'x@y.com' }), 'x', 'ชื่อที่มีแต่ช่องว่างไม่นับ');
+});
+
+test('no usable name gives a greeting with no name in it', () => {
+  // better a bare hello than a wrong one
+  assert.equal(whoAmI({}), '');
+  assert.equal(whoAmI(null), '');
+  assert.equal(whoAmI({ email:'' }), '');
 });
