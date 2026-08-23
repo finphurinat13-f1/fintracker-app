@@ -167,12 +167,18 @@ const db   = firebase.firestore();
   /* ── Text Colors ── */
   .tg-brand   { color: #c9a94b; text-shadow: 0 0 18px rgba(201,169,74,0.3); }
   .glow-num   { color: #c9a94b; }
+  /* These sit outside Tailwind, so muting emerald and rose in the config left
+     them behind — the biggest figures on the dashboard and the debt page are
+     exactly the ones wearing tg-red and tg-emerald, which is why the totals
+     kept glowing after everything around them had calmed down. Same two values
+     as the config now. .tg-green is the older duplicate of .tg-emerald and is
+     pointed at the same colour rather than left as a third opinion. */
   .tg-white   { color: #dde8f2; }
-  .tg-green   { color: #0ca34b; }
-  .tg-red     { color: #e53e3e; }
+  .tg-green   { color: #7aab8a; }
+  .tg-red     { color: #c9726a; }
   .tg-indigo  { color: #c9a94b; }
   .tg-gold    { color: #c8a84a; }
-  .tg-emerald { color: #27ae60; }
+  .tg-emerald { color: #7aab8a; }
 
   /* ── Institutional Button ── */
   .btn-primary {
