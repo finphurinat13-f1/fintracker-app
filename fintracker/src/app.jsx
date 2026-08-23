@@ -1294,8 +1294,12 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
       </div>
 
 
-{/* ── Net Worth Hero Card ── */}
-      {(assets.length>0||wallets.length>0)&&(
+{/* ── Net Worth Hero Card ──
+     Shown even at zero. Hiding it kept a big ฿0.00 off a brand-new dashboard,
+     but every other card on that screen reads ฿0.00 already — so the one that
+     vanished looked broken rather than tactful, and it is the figure the whole
+     app exists to show. */}
+      {(
         <div className={`rounded-2xl p-5 fade-up ${dk?'card-hero glass':'glass-light shadow-sm border border-gold-100'}`}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -9070,19 +9074,24 @@ const App = () => {
               <button onClick={()=>{setChecklistDone(true);try{localStorage.setItem('ft-checklist-done','1');}catch{}}} className={`text-xs ${dk?'text-slate-500 hover:text-slate-300':'text-slate-400 hover:text-slate-600'}`}>ซ่อน</button>
             </div>
             <div className={`w-full h-2 rounded-full mb-4 overflow-hidden ${dk?'bg-white/8':'bg-slate-100'}`}><div className="h-full rounded-full bg-emerald-500 transition-all duration-500" style={{width:`${clDone/3*100}%`}}/></div>
+            {/* Finished steps leave rather than sit here crossed out. A list
+                that shrinks each time reads as progress; three lines where two
+                are struck through read as a list with things wrong with it.
+                The count and the bar above still carry how far along it is,
+                which is what the crossed-out lines were doing badly. */}
             <div className="space-y-2.5">
-              {checklist.map((s,i)=>(
-                <div key={i} className="flex items-center justify-between gap-3">
+              {checklist.filter(s=>!s.done).map((s,i)=>(
+                <div key={s.pg} className="flex items-center justify-between gap-3 fade-up">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 ${s.done?'bg-emerald-500 text-white':(dk?'bg-white/10 text-slate-500':'bg-slate-200 text-slate-400')}`}>{s.done?'✓':i+1}</span>
-                    <span className={`text-sm truncate ${s.done?(dk?'text-slate-500 line-through':'text-slate-400 line-through'):(dk?'text-slate-200':'text-slate-700')}`}>{s.label}</span>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 ${dk?'bg-white/10 text-slate-500':'bg-slate-200 text-slate-400'}`}>{i+1}</span>
+                    <span className={`text-sm truncate ${dk?'text-slate-200':'text-slate-700'}`}>{s.label}</span>
                   </div>
                   {/* The page renders first, so the form opens on the next tick
                       with the right screen already behind it — and closing it
                       leaves the person where the work happens rather than back
                       on the dashboard. */}
-                  {!s.done&&<button onClick={()=>{ setPage(s.pg); try{localStorage.setItem('ft-page',s.pg);}catch{} setTimeout(s.open, 0); }}
-                    className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg bg-gold-500 hover:bg-gold-600 whitespace-nowrap">{s.cta} →</button>}
+                  <button onClick={()=>{ setPage(s.pg); try{localStorage.setItem('ft-page',s.pg);}catch{} setTimeout(s.open, 0); }}
+                    className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg bg-gold-500 hover:bg-gold-600 whitespace-nowrap">{s.cta} →</button>
                 </div>
               ))}
             </div>
