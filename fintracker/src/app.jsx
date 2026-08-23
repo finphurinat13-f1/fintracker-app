@@ -340,7 +340,7 @@ const LogoSvg = ({size=32}) => (
 );
 
 // ── CHARTS ─────────────────────────────────────────────────
-const BarChart = ({ data, theme, privacy=false }) => {
+const BarChart = ({ data, theme, hide=false }) => {
   const ref = useRef(); const ch = useRef();
   useEffect(() => {
     if (!ref.current||!data) return;
@@ -365,12 +365,12 @@ const BarChart = ({ data, theme, privacy=false }) => {
         scales:{
           x:{ grid:{display:false}, border:{display:false}, ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Chakra Petch',sans-serif"}} },
           y:{ grid:{color:dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)'}, border:{display:false},
-              ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Chakra Petch',sans-serif"}, callback:v=>v>=1000?(v/1000).toFixed(0)+(privacy?'':'K'):v} }
+              ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Chakra Petch',sans-serif"}, callback:v=>v>=1000?(v/1000).toFixed(0)+(hide?'':'K'):v} }
         }
       }
     });
     return () => ch.current?.destroy();
-  }, [data, theme, privacy]);
+  }, [data, theme, hide]);
   return <canvas ref={ref}/>;
 };
 
@@ -753,7 +753,7 @@ const Modal = ({ open, onClose, onSave, editData, theme, wallets=[], assets=[], 
 };
 
 // ── NET WORTH TIMELINE ─────────────────────────────────────
-const NwTimeline = ({ nwHistory, theme, wallets=[], privacy=false }) => {
+const NwTimeline = ({ nwHistory, theme, wallets=[], hide=false }) => {
   const dk = theme==='dark';
   const ref = useRef(); const ch = useRef();
   const sorted = useMemo(()=>[...nwHistory].sort((a,b)=>a.month.localeCompare(b.month)),[nwHistory]);
@@ -792,12 +792,15 @@ const NwTimeline = ({ nwHistory, theme, wallets=[], privacy=false }) => {
           x:{ grid:{color:dk?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.06)'}, border:{display:false}, ticks:{color:dk?'#4d6282':'#94a3b8',font:{size:10,family:"'Chakra Petch',sans-serif"}} },
           y:{ grid:{color:dk?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.06)'}, border:{display:false},
               ticks:{color:dk?'#4d6282':'#94a3b8',font:{size:10,family:"'Chakra Petch',sans-serif"},
-                callback:v=>privacy?(v>=1000000?(v/1000000).toFixed(1):v>=1000?(v/1000).toFixed(0):v):(v>=1000000?'฿'+(v/1000000).toFixed(1)+'M':v>=1000?'฿'+(v/1000).toFixed(0)+'K':'฿'+v) } } } } });
+                callback:v=>hide?(v>=1000000?(v/1000000).toFixed(1):v>=1000?(v/1000).toFixed(0):v):(v>=1000000?'฿'+(v/1000000).toFixed(1)+'M':v>=1000?'฿'+(v/1000).toFixed(0)+'K':'฿'+v) } } } } });
     return ()=>ch.current?.destroy();
-  },[sorted,theme,privacy]);
+  },[sorted,theme,hide]);
 
   if(sorted.length===0) return null;
   const card = `rounded-2xl fade-up ${dk?'card-solid':'glass-light shadow-sm'}`;
+  // fmt already covers the padlock; this adds the card eye, so covering the
+  // figures on screen covers the ones in the table under it too.
+  const f = v => hide ? '฿ •••••' : fmt(v);
   const rev = [...sorted].reverse();
 
   return (
@@ -832,14 +835,14 @@ const NwTimeline = ({ nwHistory, theme, wallets=[], privacy=false }) => {
                 return (
                   <tr key={h.month} className={`border-t ${dk?'border-white/5 hover:bg-white/3':'border-slate-50 hover:bg-slate-50'}`}>
                     <td className={`px-4 py-2 ${dk?'text-slate-300':'text-slate-700'}`}>{MONTHS_TH[parseInt(m)-1]} {y}</td>
-                    <td className={`px-4 py-2 text-right font-semibold ${dk?'text-white':'text-slate-800'}`}>{fmt(h.total)}</td>
-                    <td className={`px-4 py-2 text-right ${dk?'text-slate-400':'text-slate-500'}`}>{fmt(h.portfolio)}</td>
-                    {wallets.length>0&&<td className={`px-4 py-2 text-right ${dk?'text-slate-400':'text-slate-500'}`}>{fmt(h.wallets)}</td>}
-                    {sorted.some(x=>x.other>0)&&<td className={`px-4 py-2 text-right ${dk?'text-slate-400':'text-slate-500'}`}>{fmt(h.other||0)}</td>}
+                    <td className={`px-4 py-2 text-right font-semibold ${dk?'text-white':'text-slate-800'}`}>{f(h.total)}</td>
+                    <td className={`px-4 py-2 text-right ${dk?'text-slate-400':'text-slate-500'}`}>{f(h.portfolio)}</td>
+                    {wallets.length>0&&<td className={`px-4 py-2 text-right ${dk?'text-slate-400':'text-slate-500'}`}>{f(h.wallets)}</td>}
+                    {sorted.some(x=>x.other>0)&&<td className={`px-4 py-2 text-right ${dk?'text-slate-400':'text-slate-500'}`}>{f(h.other||0)}</td>}
                     <td className="px-4 py-2 text-right">
                       {change!=null
                         ? <span className={change>=0?'text-emerald-400':'text-rose-400'}>
-                            {change>=0?'+':'-'}{fmt(Math.abs(change))}
+                            {change>=0?'+':'-'}{f(Math.abs(change))}
                             {changePct!=null&&<span className="ml-1 opacity-75">({change>=0?'+':''}{changePct.toFixed(1)}%)</span>}
                           </span>
                         : <span className={dk?'text-slate-600':'text-slate-300'}>—</span>
@@ -1369,7 +1372,7 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={card}>
           <h3 className={`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-700'}`}>รายรับ-รายจ่ายรายเดือน (6 เดือน)</h3>
-          <div className="h-52"><BarChart data={barData} theme={theme} privacy={privacy}/></div>
+          <div className="h-52"><BarChart data={barData} theme={theme} hide={hideAmt||privacy}/></div>
         </div>
         <div className={card}>
           <h3 className={`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-700'}`}>รายจ่ายตามหมวด (เดือนนี้)</h3>
@@ -1415,7 +1418,7 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
         ))}
       </div>
 
-      {nwHistory.length>0&&<NwTimeline nwHistory={nwHistory} theme={theme} wallets={wallets} privacy={privacy}/>}
+      {nwHistory.length>0&&<NwTimeline nwHistory={nwHistory} theme={theme} wallets={wallets} hide={hideAmt||privacy}/>}
     </div>
   );
 };
