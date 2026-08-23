@@ -442,11 +442,20 @@ const DonutChart = ({ data, theme, centerValue, hideAmt=false }) => {
     );
   });
   return (
-    <div ref={containerRef} style={narrow?{display:'flex',flexDirection:'column',gap:'10px'}:{display:'flex',height:'200px',alignItems:'center',gap:'12px'}}>
-      <div style={narrow?{height:'160px',width:'160px',margin:'0 auto',flexShrink:0}:{flex:'0 0 auto',height:'100%',aspectRatio:'1/1'}}>
+    {/* minHeight, not height. The wide layout was pinned to 200px with the
+        legend set to overflow:hidden, so a month with more categories than fit
+        simply lost the last few — and they were the small ones at the bottom,
+        which is exactly where an unfamiliar charge hides. The row grows with
+        the legend now.
+
+        The donut takes a fixed 200px square rather than height:100%, which
+        would have made it grow to match the legend: thirteen categories would
+        have inflated it to a 300px circle to no purpose. */}
+    <div ref={containerRef} style={narrow?{display:'flex',flexDirection:'column',gap:'10px'}:{display:'flex',minHeight:'200px',alignItems:'center',gap:'12px'}}>
+      <div style={narrow?{height:'160px',width:'160px',margin:'0 auto',flexShrink:0}:{flex:'0 0 auto',height:'200px',width:'200px'}}>
         <canvas ref={ref} style={{height:'100%',width:'100%'}}/>
       </div>
-      <div style={narrow?{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'7px 8px'}:{flex:1,display:'flex',flexDirection:'column',gap:'8px',justifyContent:'center',overflow:'hidden'}}>
+      <div style={narrow?{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'7px 8px'}:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:'8px',justifyContent:'center'}}>
         {legendItems}
       </div>
     </div>
@@ -4186,35 +4195,39 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
 
       {/* Dividend summary */}
       {divTxs.length>0 && (
-        <div className={`${card} p-5`}>
-          <div className="flex items-center justify-between mb-4">
+        {/* Compact. The card was giving two text-2xl figures a row each and then
+            a two-line block per asset, which came to roughly the height of the
+            P/L card for a total two orders of magnitude smaller. The figures now
+            share one line with the heading, and each asset is one row with its
+            bar in the middle instead of stacked underneath. */}
+        <div className={`${card} p-4`}>
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>💰 เงินปันผลรับ</div>
             <span className={sub}>{divTxs.length} ครั้ง</span>
           </div>
-          <div className="grid grid-cols-2 gap-4 mb-5">
-            <div>
-              <div className={`text-xs font-medium mb-1 uppercase tracking-wide ${dk?'text-slate-400':'text-slate-500'}`}>รับทั้งหมด</div>
-              <div className="text-2xl font-bold text-teal-400">+{fmt(divTotal)}</div>
+          <div className="flex items-baseline gap-x-5 gap-y-1 flex-wrap mt-2">
+            <div className="flex items-baseline gap-1.5">
+              <span className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>รับทั้งหมด</span>
+              <span className="text-lg font-bold text-teal-400">+{fmt(divTotal)}</span>
             </div>
-            <div>
-              <div className={`text-xs font-medium mb-1 uppercase tracking-wide ${dk?'text-slate-400':'text-slate-500'}`}>ปีนี้ ({curYear})</div>
-              <div className="text-2xl font-bold text-teal-400">+{fmt(divYear)}</div>
+            <div className="flex items-baseline gap-1.5">
+              <span className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>ปีนี้ ({curYear})</span>
+              <span className={`text-sm font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>+{fmt(divYear)}</span>
             </div>
           </div>
           {divByAsset.length>0 && (
-            <div className="space-y-2.5">
-              <div className={`text-xs font-medium ${sub}`}>แยกตามสินทรัพย์</div>
-              {divByAsset.slice(0,8).map((d,i)=>{
+            <div className="mt-3 space-y-1.5">
+              {divByAsset.slice(0,6).map((d,i)=>{
                 const pct = divTotal>0 ? d.amount/divTotal*100 : 0;
                 return (
-                  <div key={i}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className={`truncate pr-2 ${dk?'text-slate-300':'text-slate-600'}`}>{d.name}<span className={`ml-1.5 ${dk?'text-slate-500':'text-slate-400'}`}>×{d.count}</span></span>
-                      <span className="font-semibold text-teal-400 whitespace-nowrap">+{fmt(d.amount)}</span>
-                    </div>
-                    <div className={`h-1.5 rounded-full overflow-hidden ${dk?'bg-white/10':'bg-slate-100'}`}>
-                      <div className="h-full rounded-full bg-teal-400 transition-all" style={{width:`${pct}%`}}/>
-                    </div>
+                  <div key={i} className="flex items-center gap-2.5 text-xs">
+                    <span className={`truncate flex-shrink-0 ${dk?'text-slate-300':'text-slate-600'}`} style={{maxWidth:'40%'}}>
+                      {d.name}<span className={`ml-1 ${dk?'text-slate-500':'text-slate-400'}`}>×{d.count}</span>
+                    </span>
+                    <span className={`flex-1 h-1 rounded-full overflow-hidden ${dk?'bg-white/10':'bg-slate-100'}`}>
+                      <span className="block h-full rounded-full bg-teal-400 transition-all" style={{width:`${pct}%`}}/>
+                    </span>
+                    <span className="font-semibold text-teal-400 whitespace-nowrap tabular-nums">+{fmt(d.amount)}</span>
                   </div>
                 );
               })}
@@ -4224,7 +4237,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
               what gets read month to month; the individual rows are for the once
               -in-a-while check that a specific payment was recorded. */}
           <button onClick={()=>setDivOpen(o=>!o)}
-            className={`w-full mt-4 pt-3 border-t flex items-center justify-center gap-1.5 text-xs font-medium transition-colors ${dk?'border-white/10 text-slate-400 hover:text-teal-400':'border-slate-100 text-slate-500 hover:text-teal-600'}`}>
+            className={`w-full mt-3 pt-2.5 border-t flex items-center justify-center gap-1.5 text-xs font-medium transition-colors ${dk?'border-white/10 text-slate-400 hover:text-teal-400':'border-slate-100 text-slate-500 hover:text-teal-600'}`}>
             <span className={`inline-block transition-transform duration-200 ${divOpen?'rotate-90':''}`}>▶</span>
             {divOpen?'ซ่อนรายการ':`ดูรายการทั้งหมด (${divTxs.length})`}
           </button>
