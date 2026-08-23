@@ -6748,7 +6748,7 @@ const AccountModal = ({open, onClose, theme, setTheme, colorTheme, setColorTheme
           <div className="mb-4">
             <div className={`text-xs mb-1.5 font-medium ${dk?'text-slate-400':'text-slate-500'}`}>ชื่อที่แสดง</div>
             <div className="flex gap-2">
-              <input value={dispName} onChange={e=>{ setDispName(e.target.value); setNameSaved(false); }} placeholder="ชื่อที่อยากให้แอปเรียก"
+              <input value={dispName} onChange={e=>{ setDispName(e.target.value); setNameSaved(false); }} placeholder="ชื่อ"
                 className={`flex-1 px-3 py-2 rounded-xl text-sm border outline-none transition-colors ${dk?'bg-white/5 border-white/10 text-white placeholder-slate-500 focus:border-gold-500':'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:border-gold-400'}`}/>
               <button onClick={saveDispName} className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors ${nameSaved?'bg-emerald-500/20 text-emerald-400':'bg-gold-500 hover:bg-gold-600'}`}>{nameSaved?<Ic n="check" s={14}/>:'บันทึก'}</button>
             </div>
