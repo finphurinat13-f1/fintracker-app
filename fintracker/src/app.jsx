@@ -338,7 +338,7 @@ const LogoSvg = ({size=32}) => (
 );
 
 // ── CHARTS ─────────────────────────────────────────────────
-const BarChart = ({ data, theme }) => {
+const BarChart = ({ data, theme, privacy=false }) => {
   const ref = useRef(); const ch = useRef();
   useEffect(() => {
     if (!ref.current||!data) return;
@@ -363,12 +363,12 @@ const BarChart = ({ data, theme }) => {
         scales:{
           x:{ grid:{display:false}, border:{display:false}, ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Chakra Petch',sans-serif"}} },
           y:{ grid:{color:dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)'}, border:{display:false},
-              ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Chakra Petch',sans-serif"}, callback:v=>(v>=1000?(v/1000).toFixed(0)+'K':v)} }
+              ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Chakra Petch',sans-serif"}, callback:v=>privacy?'':(v>=1000?(v/1000).toFixed(0)+'K':v)} }
         }
       }
     });
     return () => ch.current?.destroy();
-  }, [data, theme]);
+  }, [data, theme, privacy]);
   return <canvas ref={ref}/>;
 };
 
@@ -751,7 +751,7 @@ const Modal = ({ open, onClose, onSave, editData, theme, wallets=[], assets=[], 
 };
 
 // ── NET WORTH TIMELINE ─────────────────────────────────────
-const NwTimeline = ({ nwHistory, theme, wallets=[] }) => {
+const NwTimeline = ({ nwHistory, theme, wallets=[], privacy=false }) => {
   const dk = theme==='dark';
   const ref = useRef(); const ch = useRef();
   const sorted = useMemo(()=>[...nwHistory].sort((a,b)=>a.month.localeCompare(b.month)),[nwHistory]);
@@ -790,9 +790,9 @@ const NwTimeline = ({ nwHistory, theme, wallets=[] }) => {
           x:{ grid:{color:dk?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.06)'}, border:{display:false}, ticks:{color:dk?'#4d6282':'#94a3b8',font:{size:10,family:"'Chakra Petch',sans-serif"}} },
           y:{ grid:{color:dk?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.06)'}, border:{display:false},
               ticks:{color:dk?'#4d6282':'#94a3b8',font:{size:10,family:"'Chakra Petch',sans-serif"},
-                callback:v=>v>=1000000?'฿'+(v/1000000).toFixed(1)+'M':v>=1000?'฿'+(v/1000).toFixed(0)+'K':'฿'+v } } } } });
+                callback:v=>privacy?'':v>=1000000?'฿'+(v/1000000).toFixed(1)+'M':v>=1000?'฿'+(v/1000).toFixed(0)+'K':'฿'+v } } } } });
     return ()=>ch.current?.destroy();
-  },[sorted,theme]);
+  },[sorted,theme,privacy]);
 
   if(sorted.length===0) return null;
   const card = `rounded-2xl fade-up ${dk?'card-solid':'glass-light shadow-sm'}`;
@@ -1115,7 +1115,7 @@ const useConfirm = (dk=false) => {
 };
 
 // ── DASHBOARD ──────────────────────────────────────────────
-const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets=[], user=null, debts=[], custodial=[] }) => {
+const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets=[], user=null, debts=[], custodial=[], privacy=false }) => {
   const dk = theme==='dark';
   const [recentOpen, setRecentOpen] = useState(false);
   const now = new Date();
@@ -1362,7 +1362,7 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={card}>
           <h3 className={`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-700'}`}>รายรับ-รายจ่ายรายเดือน (6 เดือน)</h3>
-          <div className="h-52"><BarChart data={barData} theme={theme}/></div>
+          <div className="h-52"><BarChart data={barData} theme={theme} privacy={privacy}/></div>
         </div>
         <div className={card}>
           <h3 className={`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-700'}`}>รายจ่ายตามหมวด (เดือนนี้)</h3>
@@ -1408,7 +1408,7 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
         ))}
       </div>
 
-      {nwHistory.length>0&&<NwTimeline nwHistory={nwHistory} theme={theme} wallets={wallets}/>}
+      {nwHistory.length>0&&<NwTimeline nwHistory={nwHistory} theme={theme} wallets={wallets} privacy={privacy}/>}
     </div>
   );
 };
@@ -9108,7 +9108,7 @@ const App = () => {
             having none. So while a PIN is set and the figures are hidden,
             nothing renders until it is entered. */}
         {privacy && lockOn ? <LockedPanel dk={theme==='dark'} onUnlock={()=>setPinGate('unlock')}/> : (<>
-        {page==='dashboard'    && <Dashboard     txs={txs} assets={assets} theme={theme} onEdit={openEdit} onDelete={delOne} nwHistory={nwHistory} wallets={wallets} user={user} debts={debts} custodial={custodial}/>}
+        {page==='dashboard'    && <Dashboard     txs={txs} assets={assets} theme={theme} onEdit={openEdit} onDelete={delOne} nwHistory={nwHistory} wallets={wallets} user={user} debts={debts} custodial={custodial} privacy={privacy}/>}
         {page==='transactions' && <TxPage        txs={txs}    theme={theme} onEdit={openEdit} onAdd={()=>setModal({open:true,editData:null})} onDelete={delOne} onBulkDelete={delBulk} onExport={()=>exportCSV(txs)} wallets={wallets} assets={assets} onAddRecurring={openQuickRecur} onRecordRecurring={addRecur} onQuickEdit={quickEditTx} favKeys={favKeys}/>}
         {page==='assets'       && <AssetsPage    assets={assets} theme={theme} onEdit={editAsset} onDelete={delAsset} onAdd={()=>setAModal({open:true,editData:null})} onTransfer={()=>setUnifiedOpen({open:true,from:null,to:null})} onInvest={assetId=>setUnifiedOpen({open:true,from:null,to:typeof assetId==='number'?`a-${assetId}`:null})} onPriceUpdate={updatePrices} onQuickPrice={quickPriceEdit} onDCA={a=>setDcaModal({open:true,asset:a})} onAddAssetTx={addAssetTx} onDeleteAssetTx={delAssetTx} onTopUpAsset={topUpAsset} onDeleteMove={deleteAssetMove} onRenameMove={renameAssetMove} onAddItem={addAssetItem} onDelItem={delAssetItem} wallets={wallets} txs={txs}/>}
         {page==='budget'       && <BudgetPage    key={`budget-${dataKey}`}    txs={txs}    theme={theme} onEdit={openEdit} onRenameCategory={renameCategoryInTxs}/>}
