@@ -16,10 +16,19 @@
 // Kept as an array so the lookup that falls back to THEMES[0] still works, and
 // so a second one can be added the day the palette underneath it is ready.
 export const THEMES = [
+  // Darker, and no longer blue. The ground was #05080f — a near-black with a
+  // blue cast — and blue is gold's opposite: sitting on it pulled the warmth
+  // out of the accent and left it reading faintly green. Neutral black gives
+  // the same gold back its own colour, which does more for how it lands than
+  // the extra contrast from going darker does.
+  //
+  // The card stays where it was, so dropping the page opens the gap between the
+  // two: cards now read as raised surfaces rather than as slightly different
+  // black. The teal in the second glow went with it for the same reason.
   { id:'terminal', icon:'💹', label:'Terminal', note:'ทองบนดำ — ธีมหลัก',
-    dark:  'radial-gradient(ellipse 70% 50% at 5% 15%,rgba(212,160,23,.06) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 95% 85%,rgba(0,200,150,.04) 0%,transparent 55%),#05080f',
+    dark:  'radial-gradient(ellipse 70% 50% at 5% 15%,rgba(212,160,23,.07) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 95% 85%,rgba(160,120,40,.04) 0%,transparent 55%),#030304',
     light: 'radial-gradient(ellipse 60% 55% at 15% 10%,rgba(212,160,23,.05) 0%,transparent 65%),#f6f4ef',
-    card: '#0d1119',
+    card: '#0d0d10',
   },
 ];
 

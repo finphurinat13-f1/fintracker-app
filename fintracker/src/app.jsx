@@ -924,7 +924,13 @@ const SegmentedProgress = ({ segments, total, theme }) => {
       <div className={`flex h-3 w-full overflow-hidden rounded-full ${dk?'bg-white/8':'bg-slate-200'}`}>
         {segments.map((seg,i)=>{
           const pct = total>0 ? (seg.val/total*100) : 0;
-          return <div key={seg.type} className="h-full transition-all duration-700" style={{width:`${pct}%`,backgroundColor:getColor(seg.type,i)}}/>;
+          // The sheen runs top-to-bottom, never left-to-right. Segment
+          // boundaries are vertical, so a horizontal gradient would blend one
+          // asset class into the next and there would be no telling where
+          // crypto ends and stocks begin — the bar's whole job. Running it
+          // down the bar instead crosses no boundary: every segment keeps a
+          // hard edge and a flat swatch turns into something with a surface.
+          return <div key={seg.type} className="h-full transition-all duration-700" style={{width:`${pct}%`,backgroundColor:getColor(seg.type,i),backgroundImage:'linear-gradient(180deg,rgba(255,255,255,0.20) 0%,rgba(255,255,255,0.05) 42%,rgba(0,0,0,0.10) 68%,rgba(0,0,0,0.20) 100%)'}}/>;
         })}
       </div>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-2.5">
