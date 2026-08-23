@@ -34,7 +34,37 @@ export const INCOME_CATS  = ['เงินเดือน','Freelance','ลง�
 export const EXPENSE_CATS = ['อาหาร','การเดินทาง','ช้อปปิ้ง','Home & Utilities','อินเตอร์เน็ต/โทรศัพท์','บันเทิง','สุขภาพ','การศึกษา','Subscription','ลงทุน/ปันผล','อื่นๆ'];
 export const getExpenseCats = () => { try { const s=localStorage.getItem('ft-expense-cats'); if(s) return JSON.parse(s); } catch{} return EXPENSE_CATS; };
 export const MONTHS_TH    = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-export const CAT_CLR  = { 'อาหาร':'#f43f5e','การเดินทาง':'#f97316','ช้อปปิ้ง':'#eab308','ที่พัก':'#14b8a6','Home & Utilities':'#14b8a6','บันเทิง':'#3b82f6','สุขภาพ':'#10b981','การศึกษา':'#06b6d4','Subscription':'#6366f1','ลงทุน/ปันผล':'#8b5cf6','อื่นๆ':'#94a3b8','default':'#94a3b8' };
+// One metal, ten temperatures — deep bronze through to white gold. This was ten
+// fully-saturated hues (rose, orange, yellow, teal, blue, emerald, cyan, indigo,
+// violet), one chosen per category for what it "is", which turned the donut into
+// a slide-deck pie chart and made it the loudest thing on a page about money.
+//
+// Nothing here was ever decided by food being red. What a segment needs is to be
+// told from the one beside it, and lightness does that inside a single hue — the
+// way an amber screen separated things without ever leaving amber.
+//
+// The steps are wide on purpose. Ten shades of one colour only works if adjacent
+// ones are far enough apart to survive a 9px legend swatch; each is about 10%
+// lighter than the last rather than evenly split across the range.
+export const GOLD_RAMP = [
+  '#5e4a23', '#71592b', '#856b35', '#9a7e41', '#af924f',
+  '#c3a65f', '#d4b876', '#e2ca93', '#eddcb6', '#f7ecd6',
+];
+export const CAT_CLR  = {
+  'ลงทุน/ปันผล':'#5e4a23',
+  'ที่พัก':'#71592b',
+  'Home & Utilities':'#71592b',   // the same thing under two names
+  'อินเตอร์เน็ต/โทรศัพท์':'#856b35',
+  'Subscription':'#9a7e41',
+  'การเดินทาง':'#af924f',
+  'สุขภาพ':'#c3a65f',
+  'การศึกษา':'#d4b876',
+  'บันเทิง':'#e2ca93',
+  'ช้อปปิ้ง':'#eddcb6',
+  'อาหาร':'#f7ecd6',
+  'อื่นๆ':'#6b6154',              // the only grey: everything uncategorised
+  'default':'#6b6154',
+};
 // Values are keys into CAT_SVG (app.jsx). Anything not found there is drawn as
 // text, which is what keeps every emoji saved before the icons existed working.
 export const CAT_ICON = { 'อาหาร':'food','การเดินทาง':'transport','ช้อปปิ้ง':'shopping','ที่พัก':'home','Home & Utilities':'home','อินเตอร์เน็ต/โทรศัพท์':'phone','บันเทิง':'entertain','สุขภาพ':'health','การศึกษา':'education','Subscription':'subscription','ลงทุน/ปันผล':'invest','อื่นๆ':'other','เงินเดือน':'salary','โบนัส':'gift','ลงทุน':'invest','ฟรีแลนซ์':'laptop','Freelance':'laptop','ธุรกิจ':'work' };
@@ -110,7 +140,13 @@ export const catIcon = (c) => { const m=getCatMeta()[c]; if(m&&m.icon) return m.
 export const catIconSmart = (c) => { const m=getCatMeta()[c]; if(m&&m.icon) return m.icon; if(CAT_ICON[c]) return CAT_ICON[c]; if(c==='อื่นๆ') return 'other'; return guessCatIcon(c) || CAT_EMOJIS[hashCat(c)%CAT_EMOJIS.length]; };
 export const catClr  = (c) => { const m=getCatMeta()[c]; if(m&&m.clr) return m.clr; if(CAT_CLR[c]) return CAT_CLR[c]; if(c==='อื่นๆ') return CAT_CLR.default; return CAT_PALETTE[hashCat(c)%CAT_PALETTE.length]; };
 // Earthy / pastel palette for new categories (per Fin's preference)
-export const CAT_PALETTE = ['#7aab8a','#c9a84c','#c98f5a','#c9726a','#8a9bb3','#a88fb0','#b08a6f','#6f9b97'];
+// The pool a category with no colour of its own is hashed into. Was sage, gold,
+// terracotta, rose, slate-blue, mauve, tan, teal — a second family, so a
+// custom category landed somewhere the built-in ones never go.
+// Same ramp, interleaved rather than in order: hashing lands adjacent names on
+// adjacent slots often enough that a sequential ramp would give two new
+// categories nearly the same shade.
+export const CAT_PALETTE = ['#f7ecd6','#9a7e41','#d4b876','#71592b','#c3a65f','#856b35','#e2ca93','#af924f'];
 // The pool a category with no icon of its own is hashed into — same name always
 // lands on the same icon, so nothing shuffles when a category is renamed back.
 // Keys into CAT_SVG, not emoji, despite the name this export has always had.

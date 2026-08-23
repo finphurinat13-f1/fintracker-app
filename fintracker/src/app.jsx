@@ -1,5 +1,5 @@
 import {
-  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, CAT_ICON, getCatMeta, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, encryptBackup, decryptBackup, isEncryptedBackup
+  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, CAT_ICON, getCatMeta, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, GOLD_RAMP, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, encryptBackup, decryptBackup, isEncryptedBackup
 } from "./lib.js";
 
 
@@ -913,8 +913,12 @@ const BudgetMetricCard = ({ cat, spent, budget, dk, onEdit }) => {
 const SegmentedProgress = ({ segments, total, theme }) => {
   const dk = theme === 'dark';
   const free = total > 0 ? Math.max(0, total - segments.reduce((s,g)=>s+g.val,0)) : 0;
-  const SEG_COLOR_MAP = {crypto:'#DB5A6B',stock:'#26c6da',gold:'#E5BD77',cash:'#9AA374',other:'#b2dfdb',bond:'#b2dfdb'};
-  const getColor = (type,i) => SEG_COLOR_MAP[type] || ['#f36c60','#26c6da','#D3AD79','#C5D6BA','#b2dfdb'][i%5];
+  // A third palette lived here — coral, cyan, sage, mint — separate from both
+  // ASSET_TYPES and CAT_CLR while describing the same five asset types those
+  // already colour. Same ramp as everywhere else now, and unknown types fall
+  // through it rather than into a set of pastels nothing else uses.
+  const SEG_COLOR_MAP = {stock:'#f7ecd6',crypto:'#d4b876',gold:'#af924f',cash:'#856b35',other:'#6b6154',bond:'#71592b'};
+  const getColor = (type,i) => SEG_COLOR_MAP[type] || GOLD_RAMP[(i*2+1) % GOLD_RAMP.length];
   return (
     <div className="mt-3">
       <div className={`flex h-3 w-full overflow-hidden rounded-full ${dk?'bg-white/8':'bg-slate-200'}`}>
