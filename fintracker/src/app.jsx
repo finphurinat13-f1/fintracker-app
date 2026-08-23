@@ -768,7 +768,13 @@ const Modal = ({ open, onClose, onSave, editData, theme, wallets=[], assets=[], 
 // rounding rule would be worse than showing nothing.
 const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[] }) => {
   const dk = theme==='dark';
-  const LBL = {stock:'หุ้น', etf:'ETF', fund:'กองทุน', bond:'พันธบัตร', crypto:'Crypto', gold:'ทองคำ', property:'อสังหา/ของสะสม', other:'อื่นๆ'};
+  // English here, Thai everywhere else in the app. Not an inconsistency that
+  // slipped in — the list already had "Crypto" sitting next to "ทองคำ" and
+  // "หุ้น", because no one says คริปโทเคอร์เรนซี out loud. One column mixing two
+  // languages is what read as wrong, so the column picks one. Local to this
+  // card: the assets page, filters and forms still label these in Thai, where
+  // they are ordinary words rather than terms sitting beside Cost and P/L.
+  const LBL = {stock:'Stocks', etf:'ETF', fund:'Funds', bond:'Bonds', crypto:'Crypto', gold:'Gold', property:'Property', other:'Other'};
 
   const { rows, totCost, totVal, totPl } = useMemo(()=>{
     // Cash is excluded, not because it is uninteresting but because it has no
@@ -820,18 +826,20 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[] })
 
   return (
     <div className={`rounded-2xl fade-up p-5 mt-4 ${dk?'card-solid':'glass-light shadow-sm'}`}>
-      <div className="flex items-baseline justify-between flex-wrap gap-x-3">
-        <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>กำไร/ขาดทุนที่ยังไม่ขาย</div>
-        <div className={`text-[11px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}>Unrealized P/L</div>
-      </div>
-      <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>มูลค่าตลาดวันนี้ ลบ ต้นทุนที่จ่ายไป · ยังไม่ได้ขาย</div>
+      {/* One heading, not two. The Thai title and the English eyebrow opposite
+          it were a translation of each other, so the card announced itself
+          twice before saying anything. The term carries the title; the Thai
+          line under it does the explaining, which is the part a translated
+          heading was never going to do on its own. */}
+      <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>Unrealized P/L</div>
+      <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>กำไร/ขาดทุนของที่ถืออยู่ · ยังไม่ได้ขาย จึงยังไม่เป็นเงินจริง</div>
 
       <div className="flex items-baseline gap-3 flex-wrap mt-4">
         <div className={`text-3xl font-bold tracking-wider ${tone(up)}`}>{f(totPl)}</div>
         <div className={`text-sm font-semibold ${tone(up)}`}>{fp(totPct)}</div>
       </div>
       <div className={`text-xs mt-1.5 ${dk?'text-slate-400':'text-slate-500'}`}>
-        ต้นทุน {fv(totCost)} → มูลค่า {fv(totVal)}
+        Cost {fv(totCost)} → Market Value {fv(totVal)}
       </div>
 
       <div className={`mt-4 pt-3 border-t space-y-2.5 ${dk?'border-white/5':'border-slate-100'}`}>
