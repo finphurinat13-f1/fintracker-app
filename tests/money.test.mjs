@@ -830,3 +830,53 @@ test('no rate means no money, in either direction', () => {
   assert.equal(assetCashFlow({}), 0, 'เรียกเปล่าๆ ต้องไม่พัง');
 });
 
+
+// ── Account switch clears local records ──────────────────────────────────────
+// localStorage keys are not namespaced by account, so the guard that wipes them
+// on a uid change is the only thing standing between two people sharing a
+// browser and one of them uploading the other's ledger. Modelled here rather
+// than in app.jsx so the rule itself is checkable: every ft- key goes except
+// the device id, which belongs to the machine and not to anyone signed in.
+const wipeOnSwitch = (store, uid) => {
+  const owner = store['ft-owner'];
+  if (owner && owner !== uid) {
+    Object.keys(store).filter(k => k.startsWith('ft-') && k !== 'ft-device-id')
+      .forEach(k => { delete store[k]; });
+  }
+  store['ft-owner'] = uid;
+  return store;
+};
+
+test('signing in as somebody else drops the previous ledger', () => {
+  const s = wipeOnSwitch({
+    'ft-owner':'uid-A', 'ft-txs':'[…]', 'ft-assets':'[…]', 'ft-wallets':'[…]',
+    'ft-device-id':'dev_abc',
+  }, 'uid-B');
+  assert.equal(s['ft-txs'], undefined, 'รายการของคนก่อนต้องไม่ค้าง');
+  assert.equal(s['ft-assets'], undefined);
+  assert.equal(s['ft-wallets'], undefined);
+  assert.equal(s['ft-owner'], 'uid-B');
+  assert.equal(s['ft-device-id'], 'dev_abc', 'device id เป็นของเครื่อง ไม่ใช่ของคน');
+});
+
+test('the previous screen lock never carries over to a new account', () => {
+  // inheriting a passcode a stranger set locks the new arrival out of their own app
+  const s = wipeOnSwitch({
+    'ft-owner':'uid-A', 'ft-lock-on':'1', 'ft-lock-hash':'abc', 'ft-lock-salt':'def',
+  }, 'uid-B');
+  assert.equal(s['ft-lock-on'], undefined);
+  assert.equal(s['ft-lock-hash'], undefined);
+  assert.equal(s['ft-lock-salt'], undefined);
+});
+
+test('signing back in as the same person keeps everything', () => {
+  const s = wipeOnSwitch({ 'ft-owner':'uid-A', 'ft-txs':'[…]' }, 'uid-A');
+  assert.equal(s['ft-txs'], '[…]', 'คนเดิมกลับมา ข้อมูลต้องอยู่ครบ');
+});
+
+test('a first sign-in keeps what is already there', () => {
+  // upgrading from a build that predates ft-owner must not wipe a real ledger
+  const s = wipeOnSwitch({ 'ft-txs':'[…]' }, 'uid-A');
+  assert.equal(s['ft-txs'], '[…]', 'ไม่มีเจ้าของเดิมบันทึกไว้ = ไม่ใช่การสลับบัญชี');
+  assert.equal(s['ft-owner'], 'uid-A');
+});

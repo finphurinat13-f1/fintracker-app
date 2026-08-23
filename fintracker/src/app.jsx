@@ -327,9 +327,13 @@ const DateRangePicker = ({from, to, onPick, dk, years=[]}) => {
 // ── LOGO ───────────────────────────────────────────────────
 const LogoSvg = ({size=32}) => (
   <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <rect width="100" height="100" fill="#0d1b2e" rx="10"/>
+    {/* The mark used to be white on #0d1b2e — a navy that appears nowhere else
+        in the app, which made the logo the one thing outside its own palette.
+        Gold on near-black is the identity everything else already uses, and it
+        is far more distinctive on a phone home screen than white on blue. */}
+    <rect width="100" height="100" fill="#05080f" rx="10"/>
     {/* Geometric F: top bar → gap → middle bar → vertical stroke */}
-    <polygon points="34,24 73,24 65,35 38,35 38,41 63,41 55,52 38,52 38,76 30,76 30,29" fill="white"/>
+    <polygon points="34,24 73,24 65,35 38,35 38,41 63,41 55,52 38,52 38,76 30,76 30,29" fill="#c9a94b"/>
   </svg>
 );
 
@@ -7197,6 +7201,70 @@ const ImportModal = ({open, onClose, onImport, theme}) => {
 };
 
 
+// ── VERIFY EMAIL ───────────────────────────────────────────
+// Its own component so it can hold a hook: an early return inside App cannot.
+//
+// Firebase tells nobody when an address gets verified — the record changes
+// server-side and every open tab carries on believing what it was told at
+// sign-in. That matters because the link is usually opened on a phone while the
+// sign-up is sitting on a laptop, and the laptop would otherwise wait forever
+// on a screen asking for something already done. Asking every few seconds costs
+// one small request while someone is looking at this page and nothing at all
+// afterwards.
+const VerifyEmail = ({ user, dk, addToast }) => {
+  const [checking, setChecking] = useState(false);
+  // Firebase sends from noreply@<project>.firebaseapp.com, a domain with no
+  // sending history, and the first message from one lands in spam often enough
+  // that saying nothing loses people who simply never find it. But leading with
+  // the word to everybody plants a doubt about the app in the same breath as
+  // asking for their email. So it waits: whoever got the mail in five seconds
+  // never sees it, and whoever is still sitting here is exactly who needs it.
+  const [slow, setSlow] = useState(false);
+  useEffect(()=>{ const t = setTimeout(()=>setSlow(true), 10000); return ()=>clearTimeout(t); },[]);
+
+  const check = useCallback(async (quiet) => {
+    try { await user.reload(); } catch { return false; }
+    if (auth.currentUser?.emailVerified) { location.reload(); return true; }
+    if (!quiet) addToast('ยังไม่พบการยืนยัน กรุณาเปิดลิงก์ในอีเมลก่อน','err');
+    return false;
+  },[user, addToast]);
+
+  useEffect(()=>{
+    const t = setInterval(()=>check(true), 4000);
+    // Coming back to the tab is the most likely moment for it to have happened
+    const onShow = ()=>{ if(document.visibilityState==='visible') check(true); };
+    document.addEventListener('visibilitychange', onShow);
+    return ()=>{ clearInterval(t); document.removeEventListener('visibilitychange', onShow); };
+  },[check]);
+
+  return (
+    <div className={`min-h-screen flex items-center justify-center p-6 ${dk?'bg-app':'bg-slate-50'}`}>
+      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`}>
+        <div className="text-4xl mb-4">📧</div>
+        {/* The first screen a stranger meets, so it reads as a system notice
+            rather than as a message from a person. */}
+        <h2 className={`text-lg font-bold mb-2 ${dk?'text-white':'text-slate-800'}`}>ยืนยันอีเมลก่อนเริ่มใช้งาน</h2>
+        <p className={`text-sm mb-1 ${dk?'text-slate-400':'text-slate-500'}`}>ระบบได้ส่งลิงก์ยืนยันไปที่</p>
+        <p className={`text-sm font-semibold mb-5 ${dk?'text-gold-300':'text-gold-600'}`}>{user.email}</p>
+        <p className={`text-xs leading-relaxed mb-6 ${dk?'text-slate-500':'text-slate-400'}`}>เปิดลิงก์จากอุปกรณ์ใดก็ได้ ระบบจะพาเข้าสู่หน้าใช้งานโดยอัตโนมัติ</p>
+        {slow&&(
+          <p className={`text-xs leading-relaxed mb-6 -mt-3 fade-up ${dk?'text-amber-400/80':'text-amber-700'}`}>
+            หากยังไม่ได้รับอีเมล กรุณาตรวจสอบในกล่องจดหมายขยะ
+          </p>
+        )}
+        <button disabled={checking} onClick={async()=>{ setChecking(true); await check(false); setChecking(false); }}
+          className="w-full py-2.5 rounded-xl text-sm font-semibold btn-primary disabled:opacity-60">
+          {checking ? 'กำลังตรวจสอบ…' : 'ยืนยันแล้ว — เข้าสู่ระบบ'}
+        </button>
+        <button onClick={async()=>{ try{ await user.sendEmailVerification({ url: window.location.origin }); addToast('ส่งอีเมลยืนยันอีกครั้งแล้ว'); }catch{ addToast('ส่งไม่สำเร็จ กรุณาลองอีกครั้ง','err'); } }}
+          className={`w-full mt-2 py-2 text-xs ${dk?'text-slate-400 hover:text-slate-200':'text-slate-500 hover:text-slate-700'}`}>ส่งอีเมลยืนยันอีกครั้ง</button>
+        <button onClick={()=>auth.signOut()}
+          className={`w-full mt-3 py-2 text-xs ${dk?'text-slate-500 hover:text-rose-400':'text-slate-400 hover:text-rose-500'}`}>ออกจากระบบ</button>
+      </div>
+    </div>
+  );
+};
+
 // ── LOGIN PAGE ─────────────────────────────────────────────
 const LoginPage = ({ theme }) => {
   const dk = theme === 'dark';
@@ -7255,7 +7323,10 @@ const LoginPage = ({ theme }) => {
       // fills with typos and throwaways, and there is no way to reach a real
       // user later — the Firestore rules check the same flag, so this is not
       // only a screen anyone can skip past.
-      try { await cred.user.sendEmailVerification(); } catch { /* account exists; the screen offers a resend */ }
+      // continueUrl puts a link back here on Firebase's confirmation page, so
+      // the trip does not dead-end on a stock English page with nowhere to go.
+      try { await cred.user.sendEmailVerification({ url: window.location.origin }); }
+      catch { /* account exists; the wait screen offers a resend */ }
       await db.collection('registry').doc(cred.user.uid).set({
         email, status: 'pending', createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -7837,6 +7908,32 @@ const App = () => {
   // ── Auth listener ──
   useEffect(()=>{
     const unsub = auth.onAuthStateChanged(async u=>{
+      // Records live in localStorage first and sync from there, and the keys
+      // are not namespaced by account — so signing in as somebody else on a
+      // browser that already holds records would load the previous person's
+      // ledger and then upload it into the new account. Two people sharing a
+      // laptop is enough to do it.
+      //
+      // The screen-lock keys matter as much: inheriting a passcode set by
+      // whoever used the browser before locks the new arrival out of an app
+      // they just signed up for, with a code only a stranger knows.
+      //
+      // Clearing has to happen before the app reads any of it, and the state
+      // initialisers have already run by now, so this reloads rather than
+      // trying to unpick it. ft-owner is written first, so the fresh load sees
+      // a matching owner and comes up clean instead of looping.
+      if (u) {
+        const owner = localStorage.getItem('ft-owner');
+        if (owner && owner !== u.uid) {
+          Object.keys(localStorage)
+            .filter(k => k.startsWith('ft-') && k !== 'ft-device-id')
+            .forEach(k => localStorage.removeItem(k));
+          localStorage.setItem('ft-owner', u.uid);
+          location.reload();
+          return;
+        }
+        try { localStorage.setItem('ft-owner', u.uid); } catch { /* private mode */ }
+      }
       setUser(u); setAuthL(false);
       if (!u) { setDataL(false); setUserStatus(null); clearInterval(sessionTimer.current); }
       else {
@@ -8674,22 +8771,8 @@ const App = () => {
 
   // Verification gates the app as well as the rules, so an unverified account
   // gets an explanation rather than a permission error it cannot act on.
-  if (user && !user.emailVerified && user.email !== ADMIN_EMAIL) return (
-    <div className={`min-h-screen flex items-center justify-center p-6 ${dk?'bg-app':'bg-slate-50'}`}>
-      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`}>
-        <div className="text-4xl mb-4">📧</div>
-        <h2 className={`text-lg font-bold mb-2 ${dk?'text-white':'text-slate-800'}`}>ยืนยันอีเมลก่อนนะคะ</h2>
-        <p className={`text-sm mb-1 ${dk?'text-slate-400':'text-slate-500'}`}>ส่งลิงก์ยืนยันไปที่</p>
-        <p className={`text-sm font-semibold mb-5 ${dk?'text-gold-300':'text-gold-600'}`}>{user.email}</p>
-        <p className={`text-xs mb-6 ${dk?'text-slate-500':'text-slate-400'}`}>กดลิงก์ในอีเมลแล้วกลับมากดปุ่มด้านล่าง — ถ้าไม่เจอ ลองดูในกล่องสแปมค่ะ</p>
-        <button onClick={()=>location.reload()} className="w-full py-2.5 rounded-xl text-sm font-semibold btn-primary">ยืนยันแล้ว — เข้าใช้งาน</button>
-        <button onClick={async()=>{ try{ await user.sendEmailVerification(); addToast('ส่งอีเมลใหม่แล้วค่ะ'); }catch{ addToast('ส่งไม่สำเร็จ ลองใหม่อีกครั้งนะคะ','err'); } }}
-          className={`w-full mt-2 py-2 text-xs ${dk?'text-slate-400 hover:text-slate-200':'text-slate-500 hover:text-slate-700'}`}>ส่งอีเมลยืนยันอีกครั้ง</button>
-        <button onClick={()=>auth.signOut()}
-          className={`w-full mt-3 py-2 text-xs ${dk?'text-slate-500 hover:text-rose-400':'text-slate-400 hover:text-rose-500'}`}>ออกจากระบบ</button>
-      </div>
-    </div>
-  );
+  if (user && !user.emailVerified && user.email !== ADMIN_EMAIL)
+    return <VerifyEmail user={user} dk={dk} addToast={addToast}/>;
 
   if (user && userStatus === 'pending') return (
     <div className={`min-h-screen flex items-center justify-center ${dk?'bg-app':'bg-slate-50'}`}>
