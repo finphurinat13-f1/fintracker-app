@@ -1,0 +1,26 @@
+{
+  "name": "FinTracker",
+  "short_name": "FinTracker",
+  "description": "Personal Finance & Investment Portfolio Tracker",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#05080f",
+  "theme_color": "#05080f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%2305080f' rx='20'/><polygon points='65,46 140,46 125,67 73,67 73,79 121,79 106,100 73,100 73,146 58,146 58,56' fill='%23d4a017'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%2305080f' rx='48'/><polygon points='172,122 374,122 333,179 195,179 195,210 322,210 282,266 195,266 195,390 155,390 155,148' fill='%23d4a017'/></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "productivity"],
+  "screenshots": []
+}

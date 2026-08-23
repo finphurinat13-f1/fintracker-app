@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+build/tw.css
+fintracker/dist/
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temp files
+*.tmp
+*.log
+
+# Large data files (customer CSV exports — keep out of repo)
+invest/CSV/
+*.csv
+
+# Personal financial backups (real data — never commit)
+fintracker-backup-*.json
+*-backup-*.json

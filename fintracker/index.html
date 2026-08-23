@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="th" id="html-root" class="light">
+<head>
+<script>try{document.documentElement.className=localStorage.getItem('ft-theme')||'light';}catch(e){}</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FinTracker">
+<meta name="theme-color" content="#05080f">
+<title>FinTracker</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%2305080f' rx='20'/><polygon points='65,46 140,46 125,67 73,67 73,79 121,79 106,100 73,100 73,146 58,146 58,56' fill='%23d4a017'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%2305080f' rx='10'/><polygon points='34,24 73,24 65,35 38,35 38,41 63,41 55,52 38,52 38,76 30,76 30,29' fill='%23d4a017'/></svg>">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<!--TAILWIND_CSS-->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyC62KuqQU94M0TE2g0k9KYgKW0Gx2z8Y6c",
+  authDomain: "f1-tracker-9e983.firebaseapp.com",
+  projectId: "f1-tracker-9e983",
+  storageBucket: "f1-tracker-9e983.firebasestorage.app",
+  messagingSenderId: "629442590739",
+  appId: "1:629442590739:web:bc5b51a50ae0cd540027e6"
+});
+const auth = firebase.auth();
+const db   = firebase.firestore();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&display=swap" rel="stylesheet">
+<style>
+  * { font-family: 'Chakra Petch', sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+  .text-2xl, .text-3xl, .text-4xl, .text-5xl { letter-spacing: -0.025em; }
+
+  /* ── Liquid Glass Background ── */
+  .bg-app {
+    background: #060c18;
+  }
+
+  /* ── Liquid Glass Surface ── */
+  .glass {
+    background: linear-gradient(160deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.02) 100%);
+    backdrop-filter: blur(48px) saturate(1.8) brightness(1.06);
+    -webkit-backdrop-filter: blur(48px) saturate(1.8) brightness(1.06);
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -1px 0 rgba(0,0,0,0.08), 0 8px 40px rgba(0,0,0,0.38), 0 2px 8px rgba(0,0,0,0.2);
+    transition: all 0.3s cubic-bezier(0.22,1,0.36,1);
+  }
+  .glass:hover {
+    background: linear-gradient(160deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.07) 40%, rgba(255,255,255,0.03) 100%);
+    border-color: rgba(255,255,255,0.28);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 12px 56px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.25);
+    transform: translateY(-1px);
+  }
+  .glass-light {
+    background: linear-gradient(160deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.35) 100%);
+    backdrop-filter: blur(48px) saturate(1.8) brightness(1.08);
+    -webkit-backdrop-filter: blur(48px) saturate(1.8) brightness(1.08);
+    border: 1px solid rgba(255,255,255,0.7);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.04), 0 8px 40px rgba(99,102,241,0.1), 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  /* ── Solid Card Surface (default for content cards in dark mode) ── */
+  .card-solid {
+    background: #0d1625;
+    border: 1px solid rgba(100,140,200,0.12);
+    box-shadow: inset 0 1px 0 rgba(255,244,210,0.04), 0 4px 18px rgba(0,0,0,0.55);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .card-solid:hover {
+    border-color: rgba(180,150,80,0.22);
+    box-shadow: inset 0 1px 0 rgba(255,244,210,0.06), 0 6px 24px rgba(0,0,0,0.65);
+    transform: translateY(-1px);
+  }
+
+  /* ── Liquid Glass Cards (reserved for hero + modals only) ── */
+  .card-hero {
+    position: relative; overflow: hidden;
+    background: linear-gradient(135deg, rgba(168,134,47,0.06) 0%, rgba(201,169,74,0.03) 50%, rgba(0,0,0,0.02) 100%);
+    border: 1px solid rgba(180,150,80,0.2);
+    box-shadow: inset 0 1px 0 rgba(255,244,210,0.1), 0 0 60px rgba(168,134,47,0.1), 0 8px 48px rgba(0,0,0,0.65);
+  }
+  .card-income-g { border-color: rgba(52,211,153,0.35) !important; box-shadow: inset 0 1px 0 rgba(52,211,153,0.3), 0 0 45px rgba(16,185,129,0.12), 0 8px 32px rgba(0,0,0,0.38) !important; }
+  .card-expense-g { border-color: rgba(251,113,133,0.35) !important; box-shadow: inset 0 1px 0 rgba(251,113,133,0.3), 0 0 45px rgba(244,63,94,0.12), 0 8px 32px rgba(0,0,0,0.38) !important; }
+
+  /* ── Text Colors ── */
+  .tg-brand   { color: #c9a94b; text-shadow: 0 0 18px rgba(201,169,74,0.3); }
+  .glow-num   { color: #c9a94b; }
+  .tg-white   { color: #dde8f2; }
+  .tg-green   { color: #0ca34b; }
+  .tg-red     { color: #e53e3e; }
+  .tg-indigo  { color: #c9a94b; }
+  .tg-gold    { color: #c8a84a; }
+  .tg-emerald { color: #27ae60; }
+
+  /* ── Institutional Button ── */
+  .btn-primary {
+    background: linear-gradient(135deg, rgba(201,169,74,0.97) 0%, rgba(168,134,47,0.97) 100%);
+    border: 1px solid rgba(220,190,110,0.5);
+    box-shadow: inset 0 1px 0 rgba(255,244,210,0.35), 0 4px 18px rgba(168,134,47,0.35);
+    transition: all 0.2s cubic-bezier(0.22,1,0.36,1);
+    color: #10173a;
+  }
+  .btn-primary:hover { background: linear-gradient(135deg, rgba(214,184,92,0.99) 0%, rgba(184,148,55,0.99) 100%); box-shadow: inset 0 1px 0 rgba(255,244,210,0.45), 0 6px 24px rgba(168,134,47,0.5); transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  /* Solid gold fills read as classic navy-on-gold (complementary hue, near-black
+     contrast): [class~=] matches only the solid utility token, never /opacity tints. */
+  [class~="bg-gold-500"], [class~="bg-gold-600"], [class~="bg-gold-700"] { color: #10173a; }
+  [class~="bg-gold-500"] svg, [class~="bg-gold-600"] svg, [class~="bg-gold-700"] svg { color: #10173a; }
+
+  /* ── Badge ── */
+  .badge-pos { background: rgba(52,211,153,0.1) !important; border: 1px solid rgba(52,211,153,0.3) !important; }
+  .badge-neg { background: rgba(251,113,133,0.1) !important; border: 1px solid rgba(251,113,133,0.3) !important; }
+
+  /* ── Nav & Logo ── */
+  .nav-active-dk { background: rgba(201,169,74,0.16); border: 1px solid rgba(220,190,110,0.35); box-shadow: inset 0 1px 0 rgba(255,244,210,0.1); }
+  .nav-active-lt { background: rgba(168,134,47,0.1); border: 1px solid rgba(168,134,47,0.35); box-shadow: 0 2px 8px rgba(168,134,47,0.12); }
+  .logo-icon { background: linear-gradient(135deg,rgba(201,169,74,0.25) 0%,rgba(168,134,47,0.4) 100%); border: 1px solid rgba(220,190,110,0.4); box-shadow: inset 0 1px 0 rgba(255,244,210,0.25), 0 4px 14px rgba(168,134,47,0.25); }
+
+  /* ── Nav bar background override ── */
+  .dark nav { background: rgba(40,40,40,0.95) !important; border-bottom-color: rgba(255,255,255,0.10) !important; }
+
+  .row-mod { border-left: 3px solid transparent; transition: all 0.15s ease; }
+  .row-mod:hover { border-left-color: rgba(255,255,255,0.3) !important; background: rgba(255,255,255,0.04) !important; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-thumb { background: linear-gradient(180deg,rgba(255,255,255,0.2),rgba(255,255,255,0.08)); border-radius:99px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  @keyframes fadeUp    { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes scaleIn   { from{opacity:0;transform:scale(0.94)}      to{opacity:1;transform:scale(1)} }
+  .fade-up  { animation: fadeUp  0.38s cubic-bezier(.22,1,.36,1) forwards; }
+  @keyframes hintPulse { 0%,100%{box-shadow:0 0 0 3px rgba(201,169,74,0.3),0 0 14px rgba(201,169,74,0.55)} 50%{box-shadow:0 0 0 3px rgba(201,169,74,0.5),0 0 24px rgba(201,169,74,0.85)} }
+  @keyframes ctaPulse { 0%,100%{box-shadow:0 4px 14px rgba(224,165,58,0.4)} 50%{box-shadow:0 6px 26px rgba(224,165,58,0.7),0 0 0 5px rgba(224,165,58,0.16)} }
+  @keyframes greenRing { 0%,100%{box-shadow:0 0 0 3px rgba(16,185,129,.9),0 0 0 6px rgba(16,185,129,0)} 50%{box-shadow:0 0 0 3px rgba(16,185,129,.7),0 0 0 10px rgba(16,185,129,.18)} }
+  @keyframes checkPop { 0%{transform:scale(0)} 55%{transform:scale(1.12)} 100%{transform:scale(1)} }
+  @keyframes checkDraw { from{stroke-dashoffset:26} to{stroke-dashoffset:0} }
+  @keyframes toastDrop { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
+  .toast-drop { animation: toastDrop .28s cubic-bezier(.22,1,.36,1) both; }
+  .scale-in { animation: scaleIn 0.24s cubic-bezier(.22,1,.36,1) forwards; }
+  @keyframes undoShrink { from{width:100%} to{width:0%} }
+  .undo-bar { animation: undoShrink 5s linear forwards; }
+  /* Action sheet: rises from the thumb on a phone, settles in place on a desktop */
+  @keyframes sheetUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+  .sheet-up { animation: sheetUp .26s cubic-bezier(.32,.72,0,1) both; }
+  @media (min-width:640px) { .sheet-up { animation: scaleIn .2s cubic-bezier(.22,1,.36,1) both; } }
+  @media (prefers-reduced-motion: reduce) { .sheet-up { animation: none; } }
+  /* Hairline dividers between stacked actions — 1px at any pixel density */
+  .sheet-row + .sheet-row { border-top: 1px solid var(--sheet-line); }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .modal-bg { background: rgba(10,10,10,0.75); backdrop-filter: blur(24px); }
+  .dark select { background-color: #0d1625 !important; color: #dde8f2 !important; }
+  .dark select option { background-color: #0d1625 !important; color: #dde8f2 !important; }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .dark input:focus, .dark select:focus { box-shadow: 0 0 0 3px rgba(96,165,250,0.22); outline: none; }
+
+  /* ── Keyboard focus ring — visible for keyboard nav, invisible on mouse click ── */
+  button:focus-visible, a:focus-visible, [role="button"]:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid #3f6fb0; outline-offset: 2px;
+  }
+  .dark button:focus-visible, .dark a:focus-visible, .dark [role="button"]:focus-visible, .dark summary:focus-visible, .dark [tabindex]:focus-visible {
+    outline-color: #8fb4e0;
+  }
+  :focus:not(:focus-visible) { outline: none; }
+  .dark select { background-color: #0d1625 !important; color: #dde8f2 !important; }
+  .dark select option { background-color: #0d1625 !important; color: #dde8f2 !important; }
+  @media print { nav,.no-print{display:none!important} .bg-app{background:white!important} body{background:white} .glass{background:rgba(248,250,252,0.95)!important;border-color:#e2e8f0!important;box-shadow:none!important;backdrop-filter:none!important;animation:none!important} .tg-brand,.tg-white,.tg-green,.tg-red,.tg-gold,.tg-emerald,.tg-indigo{color:#1e293b!important} }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<!--APP_BUNDLE-->
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>

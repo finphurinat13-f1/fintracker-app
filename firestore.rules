@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Signing up is open to anyone who reaches the page, and approval is a
+    // separate step an admin has to take. Owning the uid therefore proves only
+    // that an account exists — not that it is allowed to store anything here.
+    // Without this, a pending account could write to its own path straight
+    // through the API and spend the project's quota while its request sat
+    // unread. The app already refuses to upload before approval; this makes the
+    // rule true regardless of which client is asking.
+    // A verified address is required alongside approval: it proves the account
+    // belongs to a reachable person rather than a typo or a throwaway, and
+    // checking it here rather than only on screen means it cannot be skipped by
+    // talking to the API directly.
+    function approved() {
+      return request.auth != null && (
+        request.auth.token.email == 'finphurinat18@gmail.com' ||
+        (request.auth.token.email_verified == true &&
+         exists(/databases/$(database)/documents/registry/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/registry/$(request.auth.uid)).data.status == 'approved')
+      );
+    }
+
+    // User data — only accessible by the owner, and only once approved
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId
+                         && approved();
+    }
+
+    // Sessions — only accessible by the owner, and only once approved
+    match /sessions/{userId} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId
+                         && approved();
+    }
+
+    // Registry — a user may read + create ONLY their own entry, and only as
+    // 'pending'. Changing status (approve/reject) is restricted to the admin,
+    // so nobody can self-approve by writing straight to Firestore.
+    match /registry/{userId} {
+      allow read: if request.auth != null
+                  && request.auth.uid == userId;
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.status == 'pending';
+      allow read, write: if request.auth != null
+                         && request.auth.token.email == 'finphurinat18@gmail.com';
+    }
+  }
+}

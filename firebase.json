@@ -1,0 +1,27 @@
+{
+  "hosting": {
+    "public": "fintracker/dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "dist/**"
+    ],
+    "rewrites": [
+      { "source": "/api/prices", "function": "prices", "region": "us-central1" },
+      { "source": "/api/search", "function": "search", "region": "us-central1" }
+    ],
+    "headers": [
+      { "source": "/sw.js",      "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+      { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+      { "source": "/",           "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+    ]
+  },
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20"
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}
