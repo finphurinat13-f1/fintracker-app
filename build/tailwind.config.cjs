@@ -41,6 +41,25 @@ module.exports = {
         900: '#2a3d32',
         950: '#15201a',
       },
+      // Dividends. Tailwind's teal-400 (#2dd4bf) is a near-fluorescent cyan and
+      // was the loudest thing left on the screen once gain and loss came down.
+      // Kept as its own colour rather than folded into the gain sage, because
+      // the distinction earns its place in the transaction list, where dividend
+      // rows sit among ordinary income and expense — just quiet enough now to
+      // read as a relative of the sage rather than a different design.
+      teal: {
+        50:  '#eff5f3',
+        100: '#dbe9e4',
+        200: '#b9d3ca',
+        300: '#94bab0',
+        400: '#6fa08f',
+        500: '#578576',
+        600: '#456b5f',
+        700: '#39564d',
+        800: '#304641',
+        900: '#293a36',
+        950: '#141f1c',
+      },
       rose: {
         50:  '#fdf0ee',
         100: '#f9dcd8',
