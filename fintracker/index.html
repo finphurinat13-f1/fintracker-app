@@ -57,26 +57,36 @@ const db   = firebase.firestore();
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 12px 56px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.25);
     transform: translateY(-1px);
   }
+  /* ── Card surfaces ──────────────────────────────────────────────────────
+     Flat, on hairlines. These used to carry a 48px backdrop blur, an indigo
+     glow and a lift on hover — the stacked-glass look every finance app shipped
+     around 2020. It reads as decoration now, and on a page whose job is columns
+     of figures it competes with them: a soft shadow under every card gives the
+     eye an edge to catch on between each number and the next.
+     What replaces it is a 1px line and nothing else, which is what the current
+     generation of finance tools (Linear, Mercury, Ramp) settled on. */
   .glass-light {
-    background: linear-gradient(160deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.35) 100%);
-    backdrop-filter: blur(48px) saturate(1.8) brightness(1.08);
-    -webkit-backdrop-filter: blur(48px) saturate(1.8) brightness(1.08);
-    border: 1px solid rgba(255,255,255,0.7);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.04), 0 8px 40px rgba(99,102,241,0.1), 0 2px 8px rgba(0,0,0,0.06);
+    background: #ffffff;
+    border: 1px solid rgba(15,23,42,0.08);
+    box-shadow: none;
   }
 
-  /* ── Solid Card Surface (default for content cards in dark mode) ── */
   .card-solid {
-    background: #0d1625;
-    border: 1px solid rgba(100,140,200,0.12);
-    box-shadow: inset 0 1px 0 rgba(255,244,210,0.04), 0 4px 18px rgba(0,0,0,0.55);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    background: #0b1220;
+    border: 1px solid rgba(255,255,255,0.07);
+    box-shadow: none;
+    transition: border-color 0.15s ease;
   }
-  .card-solid:hover {
-    border-color: rgba(180,150,80,0.22);
-    box-shadow: inset 0 1px 0 rgba(255,244,210,0.06), 0 6px 24px rgba(0,0,0,0.65);
-    transform: translateY(-1px);
-  }
+  /* Hover marks the border, not the elevation — nothing moves, so a table of
+     figures does not shift under the cursor. */
+  .card-solid:hover   { border-color: rgba(201,169,75,0.28); }
+  .glass-light:hover  { border-color: rgba(201,169,75,0.35); }
+
+  /* Tighter corners throughout. rounded-2xl (16px) on every card is what makes
+     a dense screen read as a pile of pills; 10-12px keeps the shape without
+     rounding the data away. Overridden here rather than at ~200 call sites. */
+  .rounded-2xl { border-radius: 0.75rem !important; }
+  .rounded-xl  { border-radius: 0.625rem !important; }
 
   /* ── Liquid Glass Cards (reserved for hero + modals only) ── */
   .card-hero {
