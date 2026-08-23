@@ -8461,7 +8461,7 @@ const App = () => {
     // The session expired between opening the page and pressing the button.
     // The endpoint would answer 401 and the refresh would look broken for no
     // stated reason, so say which of the two it is.
-    if (noAuth) { addToast('เซสชันหมดอายุ — เข้าสู่ระบบใหม่แล้วลองอีกครั้งนะคะ','err'); return; }
+    if (noAuth) { addToast('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่','err'); return; }
     const keys = Object.keys(priceMap);
     if (!keys.length) { if(!silent) addToast('⚠️ ดึงราคาไม่สำเร็จ — ลองใหม่อีกครั้งค่ะ','warn'); return; }
     let count = 0;
@@ -8778,8 +8778,8 @@ const App = () => {
     <div className="min-h-screen flex items-center justify-center" style={bgStyle}>
       <div className={`w-full max-w-sm rounded-2xl shadow-2xl scale-in p-8 text-center ${theme==='dark'?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`}>
         <div className="text-5xl mb-4">⚠️</div>
-        <h2 className={`text-lg font-bold mb-2 ${theme==='dark'?'text-white':'text-slate-800'}`}>ถูก Logout อัตโนมัติ</h2>
-        <p className={`text-sm mb-6 ${theme==='dark'?'text-slate-400':'text-slate-500'}`}>บัญชีนี้ถูก Login จากอุปกรณ์หรือเบราว์เซอร์อื่น<br/>กรุณา Login ใหม่อีกครั้งค่ะ</p>
+        <h2 className={`text-lg font-bold mb-2 ${theme==='dark'?'text-white':'text-slate-800'}`}>ออกจากระบบอัตโนมัติ</h2>
+        <p className={`text-sm mb-6 ${theme==='dark'?'text-slate-400':'text-slate-500'}`}>บัญชีนี้ถูกเข้าสู่ระบบจากอุปกรณ์อื่น<br/>กรุณาเข้าสู่ระบบใหม่อีกครั้ง</p>
         <button onClick={()=>setKickedOut(false)}
           className="w-full py-3 rounded-xl btn-primary text-white text-sm font-semibold">
           🔓 Login ใหม่
@@ -8858,7 +8858,12 @@ const App = () => {
       <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#080f1e] border border-blue-900/40':'bg-white'}`}>
         <div className="text-5xl mb-4">🚫</div>
         <h2 className={`text-lg font-bold mb-2 ${dk?'text-white':'text-slate-800'}`}>ไม่ได้รับอนุญาต</h2>
-        <p className={`text-sm mb-6 ${dk?'text-slate-400':'text-slate-500'}`}>บัญชีนี้ถูกปฏิเสธการเข้าใช้งาน กรุณาติดต่อผู้ดูแลระบบค่ะ</p>
+        {/* Two lines rather than one wrapped paragraph: the single line broke
+            after the last word and left one syllable stranded on a line of its
+            own. Neutral wording as well, to match the other screens shown
+            before anyone is inside the app. */}
+        <p className={`text-sm mb-1 ${dk?'text-slate-400':'text-slate-500'}`}>บัญชีนี้ถูกระงับการเข้าใช้งาน</p>
+        <p className={`text-sm mb-6 ${dk?'text-slate-400':'text-slate-500'}`}>หากคิดว่าเป็นความผิดพลาด กรุณาติดต่อผู้ดูแลระบบ</p>
         <button onClick={()=>auth.signOut()} className={`text-sm ${dk?'text-slate-400 hover:text-white':'text-slate-500 hover:text-slate-700'}`}>ออกจากระบบ</button>
       </div>
     </div>
