@@ -1,5 +1,5 @@
 import {
-  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, CAT_ICON, getCatMeta, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, encryptBackup, decryptBackup, isEncryptedBackup
+  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, CAT_ICON, getCatMeta, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, budgetPace, projectedSpend, moneyFlags, encryptBackup, decryptBackup, isEncryptedBackup
 } from "./lib.js";
 
 
@@ -874,6 +874,14 @@ const BudgetMetricCard = ({ cat, spent, budget, dk, onEdit }) => {
   const over = rawPct > 100;
   const warn = rawPct >= 80 && !over;
   const barColor = over ? '#f43f5e' : warn ? '#f97316' : catClr(cat);
+  // 60% of a budget spent is a crisis on the 5th and comfortable on the 25th,
+  // and the bar above cannot tell those apart. Pace can, and it says so before
+  // the money is gone rather than after.
+  const now = new Date();
+  const dim  = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const pace = budgetPace(spent, budget, now.getDate(), dim);
+  const proj = projectedSpend(spent, now.getDate(), dim);
+  const fast = pace !== null && pace > 1.15;
   return (
     <div className={`relative overflow-hidden rounded-2xl border fade-up ${dk?'card-solid':'bg-white border-slate-200 shadow-sm'}`}>
       <div className="p-4 pb-12">
@@ -896,6 +904,13 @@ const BudgetMetricCard = ({ cat, spent, budget, dk, onEdit }) => {
             ? <p className={`text-xs ${dk?'text-orange-400':'text-orange-600'}`}>ใช้แล้ว {rawPct.toFixed(0)}% — ใกล้เต็มแล้วค่ะ</p>
             : <p className={`text-xs ${dk?'text-emerald-400':'text-emerald-600'}`}>เหลืออีก ฿{fmt(budget-spent)} ({(100-rawPct).toFixed(0)}%)</p>
           }
+          {/* Only when it is going too fast. A row saying "1.0× on track" on
+              every card would be eleven lines of noise to make three matter. */}
+          {fast && !over && (
+            <p className={`text-[11px] mt-1 ${dk?'text-orange-400/90':'text-orange-600'}`}>
+              ⚡ ใช้เร็วกว่ากำหนด <b>{pace.toFixed(1)}×</b> — สิ้นเดือนจะราว ฿{fmt(proj)}
+            </p>
+          )}
         </div>
       </div>
       <div className="absolute bottom-0 left-0 right-0">
@@ -1155,6 +1170,29 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
   const totalCustodial = useMemo(()=>custodial.filter(c=>!c.returned).reduce((s,c)=>s+(c.amount||0),0),[custodial]);
   const trueNetWorth = netWorth - totalDebtRemaining;
   const animNetWorth = useCountUp(trueNetWorth);
+
+  // Things the figures on this page already prove, said out loud. Everything
+  // below is arithmetic over data the dashboard is drawing anyway — no model,
+  // no request, nothing that cannot be checked by hand.
+  const flags = useMemo(()=>{
+    const d = new Date(), dim = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+    const mExpense = sumTxMonth(txs,'expense',curM);
+    const cashTotal = walletCashTotal
+      + assets.filter(a=>a.type==='cash').reduce((s,a)=>s+assetVal(a,txs,usdRate),0);
+    let budgets = {};
+    try { budgets = JSON.parse(localStorage.getItem('ft-budgets')||'null') || {}; } catch {}
+    const spentByCat = {};
+    txs.filter(t=>t.type==='expense' && (t.date||'').startsWith(curM))
+       .forEach(t=>{ spentByCat[t.category] = (spentByCat[t.category]||0) + Math.abs(t.amount||0); });
+    // priceAge formats a timestamp for display; staleness is the comparison
+    // behind it. A holding that was never priced counts too — it is the same
+    // problem, one step earlier.
+    const staleTickers = assets
+      .filter(a=>impliedTicker(a) && (!a.priceAt || Date.now() - new Date(a.priceAt).getTime() > PRICE_STALE_MS))
+      .map(a=>(a.name||impliedTicker(a)));
+    return moneyFlags({ cashTotal, netWorth:trueNetWorth, monthlySpend:mExpense,
+                        budgets, spentByCat, day:d.getDate(), daysInMonth:dim, staleTickers });
+  },[txs,assets,usdRate,walletCashTotal,trueNetWorth,curM]);
   const nwByType = useMemo(()=>{
     const map={};
     assets.forEach(a=>{ map[a.type]=(map[a.type]||0)+assetVal(a,txs,usdRate); });
@@ -1300,6 +1338,24 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
         </div>
       </div>
 
+
+{/* Above the figures rather than below them: a dashboard is scanned from the
+    top, and the point of these is to be read before somebody decides the month
+    is going fine. Silent when there is nothing to say, which is most days —
+    a panel that always has something in it stops being read. */}
+      {flags.length>0 && !hideAmt && !privacy && (
+        <div className={`rounded-2xl p-4 fade-up ${dk?'card-solid':'glass-light shadow-sm'}`}>
+          <div className={`text-[11px] font-semibold mb-2.5 ${dk?'text-slate-400':'text-slate-500'}`}>สิ่งที่น่าสังเกต</div>
+          <div className="space-y-2">
+            {flags.map(f=>(
+              <div key={f.id} className="flex items-start gap-2 text-xs leading-relaxed">
+                <span className="flex-shrink-0">{f.level==='warn'?'⚡':'ⓘ'}</span>
+                <span className={f.level==='warn'?(dk?'text-amber-300':'text-amber-700'):(dk?'text-slate-400':'text-slate-500')}>{f.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
 {/* ── Net Worth Hero Card ──
      Shown even at zero. Hiding it kept a big ฿0.00 off a brand-new dashboard,

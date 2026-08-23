@@ -18,7 +18,7 @@ globalThis.localStorage = {
 const {
   walletCash, assetVal, walletDelta, runningBalances, mergeArrById, systemCashByDay, txSign, txAmtCls, revertMove,
   isUntouchedBudgets, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, realizedByYear,
-  encryptBackup, decryptBackup, isEncryptedBackup, assetCashFlow, whoAmI,
+  encryptBackup, decryptBackup, isEncryptedBackup, assetCashFlow, whoAmI, budgetPace, projectedSpend, moneyFlags,
   impliedTicker, catOptions, renameCatInStores, priceAge,
 } = await import('../fintracker/src/lib.js');
 
@@ -897,4 +897,78 @@ test('no usable name gives a greeting with no name in it', () => {
   assert.equal(whoAmI({}), '');
   assert.equal(whoAmI(null), '');
   assert.equal(whoAmI({ email:'' }), '');
+});
+
+// ── Budget pace ──────────────────────────────────────────────────────────────
+// A progress bar at 60% means nothing without the date beside it: on the 5th
+// that is a problem, on the 25th it is fine. Pace divides the two.
+test('pace compares spending against how far into the month it is', () => {
+  // half the budget gone on day 15 of 30 — exactly on track
+  assert.equal(budgetPace(5000, 10000, 15, 30), 1);
+  // the whole budget gone on day 10 of 30 — three times too fast
+  assert.equal(budgetPace(10000, 10000, 10, 30), 3);
+  // a quarter gone at the halfway mark — comfortably under
+  assert.equal(budgetPace(2500, 10000, 15, 30), 0.5);
+});
+
+test('pace stays quiet when it would only mislead', () => {
+  assert.equal(budgetPace(500, 0, 15, 30), null, 'ไม่ได้ตั้งงบ = ไม่มีอะไรให้เทียบ');
+  assert.equal(budgetPace(120, 10000, 1, 30), null, 'วันแรก กาแฟแก้วเดียวก็เป็นหลายเท่า');
+  assert.equal(budgetPace(0, 10000, 15, 30), 0, 'ยังไม่ใช้เลย = 0 ไม่ใช่ null');
+});
+
+test('a day past the end of the month does not inflate the pace', () => {
+  // clamped, so the last day reads as the last day rather than as overtime
+  assert.equal(budgetPace(10000, 10000, 31, 30), 1);
+  assert.equal(budgetPace(10000, 10000, 99, 30), 1);
+});
+
+test('projected spend answers how much, not how fast', () => {
+  assert.equal(projectedSpend(5000, 15, 30), 10000, 'ครึ่งเดือนใช้ 5,000 → ทั้งเดือน 10,000');
+  assert.equal(projectedSpend(9000, 10, 30), 27000, 'เร็วเกินไปสามเท่า');
+  assert.equal(projectedSpend(8000, 30, 30), 8000, 'สิ้นเดือนแล้ว = ยอดจริง');
+});
+
+// ── Money flags ──────────────────────────────────────────────────────────────
+// Observations the numbers already support. Every one has to be checkable by
+// hand — this goes in front of somebody about their own money.
+test('cash past a year of spending is called out', () => {
+  const f = moneyFlags({ cashTotal: 600000, monthlySpend: 40000 });
+  assert.equal(f.length, 1);
+  assert.equal(f[0].id, 'idle-cash');
+  assert.ok(f[0].text.includes('15'), 'บอกจำนวนเดือนที่อยู่ได้');
+});
+
+test('a normal emergency fund says nothing', () => {
+  assert.deepEqual(moneyFlags({ cashTotal: 200000, monthlySpend: 40000 }), []);
+  assert.deepEqual(moneyFlags({ cashTotal: 999999, monthlySpend: 0 }), [], 'ไม่รู้รายจ่าย = เทียบไม่ได้');
+});
+
+test('the worst overspending category is named, not all of them', () => {
+  const f = moneyFlags({
+    budgets:{ 'อาหาร':10000, 'ช้อปปิ้ง':5000, 'เดินทาง':3000 },
+    spentByCat:{ 'อาหาร':9000, 'ช้อปปิ้ง':4800, 'เดินทาง':500 },
+    day:15, daysInMonth:30,
+  });
+  const flag = f.find(x=>x.id==='budget-pace');
+  assert.ok(flag, 'ต้องมีคำเตือน');
+  assert.ok(flag.text.includes('ช้อปปิ้ง'), 'หนักสุดคือช้อปปิ้ง 1.92× ไม่ใช่อาหาร 1.8×');
+  assert.ok(flag.text.includes('2 หมวด'), 'บอกว่ามีกี่หมวด ไม่ใช่ไล่ทั้งหมด');
+});
+
+test('a stale price is flagged because the total is quietly wrong', () => {
+  const f = moneyFlags({ staleTickers:['RKLB','NVDA','TSM','AAPL','MSFT'] });
+  assert.equal(f[0].id, 'stale-price');
+  assert.ok(f[0].text.includes('และอีก 2'), 'สรุปส่วนที่เหลือ ไม่ไล่ทั้งหมด');
+});
+
+test('spending more per year than everything is worth is said once', () => {
+  const f = moneyFlags({ netWorth: 300000, monthlySpend: 40000 });
+  assert.ok(f.some(x=>x.id==='burn-rate'));
+});
+
+test('nothing to say means nothing said', () => {
+  assert.deepEqual(moneyFlags(), [], 'เรียกเปล่าๆ ต้องเงียบ');
+  assert.deepEqual(moneyFlags({ cashTotal:100000, netWorth:5000000, monthlySpend:30000,
+    budgets:{'อาหาร':10000}, spentByCat:{'อาหาร':4000}, day:15, daysInMonth:30 }), []);
 });

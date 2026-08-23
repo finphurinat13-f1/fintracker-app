@@ -708,6 +708,82 @@ export const whoAmI = (user) => {
   return local || '';
 };
 
+
+// How fast a budget is being spent, against how far into the month it is.
+// A bar showing 60% used tells you nothing on its own: on the 5th that is a
+// problem and on the 25th it is fine. This divides the two, so 1.0 means
+// exactly on track, 2.9 means spending at nearly three times the rate the
+// month can absorb, and the number is readable before the money is gone.
+//
+// Returns null when there is nothing to say — no budget set, or the first day,
+// where one coffee reads as an infinite overspend.
+export const budgetPace = (spent, budget, day, daysInMonth) => {
+  if (!(budget > 0) || !(daysInMonth > 0)) return null;
+  const d = Math.min(Math.max(day, 1), daysInMonth);
+  if (d < 2) return null;
+  const expected = budget * (d / daysInMonth);
+  // Rounded here rather than at each call site: the screen shows one decimal,
+  // and 3.0000000000000004 is not a number anybody needs to carry around.
+  return expected > 0 ? Math.round((spent / expected) * 100) / 100 : null;
+};
+
+// What the month ends at if the current rate holds. The figure people actually
+// want when a pace reads high: not "how fast", but "how much will this cost me".
+export const projectedSpend = (spent, day, daysInMonth) => {
+  if (!(day > 0) || !(daysInMonth > 0)) return spent;
+  return Math.round(spent / Math.min(day, daysInMonth) * daysInMonth * 100) / 100;
+};
+
+// Observations the figures already support, phrased as something to do about
+// them. A dashboard full of correct numbers still leaves the reader to work out
+// what matters, and what matters is usually whatever is costing money quietly:
+// cash earning nothing, a budget on course to blow, a price that stopped
+// updating months ago and has been reported as current ever since.
+//
+// Deliberately arithmetic rather than a model. Every line here can be checked
+// by hand, which is what makes it safe to say to somebody about their own money.
+export const moneyFlags = ({
+  cashTotal = 0, netWorth = 0, monthlySpend = 0,
+  budgets = {}, spentByCat = {}, day = 1, daysInMonth = 30, staleTickers = [],
+} = {}) => {
+  const out = [];
+
+  // Past a year of spending, cash has stopped being an emergency fund.
+  if (monthlySpend > 0 && cashTotal > monthlySpend * 12) {
+    const months = Math.floor(cashTotal / monthlySpend);
+    out.push({ id:'idle-cash', level:'warn',
+      text:'เงินสดเท่ากับค่าใช้จ่าย ' + months + ' เดือน — ส่วนที่เกิน 12 เดือนอาจให้มันทำงานได้มากกว่านี้' });
+  }
+
+  // Budgets on course to end the month over, while there is still time to act.
+  const racing = Object.entries(budgets)
+    .map(([cat, b]) => [cat, budgetPace(spentByCat[cat] || 0, Number(b) || 0, day, daysInMonth)])
+    .filter(([, p]) => p !== null && p > 1.3)
+    .sort((a, b) => b[1] - a[1]);
+  if (racing.length) {
+    const [cat, pace] = racing[0];
+    out.push({ id:'budget-pace', level:'warn',
+      text: racing.length === 1
+        ? 'หมวด ' + cat + ' ใช้เร็วกว่ากำหนด ' + pace.toFixed(1) + ' เท่า'
+        : racing.length + ' หมวดใช้เร็วกว่ากำหนด — หนักสุดคือ ' + cat + ' ที่ ' + pace.toFixed(1) + ' เท่า' });
+  }
+
+  // A stale price is still drawn as though it were today's.
+  if (staleTickers.length) {
+    const more = staleTickers.length > 3 ? ' และอีก ' + (staleTickers.length - 3) : '';
+    out.push({ id:'stale-price', level:'info',
+      text:'ราคา ' + staleTickers.slice(0,3).join(', ') + more + ' ยังไม่ได้อัปเดต — มูลค่ารวมอาจคลาดเคลื่อน' });
+  }
+
+  // Worth saying once: a year of spending exceeds everything owned.
+  if (netWorth > 0 && monthlySpend > 0 && monthlySpend * 12 > netWorth) {
+    out.push({ id:'burn-rate', level:'warn',
+      text:'ค่าใช้จ่ายทั้งปีมากกว่ามูลค่าทรัพย์สินสุทธิ — เงินหมดก่อนครบปีถ้ารายได้หยุด' });
+  }
+
+  return out;
+};
+
 export const tickerClr = t => CAT_PALETTE[hashCat((t || '?').toUpperCase()) % CAT_PALETTE.length];
 
 // ── Realized profit ──────────────────────────────────────────────────────────
