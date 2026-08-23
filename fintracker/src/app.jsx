@@ -6821,8 +6821,19 @@ const AccountModal = ({open, onClose, theme, setTheme, colorTheme, setColorTheme
           {/* Also reachable from the ☰ menu, but this is the first place anyone
               looks for it — the cost of having it twice is nothing next to the
               cost of hunting for it. */}
+          {/* ซ่อน on the setup checklist wrote a flag and left no way back, and
+              the person most likely to hit it by mistake is the new arrival who
+              still needs the list. It disappears on its own once the three steps
+              are done, so this is only ever needed by someone who dismissed it
+              early — which is exactly who could not undo it before. */}
+          {localStorage.getItem('ft-checklist-done')==='1' && (
+            <button onClick={()=>{ try{localStorage.removeItem('ft-checklist-done');}catch{} location.reload(); }}
+              className={`w-full mt-5 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border ${dk?'border-white/10 text-slate-300 hover:bg-white/5':'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+              แสดงรายการเริ่มต้นใช้งานอีกครั้ง
+            </button>
+          )}
           <button onClick={()=>{ onClose(); auth.signOut(); }}
-            className={`w-full mt-5 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border ${dk?'border-rose-500/25 text-rose-400 hover:bg-rose-500/10':'border-rose-200 text-rose-500 hover:bg-rose-50'}`}>
+            className={`w-full mt-3 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border ${dk?'border-rose-500/25 text-rose-400 hover:bg-rose-500/10':'border-rose-200 text-rose-500 hover:bg-rose-50'}`}>
             <Ic n="logout" s={14}/>ออกจากระบบ
           </button>
           {/* Which build is running. Worth the two lines: the app redeploys often,
@@ -8683,10 +8694,13 @@ const App = () => {
   const isEmptyData = txs.length===0 && assets.length===0 && wallets.length===0;
   // First-run activation checklist (auto-ticks as the user completes each step)
   const [checklistDone, setChecklistDone] = useState(()=>{ try{return localStorage.getItem('ft-checklist-done')==='1';}catch{return false;} });
+  // Each step opens the form it names. Sending someone to the right page and
+  // leaving them to find the button was half an instruction — and the people
+  // reading this list are exactly the ones who do not yet know where it is.
   const checklist = [
-    {done:wallets.length>0, label:'เพิ่มกระเป๋าเงินแรก',            pg:'wallet',       cta:'เพิ่มกระเป๋า'},
-    {done:txs.length>0,     label:'บันทึกรายรับ-รายจ่ายแรก',       pg:'transactions', cta:'บันทึกรายการ'},
-    {done:assets.length>0,  label:'เพิ่มสินทรัพย์ (หุ้น/ทอง/คริปโต)', pg:'assets',       cta:'เพิ่มสินทรัพย์'},
+    {done:wallets.length>0, label:'เพิ่มกระเป๋าเงินแรก',            pg:'wallet',       cta:'เพิ่มกระเป๋า',   open:()=>setWModal({open:true,editData:null})},
+    {done:txs.length>0,     label:'บันทึกรายรับ-รายจ่ายแรก',       pg:'transactions', cta:'บันทึกรายการ',  open:()=>setModal({open:true,editData:null})},
+    {done:assets.length>0,  label:'เพิ่มสินทรัพย์ (หุ้น/ทอง/คริปโต)', pg:'assets',       cta:'เพิ่มสินทรัพย์', open:()=>setAModal({open:true,editData:null})},
   ];
   const clDone = checklist.filter(s=>s.done).length;
   const showChecklist = page==='dashboard' && !checklistDone && clDone < 3;
@@ -9032,7 +9046,12 @@ const App = () => {
                     <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 ${s.done?'bg-emerald-500 text-white':(dk?'bg-white/10 text-slate-500':'bg-slate-200 text-slate-400')}`}>{s.done?'✓':i+1}</span>
                     <span className={`text-sm truncate ${s.done?(dk?'text-slate-500 line-through':'text-slate-400 line-through'):(dk?'text-slate-200':'text-slate-700')}`}>{s.label}</span>
                   </div>
-                  {!s.done&&<button onClick={()=>{setPage(s.pg);localStorage.setItem('ft-page',s.pg);}} className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg bg-gold-500 hover:bg-gold-600 text-white whitespace-nowrap">{s.cta} →</button>}
+                  {/* The page renders first, so the form opens on the next tick
+                      with the right screen already behind it — and closing it
+                      leaves the person where the work happens rather than back
+                      on the dashboard. */}
+                  {!s.done&&<button onClick={()=>{ setPage(s.pg); try{localStorage.setItem('ft-page',s.pg);}catch{} setTimeout(s.open, 0); }}
+                    className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg bg-gold-500 hover:bg-gold-600 whitespace-nowrap">{s.cta} →</button>}
                 </div>
               ))}
             </div>
