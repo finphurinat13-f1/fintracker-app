@@ -753,108 +753,102 @@ const Modal = ({ open, onClose, onSave, editData, theme, wallets=[], assets=[], 
   );
 };
 
-// ── NET WORTH TIMELINE ─────────────────────────────────────
-const NwTimeline = ({ nwHistory, theme, wallets=[], hide=false }) => {
+// ── UNREALIZED P/L ─────────────────────────────────────────
+// This replaced the Net Worth Timeline, which plotted total net worth month by
+// month. The trouble was that net worth moves for reasons that say nothing
+// about how the holdings performed: a salary landing, a transfer between
+// wallets, or a fresh purchase all pushed the line up exactly the way a real
+// gain did. Four lines and a seven-column table, and none of it could answer
+// the one question actually being asked of it — is the portfolio up or down.
+//
+// Unrealized P/L is immune to that by construction: market value minus what was
+// paid, so money moving in adds to both sides and cancels, leaving only price
+// movement. The formula is lifted from the assets page rather than rewritten —
+// a second definition of "profit" that disagreed with the first over some
+// rounding rule would be worse than showing nothing.
+const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[] }) => {
   const dk = theme==='dark';
-  const ref = useRef(); const ch = useRef();
-  const sorted = useMemo(()=>[...nwHistory].sort((a,b)=>a.month.localeCompare(b.month)),[nwHistory]);
+  const LBL = {stock:'หุ้น', etf:'ETF', fund:'กองทุน', bond:'พันธบัตร', crypto:'Crypto', gold:'ทองคำ', property:'อสังหา/ของสะสม', other:'อื่นๆ'};
 
-  useEffect(()=>{
-    if(!ref.current||sorted.length<2){ if(ch.current){ch.current.destroy();ch.current=null;} return; }
-    if(ch.current) ch.current.destroy();
-    const labels = sorted.map(h=>{ const[y,m]=h.month.split('-'); return MONTHS_TH[parseInt(m)-1]+' '+y.slice(2); });
-    const c1 = dk?'#7ea8d6':'#2955b8';
-    const c2 = dk?'#94a3b8':'#64748b';
-    const c3 = dk?'#27ae60':'#16a34a';
-    const c4 = dk?'#c98f5a':'#b8763f';
-    const datasets = [
-      { label:'Net Worth รวม', data:sorted.map(h=>h.total),     borderColor:c1, backgroundColor:dk?'rgba(126,168,214,0.12)':'rgba(41,85,184,0.07)', fill:true,  tension:0.4, pointBackgroundColor:c1, pointRadius:4, pointHoverRadius:6, borderWidth:2.5 },
-      { label:'พอร์ตลงทุน',   data:sorted.map(h=>h.portfolio), borderColor:c2, backgroundColor:'transparent', fill:false, tension:0.4, pointBackgroundColor:c2, pointRadius:3, pointHoverRadius:5, borderWidth:2, borderDash:[5,4] },
-    ];
-    if(wallets.length>0) datasets.push(
-      { label:'กระเป๋าเงิน', data:sorted.map(h=>h.wallets), borderColor:c3, backgroundColor:'transparent', fill:false, tension:0.4, pointBackgroundColor:c3, pointRadius:3, pointHoverRadius:5, borderWidth:2, borderDash:[5,4] }
-    );
-    if(sorted.some(h=>h.other>0)) datasets.push(
-      { label:'สินทรัพย์อื่นๆ', data:sorted.map(h=>h.other||0), borderColor:c4, backgroundColor:'transparent', fill:false, tension:0.4, pointBackgroundColor:c4, pointRadius:3, pointHoverRadius:5, borderWidth:2, borderDash:[5,4] }
-    );
-    ch.current = new Chart(ref.current,{ type:'line', data:{ labels, datasets },
-      options:{ responsive:true, maintainAspectRatio:false,
-        interaction:{ mode:'index', intersect:false },
-        plugins:{
-          legend:{ labels:{ color:dk?'#94a3b8':'#475569', usePointStyle:true, pointStyle:'circle', padding:20, font:{size:11,family:"'Chakra Petch',sans-serif"} } },
-          tooltip:{
-            backgroundColor:dk?'rgba(8,15,30,0.95)':'rgba(255,255,255,0.97)',
-            titleColor:dk?'#dde8f2':'#1e293b', bodyColor:dk?'#7ea8d6':'#475569',
-            borderColor:dk?'rgba(100,150,220,0.2)':'rgba(0,0,0,0.08)', borderWidth:1, padding:12, cornerRadius:10,
-            callbacks:{ label:ctx=>` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` }
-          }
-        },
-        scales:{
-          x:{ grid:{color:dk?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.06)'}, border:{display:false}, ticks:{color:dk?'#4d6282':'#94a3b8',font:{size:10,family:"'Chakra Petch',sans-serif"}} },
-          y:{ grid:{color:dk?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.06)'}, border:{display:false},
-              ticks:{color:dk?'#4d6282':'#94a3b8',font:{size:10,family:"'Chakra Petch',sans-serif"},
-                callback:v=>hide?(v>=1000000?(v/1000000).toFixed(1):v>=1000?(v/1000).toFixed(0):v):(v>=1000000?'฿'+(v/1000000).toFixed(1)+'M':v>=1000?'฿'+(v/1000).toFixed(0)+'K':'฿'+v) } } } } });
-    return ()=>ch.current?.destroy();
-  },[sorted,theme,hide]);
+  const { rows, totCost, totVal, totPl } = useMemo(()=>{
+    // Cash is excluded, not because it is uninteresting but because it has no
+    // cost basis to subtract — its "profit" is definitionally zero and a row of
+    // zeroes just dilutes the ones that mean something.
+    const by = {}; let tc=0, tv=0;
+    assets.filter(a=>a.type!=='cash').forEach(a=>{
+      const mult = a.currency==='USD' ? usdRate : 1;
+      const {taggedIn, taggedOut} = assetTagged(txs, a.id);
+      const val  = (a.qty*a.currentPrice + taggedIn - taggedOut) * mult;
+      const cost = (a.qty*a.avgCost) * mult;
+      if(!by[a.type]) by[a.type] = {type:a.type, label:LBL[a.type]||a.type, cost:0, val:0, n:0};
+      by[a.type].cost += cost; by[a.type].val += val; by[a.type].n++;
+      tc += cost; tv += val;
+    });
+    // Biggest mover first, gain or loss alike — a large loss is at least as
+    // worth seeing at the top as a large gain.
+    const list = Object.values(by)
+      .map(g=>({...g, pl:g.val-g.cost, pct:g.cost>0?((g.val-g.cost)/g.cost*100):0}))
+      .sort((a,b)=>Math.abs(b.pl)-Math.abs(a.pl));
+    return { rows:list, totCost:tc, totVal:tv, totPl:tv-tc };
+  },[assets,txs,usdRate]);
 
-  if(sorted.length===0) return null;
-  const card = `rounded-2xl fade-up ${dk?'card-solid':'glass-light shadow-sm'}`;
-  // fmt already covers the padlock; this adds the card eye, so covering the
-  // figures on screen covers the ones in the table under it too.
-  const f = v => hide ? '฿ •••••' : fmt(v);
-  const rev = [...sorted].reverse();
+  // Month-on-month needs a cost basis recorded alongside each snapshot, which
+  // only began when this card was built. Earlier months carry no `cost` at all,
+  // and the historical prices needed to reconstruct one were never stored, so
+  // they are skipped rather than read as zero — a missing cost treated as zero
+  // would render the whole holding as pure profit.
+  const mom = useMemo(()=>{
+    const withCost = nwHistory.filter(h=>typeof h.cost==='number' && h.cost>0)
+                              .sort((a,b)=>a.month.localeCompare(b.month));
+    if(withCost.length<2) return null;
+    const pl = h => (h.portfolio + (h.other||0)) - h.cost;
+    const cur = withCost[withCost.length-1], prev = withCost[withCost.length-2];
+    const [py,pm] = prev.month.split('-');
+    return { label:`${MONTHS_TH[parseInt(pm)-1]} ${py}`, delta: pl(cur)-pl(prev) };
+  },[nwHistory]);
+
+  if(!rows.length) return null;
+
+  const totPct = totCost>0 ? (totPl/totCost*100) : 0;
+  const up = totPl >= 0;
+  // fmt already respects the header padlock; this adds the card eye on top, so
+  // hiding here hides the per-type rows underneath as well.
+  const f  = v => hide ? '฿ •••••' : fmtSigned(v);
+  const fv = v => hide ? '฿ •••••' : fmt(v);
+  const fp = v => hide ? '•••' : `${v>=0?'+':''}${v.toFixed(2)}%`;
+  const tone = g => g ? 'text-emerald-400' : 'text-rose-400';
 
   return (
-    <div className={card}>
-      <div className="px-5 pt-4 pb-3">
-        <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>Net Worth Timeline</div>
-        <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>บันทึกอัตโนมัติทุกครั้งที่ข้อมูลเปลี่ยน · {sorted.length} เดือน</div>
+    <div className={`rounded-2xl fade-up p-5 mt-4 ${dk?'card-solid':'glass-light shadow-sm'}`}>
+      <div className="flex items-baseline justify-between flex-wrap gap-x-3">
+        <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>กำไร/ขาดทุนที่ยังไม่ขาย</div>
+        <div className={`text-[11px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}>Unrealized P/L</div>
       </div>
-      {sorted.length>=2
-        ? <div className="px-4 pb-4" style={{height:'220px'}}><canvas ref={ref}/></div>
-        : <div className={`px-5 pb-3 text-xs ${dk?'text-slate-400':'text-slate-500'}`}>ต้องการข้อมูลอย่างน้อย 2 เดือนจึงจะแสดงกราฟ</div>
-      }
-      <div className={`border-t ${dk?'border-white/5':'border-slate-100'}`}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className={dk?'text-slate-500':'text-slate-400'}>
-                <th className="px-4 py-2 text-left font-medium">เดือน</th>
-                <th className="px-4 py-2 text-right font-medium">Net Worth รวม</th>
-                <th className="px-4 py-2 text-right font-medium">พอร์ตลงทุน</th>
-                {wallets.length>0&&<th className="px-4 py-2 text-right font-medium">กระเป๋าเงิน</th>}
-                {sorted.some(h=>h.other>0)&&<th className="px-4 py-2 text-right font-medium">สินทรัพย์อื่นๆ</th>}
-                <th className="px-4 py-2 text-right font-medium">เปลี่ยนแปลง</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rev.map((h,i)=>{
-                const prev = rev[i+1];
-                const change = prev!=null ? h.total-prev.total : null;
-                const changePct = prev!=null&&prev.total>0 ? change/prev.total*100 : null;
-                const[y,m]=h.month.split('-');
-                return (
-                  <tr key={h.month} className={`border-t ${dk?'border-white/5 hover:bg-white/3':'border-slate-50 hover:bg-slate-50'}`}>
-                    <td className={`px-4 py-2 ${dk?'text-slate-300':'text-slate-700'}`}>{MONTHS_TH[parseInt(m)-1]} {y}</td>
-                    <td className={`px-4 py-2 text-right font-semibold ${dk?'text-white':'text-slate-800'}`}>{f(h.total)}</td>
-                    <td className={`px-4 py-2 text-right ${dk?'text-slate-400':'text-slate-500'}`}>{f(h.portfolio)}</td>
-                    {wallets.length>0&&<td className={`px-4 py-2 text-right ${dk?'text-slate-400':'text-slate-500'}`}>{f(h.wallets)}</td>}
-                    {sorted.some(x=>x.other>0)&&<td className={`px-4 py-2 text-right ${dk?'text-slate-400':'text-slate-500'}`}>{f(h.other||0)}</td>}
-                    <td className="px-4 py-2 text-right">
-                      {change!=null
-                        ? <span className={change>=0?'text-emerald-400':'text-rose-400'}>
-                            {change>=0?'+':'-'}{f(Math.abs(change))}
-                            {changePct!=null&&<span className="ml-1 opacity-75">({change>=0?'+':''}{changePct.toFixed(1)}%)</span>}
-                          </span>
-                        : <span className={dk?'text-slate-600':'text-slate-300'}>—</span>
-                      }
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+      <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>มูลค่าตลาดวันนี้ ลบ ต้นทุนที่จ่ายไป · ยังไม่ได้ขาย</div>
+
+      <div className="flex items-baseline gap-3 flex-wrap mt-4">
+        <div className={`text-3xl font-bold tracking-wider ${tone(up)}`}>{f(totPl)}</div>
+        <div className={`text-sm font-semibold ${tone(up)}`}>{fp(totPct)}</div>
+      </div>
+      <div className={`text-xs mt-1.5 ${dk?'text-slate-400':'text-slate-500'}`}>
+        ต้นทุน {fv(totCost)} → มูลค่า {fv(totVal)}
+      </div>
+
+      <div className={`mt-4 pt-3 border-t space-y-2.5 ${dk?'border-white/5':'border-slate-100'}`}>
+        {rows.map(g=>(
+          <div key={g.type} className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{backgroundColor:(ASSET_TYPES.find(t=>t.v===g.type)||ASSET_TYPES[4]).c}}/>
+            <span className={`text-xs flex-1 ${dk?'text-slate-300':'text-slate-600'}`}>{g.label}</span>
+            <span className={`text-xs tabular-nums font-semibold ${tone(g.pl>=0)}`}>{f(g.pl)}</span>
+            <span className={`text-xs tabular-nums w-16 text-right ${tone(g.pl>=0)}`}>{fp(g.pct)}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className={`text-xs mt-3.5 pt-3 border-t ${dk?'border-white/5 text-slate-500':'border-slate-100 text-slate-400'}`}>
+        {mom
+          ? <span>เทียบ {mom.label} · {mom.delta>=0?'กำไรเพิ่มขึ้น':'กำไรลดลง'} <span className={tone(mom.delta>=0)}>{fv(Math.abs(mom.delta))}</span></span>
+          : <span>เพิ่งเริ่มเก็บต้นทุนรายเดือน — เทียบเดือนต่อเดือนได้ตั้งแต่เดือนหน้าค่ะ</span>}
       </div>
     </div>
   );
@@ -1426,7 +1420,7 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
         ))}
       </div>
 
-      {nwHistory.length>0&&<NwTimeline nwHistory={nwHistory} theme={theme} wallets={wallets} hide={hideAmt||privacy}/>}
+      <UnrealizedPL assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy} nwHistory={nwHistory}/>
     </div>
   );
 };
@@ -8250,14 +8244,24 @@ const App = () => {
     const cashAssets   = assetsRef.current.filter(a=>a.type==='cash').reduce((s,a)=>s+assetVal(a,txsRef.current,usdRate),0);
     const otherAssets  = assetsRef.current.filter(a=>a.type==='other'||a.type==='property').reduce((s,a)=>s+assetVal(a,txsRef.current,usdRate),0);
     const walletTotal  = walletsRef.current.reduce((s,w)=>s+walletCash(w,txsRef.current,assetsRef.current),0) + cashAssets;
+    // What everything non-cash cost to acquire, banked alongside what it is
+    // worth. Value alone cannot answer "how much am I up" later, because buying
+    // more raises it exactly the way a price rise does — the two are only
+    // separable if the cost that came with the purchase was recorded too.
+    // Covers the same holdings as portfolio + other, which is what the P/L card
+    // subtracts it from. Snapshots taken before this existed have no cost and
+    // are skipped there rather than back-filled: the historical prices needed
+    // to reconstruct one were never stored.
+    const portfolioCost = assetsRef.current.filter(a=>a.type!=='cash')
+      .reduce((s,a)=>s + a.qty*a.avgCost*(a.currency==='USD'?usdRate:1), 0);
     // เงินที่ถือแทน (custodial) is informational only — not subtracted from Net Worth history
     const total = portfolio + walletTotal + otherAssets;
     const now = new Date();
     const month = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
     setNwHistory(hist=>{
       const existing = hist.find(h=>h.month===month);
-      if(existing && Math.abs(existing.total-total)<1 && Math.abs(existing.portfolio-portfolio)<1 && Math.abs(existing.wallets-walletTotal)<1 && Math.abs((existing.other||0)-otherAssets)<1) return hist;
-      const updated = [...hist.filter(h=>h.month!==month), {month, portfolio:Math.round(portfolio), wallets:Math.round(walletTotal), other:Math.round(otherAssets), total:Math.round(total)}];
+      if(existing && Math.abs(existing.total-total)<1 && Math.abs(existing.portfolio-portfolio)<1 && Math.abs(existing.wallets-walletTotal)<1 && Math.abs((existing.other||0)-otherAssets)<1 && Math.abs((existing.cost||0)-portfolioCost)<1) return hist;
+      const updated = [...hist.filter(h=>h.month!==month), {month, portfolio:Math.round(portfolio), wallets:Math.round(walletTotal), other:Math.round(otherAssets), cost:Math.round(portfolioCost), total:Math.round(total)}];
       return updated.sort((a,b)=>a.month.localeCompare(b.month));
     });
   },[]);
