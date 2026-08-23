@@ -8800,7 +8800,10 @@ const App = () => {
   // right place for a check that should almost never fire.
 
   const dk = theme==='dark';
-  const bgStyle = { background: (THEMES.find(t=>t.id===colorTheme)||THEMES[0])[dk?'dark':'light'] };
+  // The card colour rides along with the background so the two are chosen
+  // together; .card-solid reads it through inheritance.
+  const _th = THEMES.find(t=>t.id===colorTheme) || THEMES[0];
+  const bgStyle = { background: _th[dk?'dark':'light'], '--card-bg': _th.card || '#0b1220' };
 
   // ── Auth guard ──
   if (kickedOut) return (

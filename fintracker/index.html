@@ -71,8 +71,13 @@ const db   = firebase.firestore();
     box-shadow: none;
   }
 
+  /* The card colour follows the theme. It used to be one fixed blue-black,
+     which was invisible while every theme was blue-ish and obvious the moment
+     one was not — a green page with blue cards on it. Inherited through a
+     custom property set alongside the page background, so the two are decided
+     in the same place and cannot drift apart. */
   .card-solid {
-    background: #0b1220;
+    background: var(--card-bg, #0b1220);
     border: 1px solid rgba(255,255,255,0.07);
     box-shadow: none;
     transition: border-color 0.15s ease;
@@ -87,6 +92,31 @@ const db   = firebase.firestore();
      rounding the data away. Overridden here rather than at ~200 call sites. */
   .rounded-2xl { border-radius: 0.75rem !important; }
   .rounded-xl  { border-radius: 0.625rem !important; }
+
+  /* ── Type scale ──────────────────────────────────────────────────────────
+     The sizes in use were 9, 10, 11, 12, 14, 16, 18, 20, 24, 30 — four of them
+     inside a four-pixel band carrying 526 of the ~850 pieces of text on screen.
+     One pixel is not a hierarchy; it is a coin flip about which line matters,
+     made 526 times.
+     So the crowded bottom collapses into two real steps, and the top opens up:
+     the distance between a heading and the line under it now does the work that
+     bold alone was being asked to do. Ratios rather than pixels, so the steps
+     stay distinguishable at any zoom. Set here because these classes appear at
+     hundreds of call sites and the scale is one decision, not hundreds. */
+  .text-\[9px\]  { font-size: 10.5px !important; }
+  .text-\[10px\] { font-size: 10.5px !important; }
+  .text-\[11px\] { font-size: 11.5px !important; }
+  .text-xs       { font-size: 12.5px !important; line-height: 1.55 !important; }
+  .text-sm       { font-size: 14px   !important; line-height: 1.6  !important; }
+  .text-base     { font-size: 16px   !important; }
+  .text-lg       { font-size: 19px   !important; line-height: 1.35 !important; }
+  .text-xl       { font-size: 23px   !important; line-height: 1.3  !important; }
+  .text-2xl      { font-size: 28px   !important; line-height: 1.25 !important; }
+  .text-3xl      { font-size: 36px   !important; line-height: 1.15 !important; }
+
+  /* Labels read as labels rather than as small body text. The tracking is what
+     separates them once they are no longer a pixel apart from the line below. */
+  .uppercase { letter-spacing: 0.06em; }
 
   /* ── Liquid Glass Cards (reserved for hero + modals only) ── */
   .card-hero {

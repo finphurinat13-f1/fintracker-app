@@ -17,14 +17,26 @@ export const THEMES = [
   { id:'terminal', icon:'💹', label:'Terminal', note:'ทองบนดำ — ธีมหลัก',
     dark:  'radial-gradient(ellipse 70% 50% at 5% 15%,rgba(212,160,23,.06) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 95% 85%,rgba(0,200,150,.04) 0%,transparent 55%),#05080f',
     light: 'radial-gradient(ellipse 60% 55% at 15% 10%,rgba(212,160,23,.05) 0%,transparent 65%),#f6f4ef',
+    card: '#0d1119',
   },
   { id:'midnight', icon:'🏦', label:'Midnight', note:'น้ำเงินเข้ม',
     dark:  'radial-gradient(ellipse 70% 55% at 10% 15%,rgba(41,85,184,.18) 0%,transparent 60%),radial-gradient(ellipse 55% 45% at 90% 85%,rgba(30,60,140,.12) 0%,transparent 58%),#060c18',
     light: 'radial-gradient(ellipse 65% 55% at 15% 10%,rgba(41,85,184,.05) 0%,transparent 65%),radial-gradient(ellipse 55% 50% at 85% 90%,rgba(100,150,220,.04) 0%,transparent 60%),#f5f7fa',
+    card: '#0b1220',
+  },
+  // Near-black with a green cast, the way a terminal looks when the phosphor
+  // bleeds into the background. Dark-first by design: the light variant is a
+  // faint tint rather than an attempt to be the same theme in reverse, because
+  // this one is only itself with the lights off.
+  { id:'console', icon:'🖥️', label:'Console', note:'ดำอมเขียว — แนวเทอร์มินัล',
+    dark:  'radial-gradient(ellipse 65% 50% at 12% 12%,rgba(52,211,153,.07) 0%,transparent 62%),radial-gradient(ellipse 55% 45% at 88% 88%,rgba(16,185,129,.05) 0%,transparent 58%),#070b0a',
+    light: 'radial-gradient(ellipse 60% 50% at 15% 10%,rgba(16,185,129,.05) 0%,transparent 65%),#f3f6f4',
+    card: '#0c1211',
   },
   { id:'mono',    icon:'🌑', label:'Mono', note:'เทากลาง ไม่มีสี',
     dark:  'radial-gradient(ellipse 60% 50% at 30% 20%,rgba(100,116,139,.22) 0%,transparent 60%),radial-gradient(ellipse 50% 60% at 80% 80%,rgba(71,85,105,.18) 0%,transparent 55%),#07080a',
     light: 'radial-gradient(ellipse 60% 50% at 30% 20%,rgba(148,163,184,.10) 0%,transparent 60%),radial-gradient(ellipse 50% 60% at 80% 80%,rgba(100,116,139,.07) 0%,transparent 55%),#f4f5f7',
+    card: '#101215',
   },
 ];
 
