@@ -1,5 +1,5 @@
 import {
-  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, CAT_ICON, getCatMeta, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, GOLD_RAMP, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, encryptBackup, decryptBackup, isEncryptedBackup
+  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, GOLD_RAMP, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, encryptBackup, decryptBackup, isEncryptedBackup
 } from "./lib.js";
 
 
@@ -351,7 +351,7 @@ const BarChart = ({ data, theme, hide=false }) => {
       labels: data.labels,
       datasets: [
         { label:'รายรับ', data:data.income, backgroundColor:dk?'rgba(201,169,74,0.75)':'rgba(201,169,74,0.65)', borderRadius:8, borderSkipped:false, barPercentage:0.65 },
-        { label:'รายจ่าย', data:data.expense, backgroundColor:dk?'rgba(244,63,94,0.75)':'rgba(244,63,94,0.65)', borderRadius:8, borderSkipped:false, barPercentage:0.65 },
+        { label:'รายจ่าย', data:data.expense, backgroundColor:dk?'rgba(201,114,106,0.75)':'rgba(201,114,106,0.65)', borderRadius:8, borderSkipped:false, barPercentage:0.65 },
       ]}, options:{ responsive:true, maintainAspectRatio:false,
         plugins:{
           legend:{ labels:{ color:dk?'#94a3b8':'#64748b', usePointStyle:true, pointStyle:'circle', padding:20, font:{size:11,family:"'Chakra Petch',sans-serif"} } },
@@ -463,7 +463,7 @@ const LineChart = ({ data, theme }) => {
       labels: data.labels,
       datasets:[
         { label:'รายรับ', data:data.income, borderColor:'#c9a94b', backgroundColor: dk?'rgba(201,169,74,0.12)':'rgba(201,169,74,0.08)', fill:true, tension:0.4, pointRadius:0, pointHoverRadius:4, pointHoverBackgroundColor:'#c9a94b', borderWidth:2 },
-        { label:'รายจ่าย', data:data.expense, borderColor:'#f43f5e', backgroundColor: dk?'rgba(244,63,94,0.12)':'rgba(244,63,94,0.08)', fill:true, tension:0.4, pointRadius:0, pointHoverRadius:4, pointHoverBackgroundColor:'#f43f5e', borderWidth:2 },
+        { label:'รายจ่าย', data:data.expense, borderColor:'#c9726a', backgroundColor: dk?'rgba(201,114,106,0.12)':'rgba(201,114,106,0.08)', fill:true, tension:0.4, pointRadius:0, pointHoverRadius:4, pointHoverBackgroundColor:'#c9726a', borderWidth:2 },
       ]}, options:{ responsive:true, maintainAspectRatio:false,
         interaction:{ mode:'index', intersect:false },
         plugins:{
@@ -511,7 +511,7 @@ const PlanChart = ({ data, theme }) => {
           fill:'origin', borderWidth:2, tension:0.25, pointRadius:0, pointHoverRadius:4 },
         // fill:'-1' shades to the line above — the compound return, drawn as the
         // distance between the two rather than as a number to be read off
-        { label:'มูลค่ารวม', data:data.total, borderColor:'#10b981', backgroundColor:dk?'rgba(16,185,129,0.16)':'rgba(16,185,129,0.13)',
+        { label:'มูลค่ารวม', data:data.total, borderColor:'#7aab8a', backgroundColor:dk?'rgba(122,171,138,0.16)':'rgba(122,171,138,0.13)',
           fill:'-1', borderWidth:2.5, tension:0.25, pointRadius:0, pointHoverRadius:4 },
       ]}, options:{ responsive:true, maintainAspectRatio:false,
         interaction:{ mode:'index', intersect:false },
@@ -520,7 +520,7 @@ const PlanChart = ({ data, theme }) => {
           tooltip:{
             backgroundColor: dk?'rgba(13,27,46,0.95)':'rgba(255,255,255,0.97)',
             titleColor: dk?'#e2e8f0':'#1e293b', bodyColor: dk?'#94a3b8':'#64748b',
-            footerColor: dk?'#34d399':'#059669',
+            footerColor: dk?'#7aab8a':'#4b735a',
             borderColor: dk?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)',
             borderWidth:1, padding:10, cornerRadius:10,
             callbacks:{
@@ -875,7 +875,10 @@ const BudgetMetricCard = ({ cat, spent, budget, dk, onEdit }) => {
   const pct = Math.min(rawPct, 100);
   const over = rawPct > 100;
   const warn = rawPct >= 80 && !over;
-  const barColor = over ? '#f43f5e' : warn ? '#f97316' : catClr(cat);
+  // The warn orange came down with the red beside it. Leaving #f97316 neon in
+  // the same three-way conditional whose other branch just got muted would have
+  // made "nearly over" shout louder than "over".
+  const barColor = over ? '#c9726a' : warn ? '#c98f5a' : catClr(cat);
   return (
     <div className={`relative overflow-hidden rounded-2xl border fade-up ${dk?'card-solid':'bg-white border-slate-200 shadow-sm'}`}>
       <div className="p-4 pb-12">
@@ -1133,9 +1136,8 @@ const useConfirm = (dk=false) => {
 };
 
 // ── DASHBOARD ──────────────────────────────────────────────
-const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets=[], user=null, debts=[], custodial=[], privacy=false, hideAmt=false, onToggleHide }) => {
+const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, debts=[], custodial=[], privacy=false, hideAmt=false, onToggleHide }) => {
   const dk = theme==='dark';
-  const [recentOpen, setRecentOpen] = useState(false);
   const now = new Date();
   const curM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   const income  = sumTxType(txs,'income');
@@ -1210,7 +1212,6 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
     return { labels:sorted.map(([k])=>k), values:sorted.map(([,v])=>v), colors:sorted.map(([k])=>catClr(k)) };
   },[txs,curM]);
 
-  const recent = useMemo(()=>[...txs].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10),[txs]);
 
   const card  = `rounded-2xl p-5 fade-up ${dk?'card-solid':'glass-light shadow-sm'}`;
   const subTx = `text-xs ${dk?'text-slate-400':'text-slate-500'}`;
@@ -1375,8 +1376,8 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <MiniAreaCard label="รายรับเดือนนี้" ticker="INCOME" value={mask(fmt(statsCards.ci))} sub={`${statsCards.momI>=0?'+':''}${statsCards.momI.toFixed(1)}% vs เดือนก่อน`} positive={statsCards.momI>=0} data={barData.income} labels={barData.labels} color="#c9a94b" theme={theme}/>
-        <MiniAreaCard label="รายจ่ายเดือนนี้" ticker="EXPENSE" value={mask(fmt(statsCards.ce))} sub={`${statsCards.momE>=0?'+':''}${statsCards.momE.toFixed(1)}% vs เดือนก่อน`} positive={statsCards.momE<=0} data={barData.expense} labels={barData.labels} color="#f43f5e" theme={theme}/>
-        <MiniAreaCard label="คงเหลือเดือนนี้" ticker="NET" value={mask(fmt(statsCards.cn))} sub={`${statsCards.momN>=0?'+':''}${statsCards.momN.toFixed(1)}% vs เดือนก่อน`} positive={statsCards.cn>=0} data={statsCards.netD} labels={barData.labels} color="#10b981" theme={theme}/>
+        <MiniAreaCard label="รายจ่ายเดือนนี้" ticker="EXPENSE" value={mask(fmt(statsCards.ce))} sub={`${statsCards.momE>=0?'+':''}${statsCards.momE.toFixed(1)}% vs เดือนก่อน`} positive={statsCards.momE<=0} data={barData.expense} labels={barData.labels} color="#c9726a" theme={theme}/>
+        <MiniAreaCard label="คงเหลือเดือนนี้" ticker="NET" value={mask(fmt(statsCards.cn))} sub={`${statsCards.momN>=0?'+':''}${statsCards.momN.toFixed(1)}% vs เดือนก่อน`} positive={statsCards.cn>=0} data={statsCards.netD} labels={barData.labels} color="#7aab8a" theme={theme}/>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1392,42 +1393,12 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
         </div>
       </div>
 
-      <div className={`rounded-2xl ${dk?'card-solid':'glass-light shadow-sm'}`}>
-        <button onClick={()=>setRecentOpen(o=>!o)} className={`w-full flex items-center justify-between px-4 py-3 border-b ${dk?'border-white/5':'border-slate-100'}`}>
-          <h3 className={`text-xs font-semibold ${dk?'text-white':'text-slate-700'}`}>รายการล่าสุด</h3>
-          <div className="flex items-center gap-2">
-            <span className={subTx}>{recent.length} รายการ</span>
-            <Ic n="chevD" s={13} cls={`transition-transform duration-200 ${recentOpen?'':'rotate-180'} ${dk?'text-slate-400':'text-slate-500'}`}/>
-          </div>
-        </button>
-        {recentOpen&&recent.length===0&&<div className={`py-6 text-center text-xs ${subTx}`}>ยังไม่มีรายการ</div>}
-        {recentOpen&&recent.map(t=>(
-          <div key={t.id} className={`row-mod flex items-center gap-2.5 px-4 py-2 border-b transition-colors group ${dk?'border-white/5':'border-slate-50 hover:bg-slate-50'}`}>
-            <div className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center ${t.type==='transfer'?'text-base text-gold-400 bg-gold-500/15':t.type==='adjustment'?'text-base text-amber-400 bg-amber-500/15':(getCatMeta()[t.category]?.icon||CAT_ICON[t.category])?'text-base':'text-xs font-bold '+(t.type==='income'?'text-gold-400':'text-rose-400')} ${(t.type==='transfer'||t.type==='adjustment')?'':'bg-'+(t.type==='income'?'gold-500/15':'rose-500/15')}`}>{t.type==='transfer'?'↔':t.type==='adjustment'?'⚖':(getCatMeta()[t.category]?.icon||CAT_ICON[t.category]||t.category.substring(0,2))}</div>
-            <div className="flex-1 min-w-0">
-              <div className={`text-xs font-medium truncate ${dk?'text-white':'text-slate-700'}`}>{t.title}</div>
-              <div className={`text-xs ${subTx}`}>
-                {t.type==='transfer'?(()=>{
-                  const targetWallet = t.transferDir==='from'?wallets.find(w=>w.id===t.toWalletId):wallets.find(w=>w.id===t.fromWalletId);
-                  return t.transferDir==='from'?`โยกไป ${targetWallet?.name||'wallet'}`:` รับจาก ${targetWallet?.name||'wallet'}`;
-                })():t.type==='adjustment'?(()=>{
-                  if(t.walletId){const w=wallets.find(x=>x.id===t.walletId);return w?`กระเป๋า: ${w.name}`:'ปรับยอด';}
-                  if(t.targetAssetId){const a=assets&&assets.find(x=>x.id===t.targetAssetId);return a?`📦 ${a.name}`:'ปรับยอด';}
-                  return 'ปรับยอด';
-                })():''}
-                {(t.type==='transfer'||t.type==='adjustment')?' · ':''}
-                {t.type!=='adjustment'&&t.category} · {t.date}
-              </div>
-            </div>
-            <div className={`text-xs font-semibold ${txAmtCls(t)}`}>{txSign(t)}{fmt(Math.abs(t.amount))}</div>
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button title="แก้ไข" onClick={()=>onEdit(t)} className={`p-1 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="edit" s={11}/></button>
-              <button title="ลบ" onClick={()=>onDelete(t.id)} className={`p-1 rounded-lg ${dk?'hover:bg-rose-500/20 text-rose-400':'hover:bg-rose-50 text-rose-400'}`}><Ic n="trash" s={11}/></button>
-            </div>
-          </div>
-        ))}
-      </div>
-
+      {/* The last-10 transactions list used to sit here, collapsed, above the
+          P/L card. The transactions page is the same list without the cap and
+          with search, filters and bulk select, so the dashboard copy could only
+          ever be the worse of the two — and it carried its own edit and delete
+          buttons, which meant a second place to change data that had to be
+          kept in step with the real one for no gain. */}
       <UnrealizedPL assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy} nwHistory={nwHistory}/>
     </div>
   );
@@ -3679,7 +3650,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
                   </div>
                   {/* Balance bar */}
                   <div className={`mx-5 mb-3 h-1.5 rounded-full overflow-hidden ${dk?'bg-white/8':'bg-slate-100'}`}>
-                    <div className="h-full rounded-full transition-all duration-700" style={{width:`${Math.min(pct,100)}%`,background:'#10b981'}}/>
+                    <div className="h-full rounded-full transition-all duration-700" style={{width:`${Math.min(pct,100)}%`,background:'#7aab8a'}}/>
                   </div>
                   {/* Transactions */}
                   {/* Anything worth showing opens the row: transactions, or quantity movements,
@@ -3911,7 +3882,7 @@ const GoalChart = ({ labels, actual, forecast, goal, theme }) => {
     if(ch.current) ch.current.destroy();
     ch.current = new Chart(ref.current, { type:'line',
       data:{ labels, datasets:[
-        { label:'เงินเก็บสะสม', data:actual, borderColor:'#10b981', backgroundColor:dk?'rgba(16,185,129,0.12)':'rgba(16,185,129,0.08)', fill:true, tension:0.35, pointRadius:2, borderWidth:2.5 },
+        { label:'เงินเก็บสะสม', data:actual, borderColor:'#7aab8a', backgroundColor:dk?'rgba(122,171,138,0.12)':'rgba(122,171,138,0.08)', fill:true, tension:0.35, pointRadius:2, borderWidth:2.5 },
         { label:'คาดการณ์', data:forecast, borderColor:'#c9a94b', borderDash:[5,4], fill:false, tension:0.35, pointRadius:0, borderWidth:2, spanGaps:true },
         { label:'เป้าหมาย', data:labels.map(()=>goal), borderColor:dk?'rgba(212,160,23,0.55)':'rgba(202,168,74,0.7)', borderDash:[2,3], fill:false, pointRadius:0, borderWidth:1.5 },
       ]},
@@ -5341,7 +5312,7 @@ const DebtPage = ({ theme, debts, setDebts }) => {
 
       {debts.map(debt=>{
         const c=calcDebt(debt);
-        const clr=c.pct>=100?'#10b981':dk?'#475569':'#94a3b8';
+        const clr=c.pct>=100?'#7aab8a':dk?'#475569':'#94a3b8';
         const extra=extraMap[debt.id]||'';
         const extraAmt=parseFloat(extra)||0;
         let extraInfo=null;
@@ -9149,7 +9120,7 @@ const App = () => {
             having none. So while a PIN is set and the figures are hidden,
             nothing renders until it is entered. */}
         {privacy && lockOn ? <LockedPanel dk={theme==='dark'} onUnlock={()=>setPinGate('unlock')}/> : (<>
-        {page==='dashboard'    && <Dashboard     txs={txs} assets={assets} theme={theme} onEdit={openEdit} onDelete={delOne} nwHistory={nwHistory} wallets={wallets} user={user} debts={debts} custodial={custodial} privacy={privacy} hideAmt={hideAmt} onToggleHide={toggleHideAmt}/>}
+        {page==='dashboard'    && <Dashboard     txs={txs} assets={assets} theme={theme} nwHistory={nwHistory} wallets={wallets} user={user} debts={debts} custodial={custodial} privacy={privacy} hideAmt={hideAmt} onToggleHide={toggleHideAmt}/>}
         {page==='transactions' && <TxPage        txs={txs}    theme={theme} onEdit={openEdit} onAdd={()=>setModal({open:true,editData:null})} onDelete={delOne} onBulkDelete={delBulk} onExport={()=>exportCSV(txs)} wallets={wallets} assets={assets} onAddRecurring={openQuickRecur} onRecordRecurring={addRecur} onQuickEdit={quickEditTx} favKeys={favKeys}/>}
         {page==='assets'       && <AssetsPage    assets={assets} theme={theme} onEdit={editAsset} onDelete={delAsset} onAdd={()=>setAModal({open:true,editData:null})} onTransfer={()=>setUnifiedOpen({open:true,from:null,to:null})} onInvest={assetId=>setUnifiedOpen({open:true,from:null,to:typeof assetId==='number'?`a-${assetId}`:null})} onPriceUpdate={updatePrices} onQuickPrice={quickPriceEdit} onDCA={a=>setDcaModal({open:true,asset:a})} onAddAssetTx={addAssetTx} onDeleteAssetTx={delAssetTx} onTopUpAsset={topUpAsset} onDeleteMove={deleteAssetMove} onRenameMove={renameAssetMove} onAddItem={addAssetItem} onDelItem={delAssetItem} wallets={wallets} txs={txs}/>}
         {page==='budget'       && <BudgetPage    key={`budget-${dataKey}`}    txs={txs}    theme={theme} onEdit={openEdit} onRenameCategory={renameCategoryInTxs}/>}
