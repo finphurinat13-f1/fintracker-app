@@ -6816,25 +6816,14 @@ const AccountModal = ({open, onClose, theme, setTheme, colorTheme, setColorTheme
                 ⓘ Visual masking only — nothing is encrypted. Backup files and cloud data stay readable.
               </div>
             </div>
-            <div className={`text-xs mb-2 font-medium ${dk?'text-slate-400':'text-slate-500'}`}>ธีมพื้นหลัง</div>
-            {/* Each tile is painted with the theme's own background strings —
-                left half light, right half dark — so it shows the two states it
-                will actually put on screen. The old swatches were invented
-                accent gradients, which promised a colour change the theme has
-                never made: only the page background moves, the gold stays gold. */}
-            <div className="grid grid-cols-3 gap-2">
-              {THEMES.map(t=>(
-                <button key={t.id} onClick={()=>setColorTheme(t.id)}
-                  className={`rounded-xl p-1 transition-all border text-left ${colorTheme===t.id?(dk?'border-gold-400 bg-gold-500/10':'border-gold-400 bg-gold-50'):(dk?'border-white/10 hover:border-white/25':'border-slate-200 hover:border-slate-300')}`}>
-                  <div className={`flex h-10 rounded-lg overflow-hidden border ${dk?'border-white/10':'border-slate-200'}`}>
-                    <div className="flex-1" style={{background:t.light}}/>
-                    <div className="flex-1" style={{background:t.dark}}/>
-                  </div>
-                  <div className={`text-[11px] font-semibold mt-1.5 px-0.5 truncate ${colorTheme===t.id?(dk?'text-gold-300':'text-gold-600'):(dk?'text-slate-300':'text-slate-600')}`}>{t.label}</div>
-                  <div className={`text-[9px] px-0.5 pb-0.5 truncate ${dk?'text-slate-500':'text-slate-400'}`}>{t.note}</div>
-                </button>
-              ))}
-            </div>
+            {/* The background picker is gone. A theme here only ever changed
+                the page background: the gold accent, the slate text and the
+                ten-colour category palette all stayed where they were, so
+                every option but the first was that palette sitting on a
+                background chosen for a different one. Three passable looks
+                lose to one that was actually designed, and the picker was a
+                standing cost on every screen added since.
+                Light and dark remain — those are about the room you are in. */}
           </div>
           {/* Also reachable from the ☰ menu, but this is the first place anyone
               looks for it — the cost of having it twice is nothing next to the

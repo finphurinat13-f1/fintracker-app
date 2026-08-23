@@ -1,45 +1,25 @@
 // ── Pure helpers, formulas & constant data (no React) ──
 // Imported by app.jsx; safe to unit-test in isolation.
 
-// ── THEMES ─────────────────────────────────────────────────
-// A theme sets the page background and nothing else — the gold accent, the
-// cards and the type are fixed. That is worth being blunt about, because the
-// picker used to show each theme as a bright two-colour swatch (Sunset as red
-// and orange, Terminal as gold and teal) which read as a promise that the app
-// would turn that colour. It never did. The tiles now show these very strings,
-// so a swatch cannot say anything the background does not.
+// ── THEME ──────────────────────────────────────────────────
+// One, now. There were five, then three, and the trouble was never which ones:
+// a theme here only ever set the page background. The gold accent, the slate
+// text and the ten-colour category palette stayed put, so every option except
+// the first was that palette sitting on a background picked for a different
+// one — and no amount of choosing better colours fixes a background that the
+// foreground has never heard of.
 //
-// Five became three, then three became three again: Mono was the neutral grey
-// one, and once Console existed it was the tile nobody would pick — a theme
-// whose entire character was the absence of one. What is left is one warm, one
-// cool, one green, each of which somebody would choose on purpose.
-// Terminal is first, so an unknown stored id falls back to the house style —
-// which is also where anyone still on Mono lands.
+// Three passable looks lose to one that was designed, and the picker was a
+// standing cost on every screen added since. Light and dark stay, because
+// those are about the room you are in rather than a colour scheme.
+//
+// Kept as an array so the lookup that falls back to THEMES[0] still works, and
+// so a second one can be added the day the palette underneath it is ready.
 export const THEMES = [
   { id:'terminal', icon:'💹', label:'Terminal', note:'ทองบนดำ — ธีมหลัก',
     dark:  'radial-gradient(ellipse 70% 50% at 5% 15%,rgba(212,160,23,.06) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 95% 85%,rgba(0,200,150,.04) 0%,transparent 55%),#05080f',
     light: 'radial-gradient(ellipse 60% 55% at 15% 10%,rgba(212,160,23,.05) 0%,transparent 65%),#f6f4ef',
     card: '#0d1119',
-  },
-  { id:'midnight', icon:'🏦', label:'Midnight', note:'น้ำเงินเข้ม',
-    dark:  'radial-gradient(ellipse 70% 55% at 10% 15%,rgba(41,85,184,.18) 0%,transparent 60%),radial-gradient(ellipse 55% 45% at 90% 85%,rgba(30,60,140,.12) 0%,transparent 58%),#060c18',
-    light: 'radial-gradient(ellipse 65% 55% at 15% 10%,rgba(41,85,184,.05) 0%,transparent 65%),radial-gradient(ellipse 55% 50% at 85% 90%,rgba(100,150,220,.04) 0%,transparent 60%),#f5f7fa',
-    card: '#0b1220',
-  },
-  // Phosphor green on black. The glow is the whole point — a flat dark-green
-  // fill reads as a mistake, while light pooling out of the corners reads as a
-  // screen that is on. Kept well under the gold accent's brightness so the two
-  // are not competing to be the thing you look at.
-  //
-  // The grey here is green-tinted rather than neutral: #0b1410 next to #101215
-  // is the difference between a room lit green and a grey room with a green
-  // lamp somewhere in it.
-  { id:'console', icon:'🖥️', label:'Console', note:'เขียวเรืองบนดำ — แนว Matrix',
-    dark:  'radial-gradient(ellipse 70% 55% at 8% 10%,rgba(0,255,65,.10) 0%,transparent 60%),'
-         + 'radial-gradient(ellipse 60% 50% at 92% 90%,rgba(0,200,80,.07) 0%,transparent 58%),'
-         + 'radial-gradient(ellipse 90% 70% at 50% 50%,rgba(0,120,50,.05) 0%,transparent 70%),#040806',
-    light: 'radial-gradient(ellipse 60% 50% at 15% 10%,rgba(0,160,70,.06) 0%,transparent 65%),#f2f6f3',
-    card: '#0a1410',
   },
 ];
 
