@@ -5898,6 +5898,10 @@ const UnifiedTransferModal = ({open, onClose, onSave, wallets=[], assets=[], txs
 // ── WALLET PAGE ──────────────────────────────────────────────
 const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx, onEditTx, onDeleteTx, onAddAsset, onUnlinkAsset, onAssetTransfer, onReorder, theme, onOpenWalletModal, onUnifiedTransfer, onAdjust, onDividend, onSaveCashCount, custodial=[], setCustodial=()=>{} }) => {
   const dk = theme==='dark';
+  // Read at render time — App re-renders when either control flips. These two
+  // figures are money that fmt never sees: a dollar conversion of the balance,
+  // and note counts that add straight back up to it.
+  const hidden = _hideAmt || _privacy;
   // ── เงินที่ถือแทน (custodial money — held for others, not ours) ──
   const [custModal, setCustModal] = useState({open:false, editData:null});
   const activeCust = useMemo(()=>custodial.filter(c=>!c.returned),[custodial]);
@@ -6334,7 +6338,9 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                         </span>
                       )}
                     </div>
-                    <p className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>≈ ${(w.balance/usdRate).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})} USD</p>
+                    {/* The dollar line is the same money in another currency,
+                        so covering only the baht one left it on screen whole. */}
+                    <p className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>≈ {hidden ? '$•••••' : '$'+(w.balance/usdRate).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})} USD</p>
                     {w.assetValue>0&&(
                       <div className={`flex items-center gap-1.5 mt-1 text-xs ${dk?'text-gold-400':'text-gold-500'}`}>
                         <span>📈</span>
@@ -6472,7 +6478,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                   )}
                   {w.cashCount && cashCountSum(w.cashCount)>0 && countWalletId!==w.id && (
                     <div className={`mt-2 pt-2 border-t text-[11px] pb-2 ${dk?'border-white/8 text-slate-400':'border-slate-100 text-slate-500'}`}>
-                      🧮 {CASH_DENOMS.filter(d=>parseInt(w.cashCount[d])>0).map(d=>`${w.cashCount[d]}×${d.toLocaleString('en-US')}`).join(' · ')}
+                      🧮 {hidden ? '•••••' : CASH_DENOMS.filter(d=>parseInt(w.cashCount[d])>0).map(d=>`${w.cashCount[d]}×${d.toLocaleString('en-US')}`).join(' · ')}
                       <span className={`ml-1 font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>= {fmt(cashCountSum(w.cashCount))}</span>
                     </div>
                   )}
