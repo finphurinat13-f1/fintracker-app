@@ -6308,7 +6308,6 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {walletData.filter(w=>filterType==='all'||(filterType==='cash-group'&&(w.type==='bank'||w.type==='cash'||w.type==='credit'))||(filterType===w.type)).map(w=>{
             const meta = TYPE_META[w.type] || { label:w.type, color:'#c9a94b' };
-            const trendUp = w.trendPct >= 0;
             return (
               <div key={w.id}
                 data-wallet-id={w.id}
@@ -6345,14 +6344,13 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                   {/* Balance + Trend */}
                   <div className="mb-3">
                     <p className={`text-xs mb-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>ยอดคงเหลือ</p>
+                    {/* The month-on-month arrow is gone. On a wallet it was
+                        mostly noise: moving your own money between accounts
+                        swings it wildly while nothing has been earned or
+                        spent, so a red −54.6% next to a balance was usually
+                        reporting a transfer as a loss. */}
                     <div className="flex items-baseline gap-2">
                       <p className={`text-2xl font-bold tracking-wider ${w.balance>=0?(dk?'text-white':'text-slate-800'):'text-rose-400'}`}>{fmtSigned(w.balance)}</p>
-                      {(w.trendLabel==='pnl' || w.prevBalance!==0)&&(
-                        <span className={`text-xs font-semibold flex items-center gap-0.5 ${trendUp?'text-emerald-400':'text-rose-400'}`}>
-                          {trendUp?'▲':'▼'}{Math.abs(w.trendPct).toFixed(1)}%
-                          {w.trendLabel==='pnl'&&<span className={`ml-0.5 font-normal ${dk?'text-slate-400':'text-slate-500'}`}>P&L</span>}
-                        </span>
-                      )}
                     </div>
                     {/* The dollar line is the same money in another currency,
                         so covering only the baht one left it on screen whole. */}
