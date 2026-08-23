@@ -386,7 +386,7 @@ const DonutChart = ({ data, theme, centerValue, hideAmt=false }) => {
   useEffect(() => {
     if (!ref.current||!data||!data.labels.length) return;
     if (ch.current) ch.current.destroy();
-    const displayCenter = hideAmt ? '******' : centerValue;
+    const displayCenter = hideAmt ? '฿ •••••' : centerValue;
     const centerPlugin = centerValue ? [{
       id:'centerText',
       beforeDraw(chart){
@@ -1115,7 +1115,7 @@ const useConfirm = (dk=false) => {
 };
 
 // ── DASHBOARD ──────────────────────────────────────────────
-const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets=[], user=null, debts=[], custodial=[], privacy=false }) => {
+const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets=[], user=null, debts=[], custodial=[], privacy=false, onTogglePrivacy }) => {
   const dk = theme==='dark';
   const [recentOpen, setRecentOpen] = useState(false);
   const now = new Date();
@@ -1126,8 +1126,12 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
   const savRate = income>0?((income-expense)/income*100):0;
 
   // ── Net Worth ──
-  const [hideAmt, setHideAmt] = useState(false);
-  const mask = v => hideAmt ? '฿ ******' : v;
+ // Was a second, page-local eye that masked only what this screen drew — so
+ // pressing it left the timeline table and both chart axes printing the same
+ // figures it had just hidden. One control, one meaning: this follows the
+ // header toggle, and the button below drives that instead of a private copy.
+ const hideAmt = privacy;
+  const mask = v => hideAmt ? '฿ •••••' : v;
   const usdRate = parseFloat(localStorage.getItem('ft-usdrate')||'35');
   // canonical net worth = every asset (incl. tags) + every wallet's cash (cash-asset dedup)
   const walletCashTotal = useMemo(()=>wallets.reduce((s,w)=>s+walletCash(w,txs,assets),0),[wallets,txs,assets]);
@@ -1306,7 +1310,7 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
               <div className="flex items-center gap-2 mb-2">
                 <div className={`text-xs font-medium uppercase tracking-widest ${dk?'text-slate-400':'text-slate-500'}`}>Net Worth · มูลค่าทรัพย์สินสุทธิ <span title="เงินสด + สินทรัพย์ทั้งหมด หักหนี้สิน = เงินที่เป็นของคุณจริงๆ (เงินที่ถือแทนคนอื่นแสดงแยกไว้ ไม่รวมในยอดนี้)" style={{cursor:'help',opacity:.7}}>ⓘ</span></div>
               </div>
-              <button data-hint="คลิกซ่อน/แสดงจำนวนเงิน" onClick={()=>setHideAmt(h=>!h)} className={`flex items-center gap-2 group cursor-pointer text-left`}>
+              <button data-hint="คลิกซ่อน/แสดงจำนวนเงิน" onClick={()=>onTogglePrivacy&&onTogglePrivacy()} className={`flex items-center gap-2 group cursor-pointer text-left`}>
                 <div className={`text-3xl font-bold tracking-wide ${dk?'text-white':'text-slate-800'}`}>
                   {mask(fmtNW(animNetWorth))}
                 </div>
@@ -1350,7 +1354,7 @@ const Dashboard = ({ txs, assets, theme, onEdit, onDelete, nwHistory=[], wallets
         <StatCard label="ยอดคงเหลือ"  val={mask(fmt(balance))}     sub={balance>=0?'✓ เป็นบวก':'⚠ ติดลบ'}  icon={<Ic n="wallet" s={15} cls="text-gold-300"/>} accent="bg-gold-500/15" extra="" valCls={dk?'tg-white':'text-slate-800'}/>
         <StatCard label="รายรับรวม"   val={mask(fmt(income))}      sub={`${txs.filter(t=>t.type==='income').length} รายการ`}  icon={<Ic n="up" s={15} cls="text-emerald-400"/>} accent="bg-emerald-500/15" extra={dk?'card-income-g':''} valCls={dk?'tg-emerald':'text-slate-800'}/>
         <StatCard label="รายจ่ายรวม"  val={mask(fmt(expense))}     sub={`${txs.filter(t=>t.type==='expense').length} รายการ`} icon={<Ic n="down" s={15} cls="text-rose-400"/>} accent="bg-rose-500/15" extra={dk?'card-expense-g':''} valCls={dk?'tg-red':'text-slate-800'}/>
-        <StatCard label="อัตราออม"    val={hideAmt?'**%':`${savRate.toFixed(1)}%`} sub={savRate>=20?'✓ ดีมาก':'↑ เพิ่มได้อีก'} icon={<Ic n="chart" s={15} cls="text-amber-400"/>} accent="bg-amber-500/15" valCls={dk?'tg-gold':'text-slate-800'}/>
+        <StatCard label="อัตราออม"    val={hideAmt?'••%':`${savRate.toFixed(1)}%`} sub={savRate>=20?'✓ ดีมาก':'↑ เพิ่มได้อีก'} icon={<Ic n="chart" s={15} cls="text-amber-400"/>} accent="bg-amber-500/15" valCls={dk?'tg-gold':'text-slate-800'}/>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -9108,7 +9112,7 @@ const App = () => {
             having none. So while a PIN is set and the figures are hidden,
             nothing renders until it is entered. */}
         {privacy && lockOn ? <LockedPanel dk={theme==='dark'} onUnlock={()=>setPinGate('unlock')}/> : (<>
-        {page==='dashboard'    && <Dashboard     txs={txs} assets={assets} theme={theme} onEdit={openEdit} onDelete={delOne} nwHistory={nwHistory} wallets={wallets} user={user} debts={debts} custodial={custodial} privacy={privacy}/>}
+        {page==='dashboard'    && <Dashboard     txs={txs} assets={assets} theme={theme} onEdit={openEdit} onDelete={delOne} nwHistory={nwHistory} wallets={wallets} user={user} debts={debts} custodial={custodial} privacy={privacy} onTogglePrivacy={togglePrivacy}/>}
         {page==='transactions' && <TxPage        txs={txs}    theme={theme} onEdit={openEdit} onAdd={()=>setModal({open:true,editData:null})} onDelete={delOne} onBulkDelete={delBulk} onExport={()=>exportCSV(txs)} wallets={wallets} assets={assets} onAddRecurring={openQuickRecur} onRecordRecurring={addRecur} onQuickEdit={quickEditTx} favKeys={favKeys}/>}
         {page==='assets'       && <AssetsPage    assets={assets} theme={theme} onEdit={editAsset} onDelete={delAsset} onAdd={()=>setAModal({open:true,editData:null})} onTransfer={()=>setUnifiedOpen({open:true,from:null,to:null})} onInvest={assetId=>setUnifiedOpen({open:true,from:null,to:typeof assetId==='number'?`a-${assetId}`:null})} onPriceUpdate={updatePrices} onQuickPrice={quickPriceEdit} onDCA={a=>setDcaModal({open:true,asset:a})} onAddAssetTx={addAssetTx} onDeleteAssetTx={delAssetTx} onTopUpAsset={topUpAsset} onDeleteMove={deleteAssetMove} onRenameMove={renameAssetMove} onAddItem={addAssetItem} onDelItem={delAssetItem} wallets={wallets} txs={txs}/>}
         {page==='budget'       && <BudgetPage    key={`budget-${dataKey}`}    txs={txs}    theme={theme} onEdit={openEdit} onRenameCategory={renameCategoryInTxs}/>}
