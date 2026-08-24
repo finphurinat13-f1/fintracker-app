@@ -890,7 +890,7 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[], c
             {rows.map(g=>{
               const clr = (ASSET_TYPES.find(t=>t.v===g.type)||ASSET_TYPES[4]).c;
               return (
-                <tr key={g.type} className={`border-t ${dk?'border-white/5':'border-slate-50'}`}>
+                <tr key={g.type} className={`border-t ${dk?'border-white/5':'border-slate-100'}`}>
                   {/* The share fill needs a visible track behind it or it is
                       not a bar. Without one it was drawn across a cell only as
                       wide as the word in it, so 35.8% of "Crypto" stopped
@@ -2562,7 +2562,7 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
                   {linked.map((a,i)=>{
                     const ti=typeInfo(a.type);
                     return (
-                      <div key={a.id} className={`flex items-center gap-3 px-4 py-3 border-b last:border-b-0 ${dk?(i%2===0?'border-white/5 bg-white/[0.01]':'border-white/5 bg-black/[0.06]'):(i%2===0?'border-slate-50 bg-white':'border-slate-50 bg-slate-50/50')}`}>
+                      <div key={a.id} className={`flex items-center gap-3 px-4 py-3 border-b last:border-b-0 ${dk?(i%2===0?'border-white/5 bg-white/[0.01]':'border-white/5 bg-black/[0.06]'):(i%2===0?'border-slate-100 bg-white':'border-slate-100 bg-slate-50/50')}`}>
                         <AssetIcon a={a} ti={ti} size="sm"/>
                         <div className="flex-1 min-w-0">
                           <div className={`text-sm font-semibold truncate ${dk?'text-white':'text-slate-700'}`}>{a.name}</div>
@@ -2598,7 +2598,7 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
                 const sel=picked.includes(a.id);
                 return (
                   <div key={a.id} onClick={()=>togglePick(a.id)}
-                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer border-b transition-colors ${dk?'border-white/5':'border-slate-50'} ${sel?(dk?'bg-gold-500/15':'bg-gold-50'):(dk?'hover:bg-white/5':'hover:bg-slate-50')}`}>
+                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer border-b transition-colors ${dk?'border-white/5':'border-slate-100'} ${sel?(dk?'bg-gold-500/15':'bg-gold-50'):(dk?'hover:bg-white/5':'hover:bg-slate-50')}`}>
                     <AssetIcon a={a} ti={ti} size="sm"/>
                     <div className="flex-1 min-w-0">
                       <div className={`text-sm font-semibold truncate ${dk?'text-white':'text-slate-700'}`}>{a.name}</div>
@@ -3650,7 +3650,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
                         <span className={`text-xs font-medium ${dk?'text-slate-400':'text-slate-500'}`}>รายการที่เกี่ยวข้อง ({investTxs.length+(a.items||[]).length})</span>
                       </button>
                       {expandedRelMap[a.id]&&(
-                        <div className={`px-3 pb-3 border-t ${dk?'border-white/5':'border-slate-50'}`}>
+                        <div className={`px-3 pb-3 border-t ${dk?'border-white/5':'border-slate-100'}`}>
                           <AssetRelBody a={a} investTxs={investTxs} dk={dk} onAddTx={onAddAssetTx} onDeleteTx={onDeleteAssetTx} onTopUp={opts=>onTopUpAsset(a.id,opts)} wallets={wallets} usdRate={usdRate} onDeleteMove={onDeleteMove} onRenameMove={onRenameMove} onAddItem={(n,v)=>onAddItem&&onAddItem(a.id,n,v)} onDelItem={iid=>onDelItem&&onDelItem(a.id,iid)}/>
                         </div>
                       )}
@@ -3720,7 +3720,16 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
                 }).sort((x,y)=>y.id-x.id);
                 return (
                   <React.Fragment key={a.id}>
-                  <tr className={`row-mod border-b transition-colors group ${dk?(i%2===0?'border-white/5 bg-white/[0.01] hover:bg-white/[0.05]':'border-white/5 bg-black/[0.08] hover:bg-white/[0.04]'):(i%2===0?'border-slate-50 bg-white hover:bg-slate-50':'border-slate-50 bg-slate-50/50 hover:bg-slate-100/60')}`}>
+                  {/* Light mode separates rows with the rule alone. It had both a
+                      rule and zebra striping, each turned down so far that
+                      neither worked — the stripe was slate-50/50 and the rule
+                      was slate-50, the same colour, so the "divider" was drawn
+                      in the shade it was meant to divide. Rows here run two
+                      lines deep, and banding that tall reads as blocks of
+                      colour rather than as grouping, so the rule is the one
+                      worth keeping. Dark mode keeps its striping: on near-black
+                      the bands are what carry across a wide row. */}
+                  <tr className={`row-mod border-b transition-colors group ${dk?(i%2===0?'border-white/5 bg-white/[0.01] hover:bg-white/[0.05]':'border-white/5 bg-black/[0.08] hover:bg-white/[0.04]'):'border-slate-100 bg-white hover:bg-slate-50'}`}>
                     <td className="px-4 py-3.5 whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
                         <AssetIcon a={a} ti={ti}/>
@@ -4308,7 +4317,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
                   <React.Fragment key={row.key}>
                     <tr
                       onClick={()=>view==='monthly'&&toggleMonth(row.key)}
-                      className={`border-b transition-colors ${view==='monthly'?'cursor-pointer':''} ${dk?'border-white/5 hover:bg-white/5':'border-slate-50 hover:bg-slate-50'}`}
+                      className={`border-b transition-colors ${view==='monthly'?'cursor-pointer':''} ${dk?'border-white/5 hover:bg-white/5':'border-slate-100 hover:bg-slate-50'}`}
                     >
                       <td className={`px-4 py-3.5 text-sm font-medium ${dk?'text-white':'text-slate-700'}`}>
                         <div className="flex items-center gap-2">
@@ -4334,7 +4343,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
                       {view==='yearly'&&<td className={`px-4 py-3.5 text-sm text-right ${dk?'text-slate-400':'text-slate-500'}`}>{row.months} เดือน</td>}
                     </tr>
                     {isOpen && days.map(day=>(
-                      <tr key={day.date} className={`border-b ${dk?'border-white/5 bg-white/[0.02]':'border-slate-50 bg-slate-50/60'}`}>
+                      <tr key={day.date} className={`border-b ${dk?'border-white/5 bg-white/[0.02]':'border-slate-100 bg-slate-50/60'}`}>
                         <td className={`pl-10 pr-4 py-2 text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{fmtDay(day.date)}</td>
                         <td className={`px-4 py-2 text-xs text-right ${day.income>0?'text-gold-400':dk?'text-slate-600':'text-slate-300'}`}>{day.income>0?'+'+fmt(day.income):'—'}</td>
                         <td className={`px-4 py-2 text-xs text-right ${day.expense>0?'text-rose-400':dk?'text-slate-600':'text-slate-300'}`}>{day.expense>0?'-'+fmt(day.expense):'—'}</td>
