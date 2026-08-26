@@ -134,19 +134,41 @@ const db   = firebase.firestore();
   }
   .btn-ghost:hover { border-color: rgba(232,118,58,0.55); background: rgba(232,118,58,0.06); }
 
-  /* ── Panel weave ─────────────────────────────────────────────────────────
-     The faint diagonal grid the reference runs behind its dark panels. At 2%
-     it is under the threshold of being seen as lines; what it does is stop a
-     large black panel from reading as a hole in the page. */
+  /* ── Panel surface ───────────────────────────────────────────────────────
+     One sweeping curve and a corner light, replacing the diagonal crosshatch
+     that was here. The crosshatch read as graph paper: a repeating geometric
+     grid, which is the one kind of ornament that competes with a table of
+     figures, because both are rows and columns of straight lines.
+
+     What replaces it is the treatment already on the wallet card face and the
+     page headers — a corner light and an arc struck from off-canvas, so only
+     the curve crosses the panel. Curves belong to nothing else on screen, so
+     they read as the surface catching light rather than as marks on it, and
+     the whole app now shares one visual language instead of three.
+
+     ::before is the light, ::after the arc. Both are drawn at the panel's own
+     border-radius so a rounded card keeps its shape.
+
+     A note for later: the arc is a radial-gradient ring rather than an SVG,
+     because ::after cannot hold markup and a background-image can be given the
+     card's own radius for free. */
   .card-solid { position: relative; }
   .card-solid::before {
     content: ""; position: absolute; inset: 0; pointer-events: none;
     border-radius: inherit;
-    background-image:
-      repeating-linear-gradient(45deg, rgba(212,175,69,0.02) 0 1px, transparent 1px 34px),
-      repeating-linear-gradient(-45deg, rgba(212,175,69,0.02) 0 1px, transparent 1px 34px);
+    background:
+      radial-gradient(ellipse 62% 90% at 0% 0%, rgba(232,118,58,0.045) 0%, transparent 60%),
+      radial-gradient(ellipse 55% 80% at 100% 100%, rgba(212,175,69,0.03) 0%, transparent 58%);
   }
-  .card-solid > * { position: relative; }
+  .card-solid::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    border-radius: inherit; overflow: hidden;
+    background: radial-gradient(circle 340px at 118% -42%,
+      transparent 0 238px,
+      rgba(212,175,69,0.10) 238px 239.4px,
+      transparent 239.4px);
+  }
+  .card-solid > * { position: relative; z-index: 1; }
 
   /* ── Type scale ──────────────────────────────────────────────────────────
      The sizes in use were 9, 10, 11, 12, 14, 16, 18, 20, 24, 30 — four of them
