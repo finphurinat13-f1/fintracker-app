@@ -1001,7 +1001,9 @@ const BudgetMetricCard = ({ cat, spent, budget, dk, onEdit }) => {
   // The warn orange came down with the red beside it. Leaving #f97316 neon in
   // the same three-way conditional whose other branch just got muted would have
   // made "nearly over" shout louder than "over".
-  const barColor = over ? '#c9726a' : warn ? '#c98f5a' : catClr(cat);
+  // Same three states as the budget page, so a category reads the same colour
+  // wherever it appears.
+  const barColor = over ? '#d4574a' : warn ? '#d4af45' : catClr(cat);
   return (
     <div className={`relative overflow-hidden rounded-2xl border fade-up ${dk?'card-solid':'bg-white border-slate-200 shadow-sm'}`}>
       <div className="p-4 pb-12">
@@ -4950,10 +4952,10 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
             <button onClick={()=>!isCurM&&setViewM(m=>shiftMonth(m,1))} disabled={isCurM} title="เดือนถัดไป"
               className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-colors ${isCurM?'opacity-25 cursor-default border-transparent':(dk?'border-white/15 text-slate-300 hover:bg-gold-500/15 hover:text-gold-300 hover:border-gold-400/50':'border-slate-200 text-slate-600 hover:bg-gold-50 hover:text-gold-600 hover:border-gold-300')}`}><Ic n="chevR" s={16}/></button>
           </div>
-          <span className="text-xs font-semibold" style={{color:totPct>=100?'#c9726a':totPct>=80?'#c98f5a':'#7aab8a'}}>{totPct.toFixed(1)}%</span>
+          <span className="text-xs font-semibold" style={{color:totPct>=100?'#d4574a':totPct>=80?'#d4af45':'#7aab8a'}}>{totPct.toFixed(1)}%</span>
         </div>
         <div className={`w-full h-3 rounded-full ${dk?'bg-white/5':'bg-slate-100'} overflow-hidden`}>
-          <div className="h-full rounded-full transition-all duration-700" style={{width:`${Math.min(totPct,100)}%`,background:totPct>=100?'#c9726a':totPct>=80?'#c98f5a':'#7aab8a'}}/>
+          <div className="h-full rounded-full transition-all duration-700" style={{width:`${Math.min(totPct,100)}%`,background:totPct>=100?'#d4574a':totPct>=80?'#d4af45':'#7aab8a'}}/>
         </div>
         <div className={`mt-1.5 text-xs ${sub}`}>{fmt(totSpent)} / {fmt(totBudget)}</div>
       </div>
@@ -4994,9 +4996,26 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
             const s=spent[cat]||0, p=bgt>0?Math.min(s/bgt*100,100):0;
             const rawPct=bgt>0?s/bgt*100:0;
             const over=s>bgt, warn=rawPct>=80&&!over;
-            const clr=over?'#c9726a':rawPct>=80?'#c98f5a':rawPct>=60?'#c9a84c':'#7aab8a';
-            const borderClr=over?(dk?'border-[#c9726a]/40':'border-[#e8a89e]/60'):warn?(dk?'border-[#c98f5a]/40':'border-[#f0c99a]/60'):'';
-            const bgTint=over?(dk?'bg-[#c9726a]/[0.06]':'bg-[#fdf0ee]'):warn?(dk?'bg-[#c98f5a]/[0.05]':'bg-[#fdf7ee]'):'';
+            // Three states, and each one visibly a different colour.
+            //
+            // There were four: #c9726a, #c98f5a, #c9a84c and #7aab8a. The first
+            // three share a hue and a lightness — they were chosen to harmonise,
+            // which is right for a figure sitting in a sentence and wrong for
+            // the only thing distinguishing "over budget" from "fine". On screen
+            // a category at 134% and one at 82% drew the same tan bar.
+            //
+            // Muting gain and loss was about colour floating in front of the
+            // page. This is the opposite failure: a signal nobody can read is
+            // not restrained, it is broken. So the steps are pulled apart — sage,
+            // then gold, then a red with enough blood in it to stop a scroll —
+            // and the 60% tier goes, because a fourth band nobody could name was
+            // what forced the other three so close together.
+            const clr = over ? '#d4574a' : rawPct>=80 ? '#d4af45' : '#7aab8a';
+            // Border and tint follow the same three colours, so a card that is
+            // over reads as over from its edge as well as its bar rather than
+            // from a fourth shade that agreed with neither.
+            const borderClr=over?(dk?'border-[#d4574a]/45':'border-[#e8a89e]/60'):warn?(dk?'border-[#d4af45]/40':'border-[#f0c99a]/60'):'';
+            const bgTint=over?(dk?'bg-[#d4574a]/[0.07]':'bg-[#fdf0ee]'):warn?(dk?'bg-[#d4af45]/[0.05]':'bg-[#fdf7ee]'):'';
             const isExp=expandedCat===cat;
             return (
               <div key={cat} className={`rounded-xl border transition-all overflow-hidden
@@ -5082,7 +5101,10 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                         )}
                       </div>
                       {/* Equal tracks, one per card, so the column reads down. */}
-                      <div className={`h-1.5 rounded-full overflow-hidden mb-1.5 ${dk?'bg-white/10':'bg-slate-100'}`}>
+                      {/* 8px, not 6. The bar carries the state on a card with
+                          nothing else large on it, and at 6px a colour has too
+                          little area to register before the eye moves on. */}
+                      <div className={`h-2 rounded-full overflow-hidden mb-1.5 ${dk?'bg-white/10':'bg-slate-100'}`}>
                         <div className="h-full rounded-full transition-all duration-500" style={{width:`${p}%`, background:clr}}/>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
