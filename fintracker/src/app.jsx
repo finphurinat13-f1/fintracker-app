@@ -4699,7 +4699,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
     window.dispatchEvent(new Event('ft-sync'));
   },[irregularCats]);
   const isIrregular = (cat) => !!irregularCats[cat];
-  const toggleIrregular = (cat) => setIrregularCats(m => { const nm={...m}; if(nm[cat]) delete nm[cat]; else nm[cat]=true; return nm; });
+  const setIrregular = (cat) => setIrregularCats(m => { const nm={...m}; if(nm[cat]) delete nm[cat]; else nm[cat]=true; return nm; });
 
   const [editing, setEditing] = useState(null);
   const [expandedCat, setExpandedCat] = useState(null);
@@ -4723,6 +4723,22 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
     setBudgets(b => ({...b, [n]: a}));
     if (newIrregular) setIrregularCats(m => ({...m, [n]: true}));
     resetAdd();
+  };
+
+  // Asks first. This button sits between two others on a small card and moves
+  // the category to a different section of the page the instant it is pressed —
+  // so a misclick did not just do the wrong thing, it made the card vanish from
+  // where the eye was looking, which reads as having deleted something. The
+  // action is trivially reversible; being unable to tell what happened is not.
+  const toggleIrregular = (cat) => {
+    const toIrregular = !isIrregular(cat);
+    askConfirm(
+      toIrregular ? 'ย้ายไปหมวดไม่ประจำ?' : 'ย้ายกลับไปหมวดประจำ?',
+      toIrregular
+        ? `ย้าย "${cat}" ไปกลุ่ม "ไม่ประจำ (นานๆ ที)" ใช่ไหมคะ?\nยอดที่บันทึกไว้ไม่เปลี่ยน เปลี่ยนแค่กลุ่มที่แสดงผลค่ะ`
+        : `ย้าย "${cat}" กลับไปกลุ่ม "ประจำ (รายวัน)" ใช่ไหมคะ?\nยอดที่บันทึกไว้ไม่เปลี่ยน เปลี่ยนแค่กลุ่มที่แสดงผลค่ะ`,
+      () => setIrregular(cat)
+    );
   };
 
   const deleteCat = (cat) => {
