@@ -4384,22 +4384,22 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
               <span className={`text-sm font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>+{fmt(divYear)}</span>
             </div>
           </div>
+          {/* No bars. A bar earns its place when the figures are far apart on
+              screen or there are enough rows that the eye has to sweep them —
+              here there are two or three, the amounts sit at the end of each
+              line, and one holding paying ฿7,927 against another paying ฿60 is
+              not a comparison that needs drawing. The bars were saying what the
+              numbers beside them had already said. */}
           {divByAsset.length>0 && (
-            <div className="mt-3 space-y-1.5">
-              {divByAsset.slice(0,6).map((d,i)=>{
-                const pct = divTotal>0 ? d.amount/divTotal*100 : 0;
-                return (
-                  <div key={i} className="flex items-center gap-2.5 text-xs">
-                    <span className={`truncate flex-shrink-0 ${dk?'text-slate-300':'text-slate-600'}`} style={{maxWidth:'40%'}}>
-                      {d.name}<span className={`ml-1 ${dk?'text-slate-500':'text-slate-400'}`}>×{d.count}</span>
-                    </span>
-                    <span className={`flex-1 h-1 rounded-full overflow-hidden ${dk?'bg-white/10':'bg-slate-100'}`}>
-                      <span className="block h-full rounded-full bg-teal-400 transition-all" style={{width:`${pct}%`}}/>
-                    </span>
-                    <span className="font-semibold text-teal-400 whitespace-nowrap tabular-nums">+{fmt(d.amount)}</span>
-                  </div>
-                );
-              })}
+            <div className="mt-3 space-y-1">
+              {divByAsset.slice(0,6).map((d,i)=>(
+                <div key={i} className="flex items-baseline justify-between gap-3 text-xs">
+                  <span className={`truncate ${dk?'text-slate-300':'text-slate-600'}`}>
+                    {d.name}<span className={`ml-1 ${dk?'text-slate-500':'text-slate-400'}`}>×{d.count}</span>
+                  </span>
+                  <span className="font-semibold text-teal-400 whitespace-nowrap tabular-nums">+{fmt(d.amount)}</span>
+                </div>
+              ))}
             </div>
           )}
           {/* Every payment, one row each. Folded away by default — the totals are
