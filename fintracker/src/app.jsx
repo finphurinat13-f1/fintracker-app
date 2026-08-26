@@ -6180,6 +6180,19 @@ const treemapLayout = (items, x, y, w, h, out=[]) => {
 
 const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
   const dk = theme==='dark';
+  // The panel's real size in pixels, so a tile can be asked whether it has room
+  // for a line of text rather than guessed at from its share of the whole.
+  const wrapRef = useRef(null);
+  const [box, setBox] = useState({w:0,h:0});
+  useEffect(()=>{
+    if(!wrapRef.current) return;
+    const ro = new ResizeObserver(es=>{
+      const r = es[0].contentRect;
+      setBox(p => (Math.abs(p.w-r.width)>1 || Math.abs(p.h-r.height)>1) ? {w:r.width,h:r.height} : p);
+    });
+    ro.observe(wrapRef.current);
+    return ()=>ro.disconnect();
+  },[]);
   const boxes = useMemo(()=>{
     const items = assets
       .filter(a=>a.type!=='cash')
@@ -6210,40 +6223,48 @@ const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
   };
 
   return (
-    // Taller, and closer to square. The small holdings were unreadable, but
-    // not because their share was wrong — a ฿1.5M position genuinely is 3.7
-    // times a ฿403K one and has to be drawn that way, or the picture stops
-    // telling the truth. They were unreadable because the panel was 16:9 and
-    // 220px tall, which left the tail with too few actual pixels to hold two
-    // lines of type. A 3:2 box at 320px is about 45% more area, shared out in
-    // the same proportions, and the split also produces squarer tiles when the
-    // container it cuts is itself squarer.
-    <div className="relative w-full" style={{aspectRatio:'3/2', minHeight:'320px'}}>
+    // 3:2 was the right shape while this shared a row; at full width it made a
+    // 660px block that pushed everything below it off the screen. A panel does
+    // not need to be large to be legible — it needs enough pixels for the
+    // smallest tile, which is a floor, not a target.
+    //
+    // 3:1 lands around 330px on a desktop, which still gives the tail room for
+    // its figures. The bounds matter more than the ratio: min so a phone does
+    // not collapse it to a strip, max so a wide monitor does not turn it back
+    // into a wall.
+    <div ref={wrapRef} className="relative w-full" style={{aspectRatio:'3/1', minHeight:'260px', maxHeight:'360px'}}>
       {boxes.map(b=>{
         // A box under roughly 7% of a side has no room for two lines of type;
         // it keeps its colour and gives its name to the tooltip instead of
         // printing a truncated word nobody can read.
-        const roomy = b.w>11 && b.h>13;
-        const tiny  = b.w<6  || b.h<7.5;
+        // Decided in pixels, measured, not in percentages. A tile at 10% of a
+        // 660px panel had 66px of height; the same 10% of a 330px panel has 33,
+        // and a percentage threshold cannot tell the difference — which is why
+        // tiles that used to be labelled went blank the moment the panel got
+        // shorter. Each line is shown when there is actually room to draw it.
+        const pxW = box.w * b.w / 100, pxH = box.h * b.h / 100;
+        const showName = pxW >= 42 && pxH >= 24;
+        const showVal  = pxW >= 58 && pxH >= 40;
+        const showPct  = pxW >= 58 && pxH >= 54;
         return (
           <div key={b.id}
             title={`${b.name} · ${hide?'฿ •••••':fmt(b.val)} · ${b.pct>=0?'+':''}${b.pct.toFixed(1)}%`}
-            className="absolute overflow-hidden rounded-md flex flex-col justify-center px-1.5"
+            className="absolute overflow-hidden rounded-md flex flex-col items-center justify-center text-center px-1"
             style={{
               left:`${b.x}%`, top:`${b.y}%`, width:`${b.w}%`, height:`${b.h}%`,
               background: fill(b.pct),
               border:`1px solid ${dk?'rgba(0,0,0,0.35)':'rgba(255,255,255,0.6)'}`,
             }}>
-            {!tiny && (
-              <div className={`text-[10px] font-bold leading-tight truncate ${dk?'text-white':'text-slate-800'}`}>{b.name}</div>
+            {showName && (
+              <div className={`text-[10px] font-bold leading-tight truncate max-w-full ${dk?'text-white':'text-slate-800'}`}>{b.name}</div>
             )}
-            {roomy && (
-              <>
-                <div className={`text-[9px] leading-tight truncate tabular-nums ${dk?'text-slate-300':'text-slate-600'}`}>{hide?'฿ •••••':fmt(b.val)}</div>
-                <div className={`text-[9px] font-semibold leading-tight tabular-nums ${b.pct>=0?'text-emerald-300':'text-rose-300'}`}>
-                  {b.pct>=0?'+':''}{b.pct.toFixed(1)}%
-                </div>
-              </>
+            {showVal && (
+              <div className={`text-[9px] leading-tight truncate max-w-full tabular-nums ${dk?'text-slate-300':'text-slate-600'}`}>{hide?'฿ •••••':fmt(b.val)}</div>
+            )}
+            {showPct && (
+              <div className={`text-[9px] font-semibold leading-tight tabular-nums ${b.pct>=0?'text-emerald-300':'text-rose-300'}`}>
+                {b.pct>=0?'+':''}{b.pct.toFixed(1)}%
+              </div>
             )}
           </div>
         );
