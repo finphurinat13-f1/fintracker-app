@@ -6370,20 +6370,18 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                       the top of the page already carries the split, and here it
                       was a coloured line per card competing with the balance
                       above it. */}
-                  {/* Month stats */}
-                  <div className={`flex gap-3 pt-3 border-t ${dk?'border-white/8':'border-slate-100'}`}>
-                    <div className="flex-1">
-                      <p className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>รายรับเดือนนี้</p>
-                      <p className="text-xs font-semibold text-emerald-400">+{fmt(w.mInc)}</p>
-                    </div>
-                    <div className="flex-1">
-                      <p className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>รายจ่ายเดือนนี้</p>
-                      <p className="text-xs font-semibold text-rose-400">-{fmt(w.mExp)}</p>
-                    </div>
-                    <div>
-                      <p className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>รายการ</p>
-                      <p className={`text-xs font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>{w.txCount}</p>
-                    </div>
+                  {/* Month stats, on one line. This was three columns of label
+                      over value — six lines to say what fits in one, on a card
+                      whose point is the balance above it. "เดือนนี้" says once
+                      what each of the three labels was repeating, and the two
+                      figures are already signed and coloured, so naming them
+                      รายรับ and รายจ่าย was telling the reader what the plus and
+                      the minus had told them. */}
+                  <div className={`flex items-baseline flex-wrap gap-x-2.5 gap-y-1 pt-2.5 border-t text-xs ${dk?'border-white/8':'border-slate-100'}`}>
+                    <span className={dk?'text-slate-400':'text-slate-500'}>เดือนนี้</span>
+                    <span className="font-semibold text-emerald-400">+{fmt(w.mInc)}</span>
+                    <span className="font-semibold text-rose-400">-{fmt(w.mExp)}</span>
+                    <span className={dk?'text-slate-500':'text-slate-400'}>· {w.txCount} รายการ</span>
                   </div>
                   {/* Transactions (collapsible, month-by-month) */}
                   {w.allTxs.length>0&&(()=>{
