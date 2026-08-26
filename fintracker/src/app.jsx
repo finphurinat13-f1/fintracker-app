@@ -1621,6 +1621,21 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
         </div>
       </div>
 
+      {/* The two panels that answer questions the charts above cannot: when the
+          money goes out, and which holding is losing it. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className={card + ' p-5'}>
+          <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>รายจ่ายรายวัน</h3>
+          <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>16 สัปดาห์ล่าสุด · ยิ่งสว่างยิ่งใช้เยอะ</p>
+          <SpendHeatmap txs={txs} theme={theme} hide={hideAmt||privacy}/>
+        </div>
+        <div className={card + ' p-5'}>
+          <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>แผนผังพอร์ต</h3>
+          <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>ขนาด = มูลค่า · สี = กำไร/ขาดทุน</p>
+          <PortfolioTreemap assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy}/>
+        </div>
+      </div>
+
       {/* The last-10 transactions list used to sit here, collapsed, above the
           P/L card. The transactions page is the same list without the cap and
           with search, filters and bulk select, so the dashboard copy could only
@@ -6127,6 +6142,193 @@ const UnifiedTransferModal = ({open, onClose, onSave, wallets=[], assets=[], txs
 };
 
 // ── WALLET PAGE ──────────────────────────────────────────────
+// ── SPENDING HEATMAP ───────────────────────────────────────
+// One cell per day, brighter for more spent, laid out as weeks down and across
+// the way a contribution graph is. It answers a question none of the other
+// charts can: not how much went out, but *when*. A monthly bar chart flattens
+// four weeks into one number and the category donut says nothing about time, so
+// a habit — every Friday, or the days after payday — was invisible in an app
+// built to find exactly that sort of thing.
+//
+// Sixteen weeks because that is about a season: long enough for a pattern to
+// repeat several times, short enough that a cell stays big enough to point at.
+const SpendHeatmap = ({ txs, theme, hide=false, weeks=16 }) => {
+  const dk = theme==='dark';
+  const { cells, max, marks } = useMemo(()=>{
+    const byDay = {};
+    txs.forEach(t=>{ if(t.type==='expense' && t.date) byDay[t.date] = (byDay[t.date]||0) + Math.abs(t.amount); });
+    const today = new Date(); today.setHours(23,59,59,999);
+    // The grid ends on the Sunday of the current week, so today's column is the
+    // last one and the week reads left to right the way a calendar does.
+    const end = new Date(today);
+    end.setDate(end.getDate() + (6 - ((end.getDay()+6)%7)));
+    const n = weeks*7;
+    const start = new Date(end); start.setDate(start.getDate() - (n-1));
+    const arr = [];
+    for(let i=0;i<n;i++){
+      const d = new Date(start); d.setDate(start.getDate()+i);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      arr.push({ key, d, v: byDay[key]||0, future: d>today });
+    }
+    // Scaled to the busiest day rather than to a fixed amount, so the picture
+    // reads the same whether the months shown are big or small.
+    const mx = Math.max(...arr.map(c=>c.v), 1);
+    const mk = [];
+    for(let w=0; w<weeks; w++){
+      const first = arr[w*7];
+      // A column is labelled when its first day falls in the opening week of a
+      // month — otherwise every column would want a label.
+      if(first && first.d.getDate()<=7) mk.push({ w, label: MONTHS_TH[first.d.getMonth()] });
+    }
+    return { cells:arr, max:mx, marks:mk };
+  },[txs,weeks]);
+
+  // Four steps, not a continuous scale: the eye cannot rank forty shades, and
+  // banding is what lets "a heavy day" be recognised rather than measured.
+  const shade = v => {
+    if(v<=0) return null;
+    const r = v/max;
+    return r>0.66 ? GOLD_RAMP[9] : r>0.33 ? GOLD_RAMP[7] : r>0.12 ? GOLD_RAMP[5] : GOLD_RAMP[3];
+  };
+  const empty = dk ? 'rgba(255,255,255,0.05)' : '#eceae6';
+  const DOW = ['จ','','พ','','ศ','','อา'];
+
+  return (
+    <div className="overflow-x-auto">
+      <div className="inline-flex flex-col gap-1 min-w-full">
+        <div className="flex gap-[3px] pl-6">
+          {Array.from({length:weeks},(_,w)=>{
+            const m = marks.find(x=>x.w===w);
+            return <div key={w} className={`w-3 text-[9px] ${dk?'text-slate-500':'text-slate-400'}`}>{m?m.label:''}</div>;
+          })}
+        </div>
+        <div className="flex gap-[3px]">
+          <div className="flex flex-col gap-[3px] w-6">
+            {DOW.map((d,i)=><div key={i} className={`h-3 text-[9px] leading-3 ${dk?'text-slate-500':'text-slate-400'}`}>{d}</div>)}
+          </div>
+          {Array.from({length:weeks},(_,w)=>(
+            <div key={w} className="flex flex-col gap-[3px]">
+              {Array.from({length:7},(_,r)=>{
+                const c = cells[w*7+r];
+                if(!c) return <div key={r} className="w-3 h-3"/>;
+                const bg = c.future ? 'transparent' : (shade(c.v) || empty);
+                return (
+                  <div key={r} className="w-3 h-3 rounded-[3px]"
+                    style={{background:bg, outline: c.future?'none':undefined}}
+                    title={c.future ? '' : `${c.d.getDate()} ${MONTHS_TH[c.d.getMonth()]} · ${hide?'฿ •••••':fmt(c.v)}`}/>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        <div className={`flex items-center gap-1.5 mt-1 pl-6 text-[10px] ${dk?'text-slate-500':'text-slate-400'}`}>
+          <span>น้อย</span>
+          <span className="w-3 h-3 rounded-[3px]" style={{background:empty}}/>
+          {[3,5,7,9].map(i=><span key={i} className="w-3 h-3 rounded-[3px]" style={{background:GOLD_RAMP[i]}}/>)}
+          <span>มาก</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── PORTFOLIO TREEMAP ──────────────────────────────────────
+// Every holding as a rectangle: area is what it is worth, colour is whether it
+// is up or down. A donut can only carry the first of those, so answering "which
+// of my big positions is losing money" meant reading the donut for size and
+// then the table for P/L and holding both in your head.
+//
+// Laid out by recursive binary split — the list is halved by value at each step
+// and the box is cut along its longer side. It is not a squarified treemap, but
+// it keeps rectangles reasonably square without the iteration that algorithm
+// needs, and at twenty or thirty holdings the difference is not visible.
+const treemapLayout = (items, x, y, w, h, out=[]) => {
+  if(!items.length) return out;
+  if(items.length===1){ out.push({...items[0], x, y, w, h}); return out; }
+  const total = items.reduce((s,i)=>s+i.val,0);
+  let acc = 0, cut = 1;
+  // Split where the running total first passes half — the closest the halves
+  // can get to equal without reordering, which would scramble the ranking.
+  for(let i=0;i<items.length;i++){ acc += items[i].val; if(acc >= total/2){ cut = i+1; break; } }
+  cut = Math.min(Math.max(cut,1), items.length-1);
+  const left = items.slice(0,cut), right = items.slice(cut);
+  const ratio = left.reduce((s,i)=>s+i.val,0) / total;
+  if(w >= h){
+    treemapLayout(left,  x,          y, w*ratio,     h, out);
+    treemapLayout(right, x+w*ratio,  y, w*(1-ratio), h, out);
+  } else {
+    treemapLayout(left,  x, y,          w, h*ratio,     out);
+    treemapLayout(right, x, y+h*ratio,  w, h*(1-ratio), out);
+  }
+  return out;
+};
+
+const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
+  const dk = theme==='dark';
+  const boxes = useMemo(()=>{
+    const items = assets
+      .filter(a=>a.type!=='cash')
+      .map(a=>{
+        const mult = a.currency==='USD' ? usdRate : 1;
+        const {taggedIn, taggedOut} = assetTagged(txs, a.id);
+        const val  = (a.qty*a.currentPrice + taggedIn - taggedOut) * mult;
+        const cost = (a.qty*a.avgCost) * mult;
+        return { id:a.id, name:a.ticker||a.name, val, pl:val-cost,
+                 pct: cost>0 ? (val-cost)/cost*100 : 0 };
+      })
+      .filter(i=>i.val>0)
+      .sort((a,b)=>b.val-a.val);
+    if(!items.length) return [];
+    return treemapLayout(items, 0, 0, 100, 100);
+  },[assets,txs,usdRate]);
+
+  if(!boxes.length) return null;
+
+  // Colour says direction and strength, not category: a flat sage or terracotta
+  // for a small move, deepening as the move gets larger, so a heavy loss is
+  // findable without reading a single figure.
+  const fill = pct => {
+    const m = Math.min(Math.abs(pct)/30, 1);          // 30% counts as full
+    return pct >= 0
+      ? `rgba(122,171,138,${0.18 + m*0.55})`
+      : `rgba(212,87,74,${0.18 + m*0.55})`;
+  };
+
+  return (
+    <div className="relative w-full" style={{aspectRatio:'16/9', minHeight:'220px'}}>
+      {boxes.map(b=>{
+        // A box under roughly 7% of a side has no room for two lines of type;
+        // it keeps its colour and gives its name to the tooltip instead of
+        // printing a truncated word nobody can read.
+        const roomy = b.w>13 && b.h>16;
+        const tiny  = b.w<7  || b.h<9;
+        return (
+          <div key={b.id}
+            title={`${b.name} · ${hide?'฿ •••••':fmt(b.val)} · ${b.pct>=0?'+':''}${b.pct.toFixed(1)}%`}
+            className="absolute overflow-hidden rounded-md flex flex-col justify-center px-1.5"
+            style={{
+              left:`${b.x}%`, top:`${b.y}%`, width:`${b.w}%`, height:`${b.h}%`,
+              background: fill(b.pct),
+              border:`1px solid ${dk?'rgba(0,0,0,0.35)':'rgba(255,255,255,0.6)'}`,
+            }}>
+            {!tiny && (
+              <div className={`text-[10px] font-bold leading-tight truncate ${dk?'text-white':'text-slate-800'}`}>{b.name}</div>
+            )}
+            {roomy && (
+              <>
+                <div className={`text-[9px] leading-tight truncate tabular-nums ${dk?'text-slate-300':'text-slate-600'}`}>{hide?'฿ •••••':fmt(b.val)}</div>
+                <div className={`text-[9px] font-semibold leading-tight tabular-nums ${b.pct>=0?'text-emerald-300':'text-rose-300'}`}>
+                  {b.pct>=0?'+':''}{b.pct.toFixed(1)}%
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 // ── HERO SPARKLINE ─────────────────────────────────────────
 // Net worth over time, drawn full-bleed behind the headline figure. It is the
 // history the app already records for its own snapshots, so nothing new is
