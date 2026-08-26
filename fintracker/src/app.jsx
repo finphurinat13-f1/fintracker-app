@@ -1550,14 +1550,26 @@ const MonthGroup = ({ month, txs, dk, defaultOpen=false, sel, toggleSel, onEdit,
   return (
     <div className={`border-b last:border-0 ${dk?'border-white/5':'border-slate-100'}`}>
       {/* Parent summary row */}
+      {/* The header was white at 4% while the rows under it were black at 10% —
+          a few percent apart on either side of the card, so neither won and the
+          month line sank into the list it was supposed to head.
+
+          It is lifted to 9% and warmed, which puts it in the same world as the
+          gold rather than reading as grey laid over black, and a rule along the
+          top marks where one month ends and the next begins. Not orange: there
+          are six of these on a page, and an accent spent six times over stops
+          meaning "this one". Orange appears on one edge of the open month only,
+          which is the single thing here worth pointing at. */}
       <div onClick={()=>setOpen(o=>!o)}
-        className={`flex items-center gap-3 px-4 py-4 cursor-pointer select-none transition-colors ${dk?(open?'bg-white/[0.04]':'bg-white/[0.02] hover:bg-white/[0.04]'):(open?'bg-slate-50':'hover:bg-slate-50')}`}>
-        <div className={`flex-shrink-0 transition-transform duration-200 ${dk?'text-slate-400':'text-slate-500'}`}
+        className={`relative flex items-center gap-3 px-4 py-4 cursor-pointer select-none transition-colors ${dk?'border-t border-white/10':(open?'bg-slate-100 border-t border-slate-200':'border-t border-slate-200 hover:bg-slate-50')}`}
+        style={dk?{background:open?'rgba(226,214,186,0.09)':'rgba(226,214,186,0.055)'}:undefined}>
+        {open&&<span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{background:'#e8763a'}}/>}
+        <div className={`flex-shrink-0 transition-transform duration-200 ${open?'text-orange-400':(dk?'text-slate-400':'text-slate-500')}`}
           style={{transform:open?'rotate(90deg)':'rotate(0deg)'}}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
         <div className="flex-1 min-w-0">
-          <span className={`text-sm font-bold ${dk?'text-white':'text-slate-700'}`}>{monthLabel}</span>
+          <span className={`text-base font-bold ${dk?'text-white':'text-slate-800'}`}>{monthLabel}</span>
           <span className={`ml-2 text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{txs.length} รายการ</span>
           {income>0&&<span className="hidden md:inline ml-3 text-xs"><span className={`mr-1 ${dk?'text-slate-400':'text-slate-500'}`}>รับ</span><span className="font-medium text-gold-400 tabular-nums">+{fmt(income)}</span></span>}
           {expense>0&&<span className="hidden md:inline ml-2 text-xs"><span className={`mr-1 ${dk?'text-slate-400':'text-slate-500'}`}>จ่าย</span><span className="font-medium text-rose-400 tabular-nums">-{fmt(expense)}</span></span>}
@@ -5989,14 +6001,39 @@ const PageHeader = ({ lead, accent, sub, theme, right=null }) => {
   // is. 23px still reads as the page title against the 14px card headings under
   // it, which is all it needs to do.
   return (
-    <div className="flex items-end justify-between gap-4 flex-wrap mb-5">
-      <div className="min-w-0">
-        <h1 className={`text-xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`} style={{textWrap:'balance'}}>
-          {lead} <span className="text-orange-400">{accent}</span>
-        </h1>
-        {sub && <p className={`text-xs mt-1 ${dk?'text-slate-400':'text-slate-500'}`}>{sub}</p>}
+    <div className="relative overflow-hidden rounded-2xl px-5 py-5 -mx-1 mb-5">
+      {/* The depth the net worth hero has, given to every page. Not the same
+          device though: that line is real data — net worth month by month — and
+          no other page has a series behind it. Repeating the shape with nothing
+          under it would draw a chart that looks like it means something and
+          does not, which is worse than a flat header.
+
+          These are the arcs from the wallet card face instead: struck from
+          off-canvas so only the curve crosses the header, obviously ornament
+          rather than measurement. Dark only — on the light ground the same
+          curves read as a smudge rather than as light falling across a
+          surface. */}
+      {dk && (
+        <>
+          <div className="absolute inset-0 pointer-events-none" style={{
+            background:'radial-gradient(ellipse 80% 130% at 12% 0%, rgba(232,118,58,0.07) 0%, transparent 62%),'
+                      +'radial-gradient(ellipse 60% 120% at 88% 100%, rgba(212,175,69,0.05) 0%, transparent 58%)',
+          }}/>
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 90" preserveAspectRatio="none" aria-hidden="true">
+            <circle cx="330" cy="-95" r="150" fill="none" stroke="#d4af45" strokeWidth="0.7" opacity="0.22" vectorEffect="non-scaling-stroke"/>
+            <circle cx="378" cy="-40" r="150" fill="none" stroke="#e8763a" strokeWidth="0.7" opacity="0.14" vectorEffect="non-scaling-stroke"/>
+          </svg>
+        </>
+      )}
+      <div className="relative flex items-end justify-between gap-4 flex-wrap">
+        <div className="min-w-0">
+          <h1 className={`text-xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`} style={{textWrap:'balance'}}>
+            {lead} <span className="text-orange-400">{accent}</span>
+          </h1>
+          {sub && <p className={`text-xs mt-1 ${dk?'text-slate-400':'text-slate-500'}`}>{sub}</p>}
+        </div>
+        {right && <div className="flex items-center gap-2 flex-wrap">{right}</div>}
       </div>
-      {right && <div className="flex items-center gap-2 flex-wrap">{right}</div>}
     </div>
   );
 };
