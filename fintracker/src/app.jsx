@@ -8,9 +8,13 @@ const { useState, useEffect, useRef, useMemo, useCallback } = React;
 // Animate a number from its previous value to the new one (easeOutCubic).
 // Honors prefers-reduced-motion by snapping instantly.
 const prefersReducedMotion = () => typeof matchMedia!=='undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-const useCountUp = (value, dur=650) => {
-  const [n,setN] = useState(value);
-  const ref = useRef(value);
+// `fromZero` makes the figure count up on first paint rather than only when it
+// later changes. It was seeded with its own value, so the animation existed but
+// nobody ever saw it: net worth is settled by the time the page renders and
+// only moves again when a transaction is edited.
+const useCountUp = (value, dur=650, fromZero=false) => {
+  const [n,setN] = useState(fromZero ? 0 : value);
+  const ref = useRef(fromZero ? 0 : value);
   useEffect(()=>{
     const from=ref.current, to=value;
     if(from===to) return;
@@ -1245,7 +1249,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
   // เงินที่ถือแทน (custodial) is informational only — shown separately, not subtracted from Net Worth
   const totalCustodial = useMemo(()=>custodial.filter(c=>!c.returned).reduce((s,c)=>s+(c.amount||0),0),[custodial]);
   const trueNetWorth = netWorth - totalDebtRemaining;
-  const animNetWorth = useCountUp(trueNetWorth);
+  const animNetWorth = useCountUp(trueNetWorth, 900, true);
 
   const nwByType = useMemo(()=>{
     const map={};
@@ -1365,7 +1369,10 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
   const dateStr = now.toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 
   return (
-    <div className="space-y-5 fade-up">
+    // `stagger` replaces `fade-up` here rather than joining it: the parent
+    // animating as one block is exactly what made every section land on the
+    // same frame. The children carry the animation now.
+    <div className="space-y-5 stagger">
 
       {/* ── Hero + Quote (merged) ── */}
       <div className={`rounded-2xl px-5 py-3.5 fade-up ${dk?'card-solid':'glass-light shadow-sm'}`}
@@ -1417,15 +1424,30 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
      but every other card on that screen reads ฿0.00 already — so the one that
      vanished looked broken rather than tactful, and it is the figure the whole
      app exists to show. */}
+      {/* No border and no card fill in dark mode. Net worth was one panel among
+          six of equal weight, so nothing on the page led — and a page where
+          everything is emphasised has no emphasis at all. Sitting directly on
+          the black, at a size no other figure comes near, it reads as the
+          page's opening statement rather than as its first card. Light mode
+          keeps a surface, where a borderless block on off-white would read as
+          unfinished rather than as deliberate.
+
+          No fade-up class: this block is a direct child of the stagger
+          container, which supplies the animation. Both would have run two. */}
       {(
-        <div className={`rounded-2xl p-5 fade-up ${dk?'card-hero glass':'glass-light shadow-sm border border-gold-100'}`}>
-          <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className={`relative overflow-hidden rounded-2xl px-5 py-6 ${dk?'':'glass-light shadow-sm border border-gold-100'}`}>
+          {dk && <HeroSpark history={nwHistory}/>}
+          <div className="relative flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <div className={`text-xs font-medium uppercase tracking-widest ${dk?'text-slate-400':'text-slate-500'}`}>Net Worth · มูลค่าทรัพย์สินสุทธิ <span title="เงินสด + สินทรัพย์ทั้งหมด หักหนี้สิน = เงินที่เป็นของคุณจริงๆ (เงินที่ถือแทนคนอื่นแสดงแยกไว้ ไม่รวมในยอดนี้)" style={{cursor:'help',opacity:.7}}>ⓘ</span></div>
               </div>
               <button data-hint="คลิกซ่อน/แสดงจำนวนเงิน" onClick={()=>onToggleHide&&onToggleHide()} className={`flex items-center gap-2 group cursor-pointer text-left`}>
-                <div className={`text-3xl font-bold tracking-wide ${dk?'text-white':'text-slate-800'}`}>
+                {/* clamp rather than a scale step: this figure should grow with
+                    the window, and it is the one place in the app where that is
+                    true. tabular-nums keeps it from jittering as it counts up. */}
+                <div className={`font-bold tracking-wide tabular-nums ${dk?'text-white':'text-slate-800'}`}
+                  style={{fontSize:'clamp(2.1rem, 5.5vw, 3.4rem)', lineHeight:1.05}}>
                   {mask(fmtNW(animNetWorth))}
                 </div>
                 <Ic n={hideAmt?'eyeoff':'eye'} s={14} className={`mt-1 opacity-40 group-hover:opacity-80 transition-opacity ${dk?'text-slate-400':'text-slate-400'}`}/>
@@ -5898,6 +5920,44 @@ const UnifiedTransferModal = ({open, onClose, onSave, wallets=[], assets=[], txs
 };
 
 // ── WALLET PAGE ──────────────────────────────────────────────
+// ── HERO SPARKLINE ─────────────────────────────────────────
+// Net worth over time, drawn full-bleed behind the headline figure. It is the
+// history the app already records for its own snapshots, so nothing new is
+// stored to draw it.
+//
+// Deliberately unlabelled and unreadable as a chart: no axis, no ticks, no
+// tooltip. Its job is to say "this has been going up" in the half-second before
+// anyone reads the number, and any attempt to read a value off it would be
+// guesswork — the scale is normalised to whatever range these months happen to
+// span. The exact figures live in the P/L card further down, where they carry
+// units.
+const HeroSpark = ({ history, accent='#e8763a' }) => {
+  const d = useMemo(()=>{
+    const pts = [...history].sort((a,b)=>a.month.localeCompare(b.month)).map(h=>h.total);
+    if(pts.length < 2) return null;
+    const min = Math.min(...pts), max = Math.max(...pts), span = (max-min) || 1;
+    // 12% padding top and bottom so the peak never touches the edge, which is
+    // what makes a sparkline read as a fragment of something larger.
+    const xy = pts.map((v,i)=>[ (i/(pts.length-1))*100, 88 - ((v-min)/span)*76 ]);
+    const line = xy.map(([x,y],i)=>`${i?'L':'M'}${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
+    return { line, area:`${line} L100,100 L0,100 Z` };
+  },[history]);
+  if(!d) return null;
+  return (
+    <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100"
+      preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="heroSparkFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor={accent} stopOpacity="0.16"/>
+          <stop offset="100%" stopColor={accent} stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d={d.area} fill="url(#heroSparkFill)"/>
+      <path d={d.line} fill="none" stroke={accent} strokeOpacity="0.42" strokeWidth="0.5" vectorEffect="non-scaling-stroke"/>
+    </svg>
+  );
+};
+
 // ── PAGE HEADER ────────────────────────────────────────────
 // The reference opens every page with one large headline where a single word
 // carries the accent, and a quiet line under it. Two things make it work and

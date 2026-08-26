@@ -256,6 +256,24 @@ const db   = firebase.firestore();
   @keyframes fadeUp    { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
   @keyframes scaleIn   { from{opacity:0;transform:scale(0.94)}      to{opacity:1;transform:scale(1)} }
   .fade-up  { animation: fadeUp  0.38s cubic-bezier(.22,1,.36,1) forwards; }
+
+  /* Sections arrive in sequence rather than all at once. Everything appearing
+     on the same frame reads as a page that was already there; a 55ms gap reads
+     as a page assembling itself, and it costs nothing because the last card is
+     still in place inside half a second. Delays stop at the eighth child —
+     beyond that the wait would be longer than the patience for it. */
+  .stagger > *              { animation: fadeUp 0.42s cubic-bezier(.22,1,.36,1) both; }
+  .stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger > *:nth-child(2) { animation-delay: 55ms; }
+  .stagger > *:nth-child(3) { animation-delay: 110ms; }
+  .stagger > *:nth-child(4) { animation-delay: 165ms; }
+  .stagger > *:nth-child(5) { animation-delay: 220ms; }
+  .stagger > *:nth-child(6) { animation-delay: 275ms; }
+  .stagger > *:nth-child(7) { animation-delay: 330ms; }
+  .stagger > *:nth-child(n+8) { animation-delay: 385ms; }
+  @media (prefers-reduced-motion: reduce) {
+    .stagger > * { animation: none !important; }
+  }
   @keyframes hintPulse { 0%,100%{box-shadow:0 0 0 3px rgba(201,169,74,0.3),0 0 14px rgba(201,169,74,0.55)} 50%{box-shadow:0 0 0 3px rgba(201,169,74,0.5),0 0 24px rgba(201,169,74,0.85)} }
   @keyframes ctaPulse { 0%,100%{box-shadow:0 4px 14px rgba(224,165,58,0.4)} 50%{box-shadow:0 6px 26px rgba(224,165,58,0.7),0 0 0 5px rgba(224,165,58,0.16)} }
   @keyframes greenRing { 0%,100%{box-shadow:0 0 0 3px rgba(122,171,138,.9),0 0 0 6px rgba(122,171,138,0)} 50%{box-shadow:0 0 0 3px rgba(122,171,138,.7),0 0 0 10px rgba(122,171,138,.18)} }
