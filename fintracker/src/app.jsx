@@ -5888,6 +5888,72 @@ const UnifiedTransferModal = ({open, onClose, onSave, wallets=[], assets=[], txs
 };
 
 // ── WALLET PAGE ──────────────────────────────────────────────
+// ── WALLET CARD FACE ───────────────────────────────────────
+// The top of a wallet card, built to read as a physical bank card. Positions
+// map to the real thing rather than being decoration hung on a panel: the
+// balance takes the card-number line, the wallet name takes the cardholder
+// line, and the type badge sits where the network mark goes.
+//
+// Dark in both themes, which is not an oversight — a bank card is a dark object
+// whichever room it is in, and inverting it for light mode would make it read
+// as a panel that happens to be card-shaped.
+//
+// Everything is drawn: the grain is an feTurbulence data URI and the chip and
+// arcs are inline SVG, so the card costs no network request and cannot fail to
+// load the way an image would.
+const CARD_GRAIN = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
+
+const WalletCardFace = ({ w, meta, balanceText, usdText, hidden, accent }) => (
+  <div className="relative overflow-hidden rounded-xl mb-4" style={{
+    background:'linear-gradient(145deg,#232326 0%,#141416 45%,#0a0a0b 100%)',
+    boxShadow:'inset 0 1px 0 rgba(255,255,255,0.06)',
+  }}>
+    {/* Grain. Low opacity and blended so it reads as a surface texture rather
+        than as static laid over the top. */}
+    <div className="absolute inset-0 pointer-events-none" style={{backgroundImage:CARD_GRAIN, opacity:0.16, mixBlendMode:'overlay'}}/>
+    {/* The two arcs from the reference — struck from off-canvas so only the
+        curve crosses the card, which is what keeps them reading as embossing
+        rather than as drawn circles. */}
+    <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 320 180" preserveAspectRatio="none" aria-hidden="true">
+      <circle cx="250" cy="-40" r="150" fill="none" stroke={accent} strokeWidth="0.8" opacity="0.30"/>
+      <circle cx="300" cy="30"  r="150" fill="none" stroke={accent} strokeWidth="0.8" opacity="0.18"/>
+    </svg>
+
+    <div className="relative px-4 pt-3.5 pb-3">
+      <div className="flex items-start justify-between gap-2">
+        {/* Chip */}
+        <svg width="30" height="23" viewBox="0 0 30 23" aria-hidden="true">
+          <rect x="0.5" y="0.5" width="29" height="22" rx="4" fill="rgba(212,175,69,0.18)" stroke={accent} strokeWidth="0.8" opacity="0.85"/>
+          <path d="M0 8h9M0 15h9M21 8h9M21 15h9M9 0v23M21 0v23" stroke={accent} strokeWidth="0.7" opacity="0.55" fill="none"/>
+        </svg>
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-6 h-6 rounded-md flex items-center justify-center text-sm flex-shrink-0 overflow-hidden">
+            {w.type==='bank' ? detectBankIcon(w.name,24) : w.type==='crypto' ? detectCryptoWalletIcon(w.name,24) : (meta.icon || w.icon)}
+          </div>
+          <span className="text-[11px] font-medium uppercase truncate" style={{color:accent, letterSpacing:'0.08em'}}>{meta.label}</span>
+        </div>
+      </div>
+
+      {/* Balance sits on the card-number line: same weight, same wide tracking,
+          same tabular figures, so a masked balance keeps the card's shape. */}
+      <div className={`mt-3 text-2xl font-bold tabular-nums ${w.balance<0?'text-rose-400':'text-[#f0e6cd]'}`} style={{letterSpacing:'0.05em'}}>
+        {balanceText}
+      </div>
+
+      <div className="flex items-end justify-between gap-3 mt-2">
+        <div className="min-w-0">
+          <div className="text-[9px] uppercase" style={{color:'rgba(240,230,205,0.45)', letterSpacing:'0.12em'}}>กระเป๋า</div>
+          <div className="text-xs font-semibold truncate" style={{color:'rgba(240,230,205,0.92)'}}>{w.name}</div>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <div className="text-[9px] uppercase" style={{color:'rgba(240,230,205,0.45)', letterSpacing:'0.12em'}}>USD</div>
+          <div className="text-xs font-semibold tabular-nums" style={{color:'rgba(240,230,205,0.75)'}}>{hidden ? '$•••••' : usdText}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx, onEditTx, onDeleteTx, onAddAsset, onUnlinkAsset, onAssetTransfer, onReorder, theme, onOpenWalletModal, onUnifiedTransfer, onAdjust, onDividend, onSaveCashCount, custodial=[], setCustodial=()=>{} }) => {
   const dk = theme==='dark';
   // Read at render time — App re-renders when either control flips. These two
@@ -6307,32 +6373,16 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                     <button title="ลบกระเป๋า" onClick={()=>ask('ลบกระเป๋าเงิน',`ยืนยันการลบกระเป๋า "${w.name}"? การดำเนินการนี้ไม่สามารถย้อนกลับได้`,()=>onDelete(w.id))}
                       className={`p-1.5 rounded-lg ${dk?'hover:bg-rose-500/20 text-slate-400 hover:text-rose-400':'hover:bg-rose-50 text-slate-400 hover:text-rose-500'}`}><Ic n="trash" s={13}/></button>
                   </div>
-                  {/* Icon & Name */}
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl flex-shrink-0 overflow-hidden"
-                      style={w.type==='crypto'?{}:w.type==='bank'||w.type==='cash'?{border:`1px solid ${meta.color}33`}:{background:`${meta.color}22`,border:`1px solid ${meta.color}44`}}>
-                      {w.type==='bank' ? detectBankIcon(w.name,40) : w.type==='crypto' ? detectCryptoWalletIcon(w.name,40) : (meta.icon || w.icon)}
-                    </div>
-                    <div>
-                      <p className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{w.name}</p>
-                      <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                        style={{background:`${meta.color}22`,color:meta.color}}>{meta.label}</span>
-                    </div>
-                  </div>
-                  {/* Balance + Trend */}
+                  {/* Name, type, balance and the USD figure all moved onto the
+                      card face above — they are what a real card shows, and
+                      keeping a second copy underneath would have been the same
+                      four facts printed twice. The month-on-month arrow stayed
+                      gone: moving money between your own accounts swung it
+                      wildly while nothing was earned or spent. */}
+                  <WalletCardFace w={w} meta={meta} accent="#d4af45" hidden={hidden}
+                    balanceText={fmtSigned(w.balance)}
+                    usdText={'$'+(w.balance/usdRate).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}/>
                   <div className="mb-3">
-                    <p className={`text-xs mb-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>ยอดคงเหลือ</p>
-                    {/* The month-on-month arrow is gone. On a wallet it was
-                        mostly noise: moving your own money between accounts
-                        swings it wildly while nothing has been earned or
-                        spent, so a red −54.6% next to a balance was usually
-                        reporting a transfer as a loss. */}
-                    <div className="flex items-baseline gap-2">
-                      <p className={`text-2xl font-bold tracking-wider ${w.balance>=0?(dk?'text-white':'text-slate-800'):'text-rose-400'}`}>{fmtSigned(w.balance)}</p>
-                    </div>
-                    {/* The dollar line is the same money in another currency,
-                        so covering only the baht one left it on screen whole. */}
-                    <p className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>≈ {hidden ? '$•••••' : '$'+(w.balance/usdRate).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})} USD</p>
                     {w.assetValue>0&&(
                       <div className={`flex items-center gap-1.5 mt-1 text-xs ${dk?'text-gold-400':'text-gold-500'}`}>
                         <span>📈</span>
