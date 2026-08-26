@@ -288,6 +288,64 @@ const db   = firebase.firestore();
   ::-webkit-scrollbar-thumb { background: linear-gradient(180deg,rgba(255,255,255,0.2),rgba(255,255,255,0.08)); border-radius:99px; }
   ::-webkit-scrollbar-track { background: transparent; }
 
+  /* ── Browser-drawn UI ────────────────────────────────────────────────────
+     The parts of the interface the app does not draw: the select popup, the
+     date picker, the text caret, the selection highlight. They were all still
+     rendering in the browser's own light-blue default, which is a jarring thing
+     to meet inside an app this deliberate about colour — and the selection
+     highlight in particular was the last blue left anywhere.
+
+     color-scheme does most of the work in one line. It tells the browser this
+     surface is dark, so the native select dropdown, the calendar panel and the
+     form controls all render in their dark variants instead of white panels
+     opening out of a black page. */
+  .dark { color-scheme: dark; }
+  :root { color-scheme: light; }
+
+  ::selection { background: rgba(232,118,58,0.30); color: inherit; }
+
+  /* Chrome paints a saved-password field with its own near-white fill and will
+     not let a background-color override it — which is why the email box on the
+     sign-in screen was a white slab in the middle of a black page. The inset
+     box-shadow is the one property it does honour: a 1000px spread fills the
+     field with the colour we want. The absurd transition delay stops Chrome
+     animating its fill back in on focus. */
+  .dark input:-webkit-autofill,
+  .dark input:-webkit-autofill:hover,
+  .dark input:-webkit-autofill:focus,
+  .dark input:-webkit-autofill:active {
+    -webkit-text-fill-color: #e6d3a8;
+    -webkit-box-shadow: 0 0 0 1000px #14141a inset;
+            box-shadow: 0 0 0 1000px #14141a inset;
+    caret-color: #e8763a;
+    transition: background-color 9999s ease-out 0s;
+  }
+  input, textarea, select, [contenteditable] { caret-color: #e8763a; }
+  input[type="checkbox"], input[type="radio"], progress { accent-color: #e8763a; }
+
+  /* Selects keep the native popup — it is the right control on a phone and no
+     custom menu handles a long list better — but lose the OS arrow, which is
+     the part that actually looked out of place. The chevron is drawn here to
+     match the app's own. */
+  select {
+    -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23908b82' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.55rem center;
+    padding-right: 1.9rem !important;
+  }
+  select:focus { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23e8763a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
+  .dark select option { background: #14141a; color: #e6d3a8; }
+
+  /* The date field's calendar button is a browser glyph that cannot be
+     replaced, only recoloured. Inverting it lifts it out of near-black and the
+     warm rotation stops it reading as the one cold grey control on the page. */
+  .dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.85) sepia(0.35) saturate(2.2) hue-rotate(-8deg);
+    opacity: 0.65; cursor: pointer;
+  }
+  .dark input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
   @keyframes fadeUp    { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
   @keyframes scaleIn   { from{opacity:0;transform:scale(0.94)}      to{opacity:1;transform:scale(1)} }
   .fade-up  { animation: fadeUp  0.38s cubic-bezier(.22,1,.36,1) forwards; }

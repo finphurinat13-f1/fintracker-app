@@ -5460,12 +5460,28 @@ const WalletModal = ({ open, onClose, onSave, editData, theme }) => {
   const dk = theme==='dark';
   const blank = { name:'', type:'bank', initialBalance:'0', icon:'🏦' };
   const [f, setF] = useState(blank);
+  // Five types covered where money sits, but not several places Thai savers
+  // actually keep it. Added rather than renamed, so nothing already recorded
+  // changes type underneath itself.
+  //
+  // ewallet is the notable gap: TrueMoney, Rabbit LINE Pay and ShopeePay hold
+  // real balances and were having to be filed as either เงินสด or a bank
+  // account, neither of which they are. fixed covers a deposit you cannot spend
+  // from without breaking it, which is worth separating from a current account
+  // for exactly that reason. fund is for a mutual-fund account, savings for a
+  // goal pot, and other for whatever is left — better an honest "อื่นๆ" than
+  // forcing a wallet into a category it does not belong to.
   const WALLET_TYPES = [
     { k:'bank',    l:'บัญชีธนาคาร',  e:'🏦' },
     { k:'cash',    l:'เงินสด',        e:'💵' },
     { k:'stock',   l:'พอร์ตหุ้น',     e:'📈' },
     { k:'credit',  l:'บัตรเครดิต',    e:'💳' },
     { k:'crypto',  l:'Crypto Wallet', e:'🔐' },
+    { k:'ewallet', l:'e-Wallet',      e:'📱' },
+    { k:'fund',    l:'กองทุนรวม',     e:'📊' },
+    { k:'fixed',   l:'ฝากประจำ',      e:'🔏' },
+    { k:'savings', l:'เงินเก็บ/เป้าหมาย', e:'🎯' },
+    { k:'other',   l:'อื่นๆ',          e:'👛' },
   ];
   useEffect(()=>{
     if (editData) setF({...editData, initialBalance:String(editData.initialBalance)});
@@ -6274,12 +6290,21 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
   // Same ramp as ASSET_TYPES, for the same reason: five hues across five wallet
   // kinds made the page look like a chart legend before it looked like money.
   // Each card already names its own type, so the colour was never carrying it.
+  // Must carry every key in WALLET_TYPES. A wallet whose type is missing here
+  // falls back to a generic label and the default gold, which looks like a bug
+  // rather than a gap — so new types get a colour off the same ramp as the
+  // originals instead of a fresh hue.
   const TYPE_META = {
-    bank:   { label:'บัญชีธนาคาร',  color:'#e8cf90' },
-    stock:  { label:'พอร์ตหุ้น',     color:'#c9a94b', icon:'📈' },
-    crypto: { label:'Crypto Wallet', color:'#a8894a', icon:'🔐' },
-    cash:   { label:'เงินสด',        color:'#7d6a3f', icon:<CashIcon s={22}/> },
-    credit: { label:'บัตรเครดิต',    color:'#584b31', icon:'💳' },
+    bank:    { label:'บัญชีธนาคาร',  color:'#e8cf90' },
+    stock:   { label:'พอร์ตหุ้น',     color:'#c9a94b', icon:'📈' },
+    crypto:  { label:'Crypto Wallet', color:'#a8894a', icon:'🔐' },
+    cash:    { label:'เงินสด',        color:'#7d6a3f', icon:<CashIcon s={22}/> },
+    credit:  { label:'บัตรเครดิต',    color:'#584b31', icon:'💳' },
+    ewallet: { label:'e-Wallet',      color:'#d4b876', icon:'📱' },
+    fund:    { label:'กองทุนรวม',     color:'#af924f', icon:'📊' },
+    fixed:   { label:'ฝากประจำ',      color:'#856b35', icon:'🔏' },
+    savings: { label:'เงินเก็บ/เป้าหมาย', color:'#c3a65f', icon:'🎯' },
+    other:   { label:'อื่นๆ',          color:'#6b6154', icon:'👛' },
   };
 
   const now = new Date();
@@ -6524,7 +6549,11 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {walletData.filter(w=>filterType==='all'||(filterType==='cash-group'&&(w.type==='bank'||w.type==='cash'||w.type==='credit'))||(filterType===w.type)).map(w=>{
+          {/* The เงินสด filter means "money I can spend", so the new everyday
+              types belong in it. e-Wallet and a savings pot are spendable; a
+              fixed deposit and a fund are not, and stay out — being unable to
+              touch it without breaking it is the whole point of the category. */}
+          {walletData.filter(w=>filterType==='all'||(filterType==='cash-group'&&['bank','cash','credit','ewallet','savings','other'].includes(w.type))||(filterType===w.type)).map(w=>{
             const meta = TYPE_META[w.type] || { label:w.type, color:'#c9a94b' };
             return (
               <div key={w.id}
@@ -7581,7 +7610,11 @@ const LoginPage = ({ theme }) => {
     }
   };
 
-  const inp = `w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-gold-500/20 ${dk?'bg-white/5 border-white/10 text-white placeholder-slate-500 focus:border-gold-500':'bg-white border-slate-200 text-slate-800 placeholder-slate-400 focus:border-gold-400'}`;
+  // Focus is an action state, so the ring and the border it lights up take the
+  // action colour rather than the brand gold. On this screen especially: gold
+  // borders are the app's resting state everywhere else, so a gold focus ring
+  // said nothing about which field the cursor was actually in.
+  const inp = `w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-orange-500/25 ${dk?'bg-white/5 border-white/10 text-white placeholder-slate-500 focus:border-orange-400':'bg-white border-slate-200 text-slate-800 placeholder-slate-400 focus:border-orange-400'}`;
   const lbl = `text-sm font-medium mb-1.5 block ${dk?'text-slate-200':'text-slate-700'}`;
 
   return (
@@ -7630,7 +7663,7 @@ const LoginPage = ({ theme }) => {
             {err && <p className="text-rose-400 text-xs text-center">{err}</p>}
             {resetSent && <p className="text-emerald-400 text-xs text-center">✅ ส่ง Email รีเซ็ตรหัสผ่านแล้วค่ะ กรุณาตรวจ Inbox</p>}
             <button onClick={mode==='login'?login:signup} disabled={loading}
-              className="mt-2 w-full py-2.5 rounded-xl bg-gold-500 hover:bg-gold-600 active:bg-gold-700 text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              className="mt-2 w-full py-2.5 rounded-full bg-orange-400 hover:bg-orange-300 active:bg-orange-500 text-orange-950 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
               {loading ? 'Loading...' : mode==='login' ? 'Sign in' : 'Create account'}
             </button>
           </div>
