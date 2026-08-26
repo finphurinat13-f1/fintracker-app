@@ -350,6 +350,19 @@ const db   = firebase.firestore();
   @keyframes scaleIn   { from{opacity:0;transform:scale(0.94)}      to{opacity:1;transform:scale(1)} }
   .fade-up  { animation: fadeUp  0.38s cubic-bezier(.22,1,.36,1) forwards; }
 
+  /* Row actions revealed on hover are unreachable on a touch screen, which has
+     no hover to give: on a phone the edit and delete buttons on a transaction,
+     a recurring item or a wallet card were either invisible or appeared only
+     after a tap that had already done something else.
+
+     Rather than unpick eight call sites, any pointer that cannot hover gets
+     them shown outright. The media query is the honest test — it asks about the
+     input device rather than guessing from screen width, so a touchscreen
+     laptop is covered and a narrow desktop window is not. */
+  @media (hover: none) {
+    .group-hover\:opacity-100 { opacity: 1 !important; }
+  }
+
   /* Sections arrive in sequence rather than all at once. Everything appearing
      on the same frame reads as a page that was already there; a 55ms gap reads
      as a page assembling itself, and it costs nothing because the last card is

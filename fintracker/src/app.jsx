@@ -1320,14 +1320,30 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
   // Once history outgrows six months the anchor stops mattering and it becomes
   // an ordinary trailing window ending on the current month, so the chart never
   // scrolls off into the past or grows past six.
+  // The window is chosen now, not fixed at six. `null` means every month on
+  // record — the one range whose length the app cannot know in advance, so it
+  // is measured from the first transaction rather than counted back from today.
+  const [range, setRange] = useState(()=>{ const v=localStorage.getItem('ft-range'); return v==='all'?null:(parseInt(v)||6); });
+  const pickRange = v => { setRange(v); try{ localStorage.setItem('ft-range', v===null?'all':String(v)); }catch{} };
+
   const chartMonths = useMemo(()=>{
     const firstTx = txs.reduce((min,t)=>(t.date&&(!min||t.date<min))?t.date:min, null);
     const startAt = firstTx ? new Date(+firstTx.slice(0,4), +firstTx.slice(5,7)-1, 1) : null;
-    const trailing = new Date(now.getFullYear(), now.getMonth()-5, 1);
-    // Whichever is later: six months back, or the month the records begin.
+    if (range === null) {
+      // Every month from the first record to this one. Capped at 60 so a long
+      // history cannot produce a chart with more bars than pixels.
+      const from = startAt || new Date(now.getFullYear(), now.getMonth(), 1);
+      const span = (now.getFullYear()-from.getFullYear())*12 + (now.getMonth()-from.getMonth()) + 1;
+      const n = Math.min(Math.max(span,1), 60);
+      return Array.from({length:n},(_,i)=>mKey(new Date(now.getFullYear(), now.getMonth()-(n-1-i), 1)));
+    }
+    const trailing = new Date(now.getFullYear(), now.getMonth()-(range-1), 1);
+    // Whichever is later: the window back from today, or the month the records
+    // begin — so early months sit as empty space on the right rather than as
+    // blanks on the left pushing the bars into half the chart.
     const base = (startAt && startAt > trailing) ? startAt : trailing;
-    return Array.from({length:6},(_,i)=>mKey(new Date(base.getFullYear(), base.getMonth()+i, 1)));
-  },[txs]);
+    return Array.from({length:range},(_,i)=>mKey(new Date(base.getFullYear(), base.getMonth()+i, 1)));
+  },[txs,range]);
 
   const barData = useMemo(()=>({
     labels: chartMonths.map(m=>{ const[,mo]=m.split('-'); return MONTHS_TH[parseInt(mo)-1]; }),
@@ -1550,7 +1566,20 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={card}>
-          <h3 className={`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-700'}`}>รายรับ-รายจ่ายรายเดือน (6 เดือน)</h3>
+          {/* The range control every financial chart has, and the reason the
+              heading no longer states a fixed number: it would have gone stale
+              the moment the window changed. */}
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+            <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>รายรับ-รายจ่ายรายเดือน</h3>
+            <div className={`flex gap-0.5 p-0.5 rounded-full ${dk?'bg-white/5':'bg-slate-100'}`}>
+              {[{l:'3M',v:3},{l:'6M',v:6},{l:'1Y',v:12},{l:'ALL',v:null}].map(({l,v})=>(
+                <button key={l} onClick={()=>pickRange(v)}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors ${range===v?'bg-orange-400 text-orange-950':(dk?'text-slate-400 hover:text-slate-200':'text-slate-500 hover:text-slate-700')}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="h-52"><BarChart data={barData} theme={theme} hide={hideAmt||privacy}/></div>
         </div>
         <div className={card}>
@@ -3770,7 +3799,15 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
           <table className="w-full">
             <thead><tr className={`border-b ${dk?'border-white/5':'border-slate-100'}`}>
               {[{h:'สินทรัพย์',f:'name'},{h:'จำนวน',f:'qty'},{h:'ทุน/หน่วย',f:'avgCost',tip:'ราคาต้นทุนเฉลี่ยต่อหน่วยที่ซื้อมา'},{h:'ราคาตลาด',f:'currentPrice',tip:'ราคาล่าสุดต่อหน่วย'},{h:'วันที่ซื้อ',f:'purchaseDate'},{h:'ต้นทุนรวม',f:'costTHB',tip:'จำนวน × ต้นทุนเฉลี่ย = เงินที่ลงทุนไปทั้งหมด'},{h:'กำไร/ขาดทุน',f:'plTHB',tip:'มูลค่าปัจจุบัน − ต้นทุนรวม (ยังไม่ขาย = กำไรบนกระดาษ)'},{h:'มูลค่าปัจจุบัน',f:'valTHB',tip:'ต้นทุนรวม + กำไร/ขาดทุน = มูลค่าตอนนี้'}].map(({h,f,tip})=>(
-                <th key={h} title={tip||undefined} onClick={()=>toggleSort(f)} className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer select-none whitespace-nowrap ${dk?'text-slate-200 hover:text-white bg-white/[0.09]':'text-slate-700 hover:text-slate-900 bg-slate-200'}`}>{h}{tip&&<span className="ml-0.5 opacity-40 normal-case">ⓘ</span>}<SI f={f}/></th>
+                // Pinned. Reading the twentieth of thirty-four holdings meant
+                // having scrolled the column names off the top, so ทุน/หน่วย and
+                // มูลค่า became two unlabelled columns of baht that look alike.
+                // The header needs an opaque background of its own to do this —
+                // rows passing under a translucent one are unreadable — hence
+                // the solid colour rather than the tint it carried before.
+                <th key={h} title={tip||undefined} onClick={()=>toggleSort(f)}
+                  className={`sticky top-0 z-10 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer select-none whitespace-nowrap ${dk?'text-slate-200 hover:text-white':'text-slate-700 hover:text-slate-900'}`}
+                  style={{background: dk ? '#14140f' : '#e8e6e1'}}>{h}{tip&&<span className="ml-0.5 opacity-40 normal-case">ⓘ</span>}<SI f={f}/></th>
               ))}
               <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${dk?'text-slate-200 bg-white/[0.09]':'text-slate-700 bg-slate-200'}`}>จัดการ</th>
             </tr></thead>
@@ -4264,7 +4301,9 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
   },[divTxs,assets]);
 
   const card = `rounded-2xl ${dk?'card-solid':'glass-light shadow-sm'}`;
-  const th = `px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${dk?'text-slate-400':'text-slate-500'}`;
+  // Pinned, with an opaque background: rows scrolling under a translucent
+  // header are unreadable, so the tint this used to inherit will not do.
+  const th = `sticky top-0 z-10 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${dk?'text-slate-400 bg-[#14140f]':'text-slate-500 bg-[#e8e6e1]'}`;
   const sub = `text-xs ${dk?'text-slate-400':'text-slate-500'}`;
   const RateBadge = ({ r }) => (
     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${r>=30?'bg-emerald-500/15 text-emerald-400':r>=10?'bg-amber-500/15 text-amber-400':'bg-rose-500/15 text-rose-400'}`}>{r.toFixed(1)}%</span>
