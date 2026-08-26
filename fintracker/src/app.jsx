@@ -4871,7 +4871,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
   return (
     <div className="space-y-4 fade-up">
       <PageHeader theme={theme} lead="Monthly" accent="Budget"
-        sub="ตั้งเพดานรายหมวด แล้วดูว่าใช้ไปเท่าไหร่แล้ว"
+        sub="วงเงินรายหมวด ยอดใช้จ่าย และส่วนที่เหลือ"
         right={isCurM
           ? <button onClick={()=>setAddOpen(true)}
               className="flex items-center gap-1 text-xs px-4 py-2 rounded-full bg-orange-400 hover:bg-orange-300 text-orange-950 font-semibold transition-colors">
