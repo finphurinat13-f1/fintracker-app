@@ -45,7 +45,14 @@ const _locked = localStorage.getItem('ft-lock-on') === '1' && !!localStorage.get
 // in use and starts counting down the moment it is not, so a reload, a glance
 // at another tab, or stepping away briefly costs nothing — while leaving for
 // longer than the window still locks.
-const LOCK_GRACE_MS = 5 * 60_000;   // 5 นาที
+//
+// Thirty minutes, up from five. Five was short enough that checking a bank app
+// mid-entry came back to a passcode prompt, and a lock people meet that often
+// is one they turn off. What this protects against is someone else picking the
+// device up, and the honest limit is stated on the settings card: this is
+// visual masking, not encryption. Half an hour is well inside the window in
+// which the device is still in your hand.
+const LOCK_GRACE_MS = 30 * 60_000;   // 30 นาที
 const lockTouch = () => { try{ localStorage.setItem('ft-lock-until', String(Date.now()+LOCK_GRACE_MS)); }catch{} };
 const lockDrop  = () => { try{ localStorage.removeItem('ft-lock-until'); }catch{} };
 const lockFresh = () => { try{ return Date.now() < (parseInt(localStorage.getItem('ft-lock-until')||'0',10)||0); }catch{ return false; } };
@@ -7154,15 +7161,18 @@ const AccountModal = ({open, onClose, theme, setTheme, colorTheme, setColorTheme
                 the screen; it does not encrypt anything, and saying otherwise
                 would be the one thing worse than not having it. */}
             <div className={`mb-4 p-3 rounded-xl border ${lockOn?(dk?'bg-gold-500/10 border-gold-500/30':'bg-gold-50 border-gold-200'):(dk?'bg-white/5 border-white/10':'bg-slate-50 border-slate-200')}`}>
-              <div className="flex items-center justify-between gap-3">
+              {/* Stacked, not side by side. The two buttons and the text were
+                  competing for one row, so the description was squeezed into a
+                  column four words wide and broke across six lines. */}
+              <div className="flex flex-col gap-2.5">
                 <div className="min-w-0">
                   <div className={`text-xs font-semibold ${dk?'text-white':'text-slate-700'}`}>{lockOn?'🔒':'🔓'} Passcode for balance privacy</div>
                   <div className={`text-[11px] mt-0.5 leading-snug ${dk?'text-slate-400':'text-slate-500'}`}>
-                    {lockOn ? 'Amounts stay hidden on every launch — passcode required to view'
+                    {lockOn ? 'Amounts stay hidden on launch — passcode required to view. Stays unlocked for 30 minutes after you leave.'
                             : 'Set a passcode so tapping 👁 does not reveal amounts'}
                   </div>
                 </div>
-                <div className="flex-shrink-0 flex gap-1.5">
+                <div className="flex-shrink-0 flex gap-1.5 flex-wrap">
                   {lockOn&&(
                     <button onClick={()=>{ onClose(); onLockChange&&onLockChange('change'); }}
                       className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-gold-500 hover:bg-gold-600">Change passcode</button>
