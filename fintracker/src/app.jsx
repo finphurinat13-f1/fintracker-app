@@ -1832,7 +1832,7 @@ const TxPage = ({ txs, theme, onEdit, onAdd, onDelete, onBulkDelete, onExport, w
 
   return (
     <div className="space-y-4 fade-up">
-      <PageHeader theme={theme} lead="รายการ" accent="ทั้งหมด"
+      <PageHeader theme={theme} lead="All" accent="Transactions"
         sub={`${txs.length} รายการ · รายรับ รายจ่าย โยกเงิน และปันผล`}/>
       {onAdd&&(
         <div className="flex items-center justify-between">
@@ -3499,7 +3499,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
 
   return (
     <div className="space-y-4 fade-up">
-      <PageHeader theme={theme} lead="สินทรัพย์" accent="ที่ถืออยู่"
+      <PageHeader theme={theme} lead="Your" accent="Holdings"
         sub={`${assets.length} รายการ · หุ้น คริปโต ทองคำ และอื่นๆ`}/>
       {/* Header */}
       <div className={`${card} p-4 flex items-center justify-between flex-wrap gap-3`}>
@@ -4243,7 +4243,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
 
   return (
     <div className="space-y-4 fade-up">
-      <PageHeader theme={theme} lead="สรุป" accent="ภาพรวม"
+      <PageHeader theme={theme} lead="Financial" accent="Summary"
         sub="รายเดือน รายปี และเป้าหมายเงินเก็บ"/>
       {/* Toggle */}
       <div className={`${card} p-4 flex items-center justify-between flex-wrap gap-3`}>
@@ -4825,7 +4825,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
 
   return (
     <div className="space-y-4 fade-up">
-      <PageHeader theme={theme} lead="งบประมาณ" accent="เดือนนี้"
+      <PageHeader theme={theme} lead="Monthly" accent="Budget"
         sub="ตั้งเพดานรายหมวด แล้วดูว่าใช้ไปเท่าไหร่แล้ว"/>
       <div className="grid grid-cols-3 gap-4">
         {[{l:'Budget รวม',v:fmt(totBudget),c:dk?'tg-gold':'text-gold-600',
@@ -5330,7 +5330,7 @@ const DebtPage = ({ theme, debts, setDebts }) => {
 
   return (
     <div className="space-y-4 fade-up">
-      <PageHeader theme={theme} lead="หนี้สิน" accent="คงเหลือ"
+      <PageHeader theme={theme} lead="Outstanding" accent="Debt"
         sub="ยอดค้าง ดอกเบี้ย และแผนการผ่อน"/>
       {debts.length>0&&(
         <div className="grid grid-cols-3 gap-4">
@@ -5993,6 +5993,14 @@ const HeroSpark = ({ history, accent='#e8763a' }) => {
 // `lead` is the plain part, `accent` the coloured word. Splitting them as props
 // rather than parsing a marker out of one string means the colour cannot land
 // on the wrong word by accident.
+//
+// The accent belongs on the noun that names the page — Wallets, Holdings,
+// Transactions — never on the qualifier. Colouring "All" tells the reader
+// nothing they could not have guessed; colouring the subject is what makes the
+// heading scannable at the top of a page they arrived at by tapping a tab.
+//
+// Headings are in English while the line beneath stays Thai, the same split the
+// P/L card uses: the term names the thing, the Thai explains it.
 const PageHeader = ({ lead, accent, sub, theme, right=null }) => {
   const dk = theme==='dark';
   // text-xl, not text-3xl. At 36px the heading was competing with the figures
@@ -6327,7 +6335,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
 
   return (
     <div className="space-y-4 fade-up">
-      <PageHeader theme={theme} lead="กระเป๋าเงิน" accent="ทั้งหมด"
+      <PageHeader theme={theme} lead="All" accent="Wallets"
         sub={`${wallets.length} กระเป๋า · เงินสด บัญชีธนาคาร และวอลเล็ตคริปโต`}/>
       {/* Summary header */}
       <div className={`${card} p-5`}>
