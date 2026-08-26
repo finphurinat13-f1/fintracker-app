@@ -4849,7 +4849,13 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
   return (
     <div className="space-y-4 fade-up">
       <PageHeader theme={theme} lead="Monthly" accent="Budget"
-        sub="ตั้งเพดานรายหมวด แล้วดูว่าใช้ไปเท่าไหร่แล้ว"/>
+        sub="ตั้งเพดานรายหมวด แล้วดูว่าใช้ไปเท่าไหร่แล้ว"
+        right={isCurM
+          ? <button onClick={()=>setAddOpen(true)}
+              className="flex items-center gap-1 text-xs px-4 py-2 rounded-full bg-orange-400 hover:bg-orange-300 text-orange-950 font-semibold transition-colors">
+              + เพิ่มหมวด
+            </button>
+          : <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${dk?'bg-white/8 text-slate-400':'bg-slate-100 text-slate-500'}`}>ดูย้อนหลัง · แก้ไขไม่ได้</span>}/>
       <div className="grid grid-cols-3 gap-4">
         {[{l:'Budget รวม',v:fmt(totBudget),c:dk?'tg-gold':'text-gold-600',
            note: bSplit.irregular>0 ? `ประจำ ${fmt(bSplit.regular)} · ไม่ประจำ ${fmt(bSplit.irregular)}` : null},
@@ -4936,24 +4942,15 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
         <div className={`mt-1.5 text-xs ${sub}`}>{fmt(totSpent)} / {fmt(totBudget)}</div>
       </div>
 
-      <div className={`${card} p-5`}>
-        <div className="flex flex-wrap justify-between items-center gap-2">
-          <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>แต่ละหมวด</h3>
-          <div className="flex items-center gap-2 flex-wrap">
-            {!isCurM&&(
-              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${dk?'bg-white/8 text-slate-400':'bg-slate-100 text-slate-500'}`}>👁️ ดูย้อนหลัง (แก้ไขไม่ได้)</span>
-            )}
-            {isCurM&&(
-              <button onClick={()=>setAddOpen(true)}
-                className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl border font-medium transition-all
-                  ${dk?'border-gold-500/40 text-gold-400 hover:bg-gold-500/10':'border-gold-300 text-gold-600 hover:bg-gold-50'}`}>
-                + เพิ่มหมวด
-              </button>
-            )}
-            <span className={`text-xs ${sub}`}>คลิก Category เพื่อดูรายการ</span>
-          </div>
-        </div>
-      </div>
+      {/* The "แต่ละหมวด" card is gone. It was a full panel wrapped around one
+          button, a read-only notice and a hint — a heading for a section that
+          starts immediately below it and needs no announcing. The button moved
+          into the page header, which already reserves its right side for
+          exactly this, and the read-only notice went with it.
+
+          The hint went entirely: "คลิก Category เพื่อดูรายการ" was a permanent
+          line of instructions for a click the chevron on every card already
+          advertises. */}
         {(() => {
           const allEntries = Object.entries(viewBudgets||{}).filter(([cat])=>!['ที่พัก','สาธารณูปโภค'].includes(cat))
             .sort(([ca,ba],[cb,bb])=>{const pa=ba>0?(spent[ca]||0)/ba:0,pb=bb>0?(spent[cb]||0)/bb:0;return pb-pa;});
@@ -4990,11 +4987,13 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 ${isExp?(dk?'border-gold-500/40':'border-gold-300'):borderClr||(dk?'border-white/8':'border-slate-100')} ${bgTint}`}>
                 {/* Utility row — badge + irregular-toggle/rename/delete (not part of the expand toggle) */}
                 <div className="flex items-center justify-between px-3.5 pt-3 pb-1 min-h-[28px]">
-                  <div className="min-w-0">
-                    {over&&<span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{background:'#fde8e6',color:'#c9726a'}}>เกิน!</span>}
-                    {!over&&rawPct>=80&&<span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{background:'#fef0e0',color:'#c98f5a'}}>ใกล้เต็ม</span>}
-                    {!over&&rawPct>=60&&rawPct<80&&<span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{background:'#fef8e0',color:'#b8963c'}}>เฝ้าระวัง</span>}
-                  </div>
+                  {/* The เกิน!/ใกล้เต็ม/เฝ้าระวัง badges are gone. The card
+                      already said the same thing three more times — in the
+                      bar's colour, in the border tint, and in the words
+                      "เกิน ฿5,098.50" which are the only version that says by
+                      how much. Their pale pink and cream backgrounds were also
+                      the last two colours on the page from no palette. */}
+                  <div className="min-w-0"/>
                   {isCurM&&(
                   <div className="flex items-center gap-0.5 flex-shrink-0">
                     <button onClick={()=>toggleIrregular(cat)}
@@ -5015,12 +5014,19 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 <button data-hint="คลิกดูรายการในหมวด" onClick={()=>setExpandedCat(isExp?null:cat)}
                   className={`w-full px-3.5 pb-3.5 text-left transition-colors ${dk?'hover:bg-white/[0.03]':'hover:bg-slate-50/70'}`}>
                   <div className="flex items-center gap-3">
-                    <div className="relative w-[58px] h-[58px] rounded-full flex-shrink-0 flex items-center justify-center"
-                      style={{background:`conic-gradient(${clr} 0% ${p}%, ${dk?'rgba(255,255,255,0.08)':'#eef1ee'} ${p}% 100%)`}}>
-                      <div className="absolute inset-[6px] rounded-full flex flex-col items-center justify-center" style={{background:dk?'#0d1420':'#fff'}}>
-                        <span className="leading-none mb-0.5"><CatGlyph v={catIconSmart(cat)} s={16} color={clr}/></span>
-                        <span className="text-[10px] font-bold tabular-nums leading-none" style={{color:clr}}>{p.toFixed(0)}%</span>
-                      </div>
+                    {/* A 58px ring with a 10px percentage inside it, twelve to a
+                        screen. Two cards' rings could not be compared without
+                        reading both numbers, which is the opposite of what a
+                        chart is for — an angle is only legible when it is large
+                        or alone, and these were neither.
+
+                        The ring is now a plain chip carrying the category icon,
+                        and the proportion moved to a bar under the figure where
+                        every card's track is the same length and the eye can
+                        run straight down the column. */}
+                    <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center"
+                      style={{background:clr+'1f', border:`1px solid ${clr}3d`}}>
+                      <CatGlyph v={catIconSmart(cat)} s={19} color={clr}/>
                     </div>
                     <div className="min-w-0 flex-1">
                       {isCurM&&renamingCat===cat
@@ -5047,7 +5053,22 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                           )}
                         </div>
                       }
-                      <div className={`text-base font-bold tabular-nums leading-none mb-1 ${over?'text-rose-500':dk?'text-white':'text-slate-800'}`}>{fmt(s)}</div>
+                      {/* Spent, then how it stands against the budget, on one
+                          line. "เหลือ / เกิน" is the question this page is
+                          opened to answer, and it had been the smallest and
+                          dimmest thing on the card. */}
+                      <div className="flex items-baseline justify-between gap-2 mb-1.5">
+                        <span className={`text-base font-bold tabular-nums leading-none ${over?'text-rose-400':dk?'text-white':'text-slate-800'}`}>{fmt(s)}</span>
+                        {bgt>0&&editing!==cat&&(
+                          <span className="text-xs font-semibold tabular-nums whitespace-nowrap" style={{color:clr}}>
+                            {over?`เกิน ${fmt(s-bgt)}`:`เหลือ ${fmt(bgt-s)}`}
+                          </span>
+                        )}
+                      </div>
+                      {/* Equal tracks, one per card, so the column reads down. */}
+                      <div className={`h-1.5 rounded-full overflow-hidden mb-1.5 ${dk?'bg-white/10':'bg-slate-100'}`}>
+                        <div className="h-full rounded-full transition-all duration-500" style={{width:`${p}%`, background:clr}}/>
+                      </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         {!isCurM
                           ?<span className="text-[11px] text-slate-400">Budget {fmt(bgt)}</span>
@@ -5062,9 +5083,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                               Budget {fmt(bgt)} <span className="opacity-60">✏</span>
                             </button>}
                         {bgt>0&&editing!==cat&&(
-                          <span className={`text-[11px] font-medium ${over?'text-rose-500':'text-emerald-500'}`}>
-                            {over?`เกิน ${fmt(s-bgt)}`:`เหลือ ${fmt(bgt-s)}`}
-                          </span>
+                          <span className={`text-[11px] tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{rawPct.toFixed(0)}%</span>
                         )}
                       </div>
                     </div>
