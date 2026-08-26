@@ -1621,19 +1621,21 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
         </div>
       </div>
 
-      {/* The two panels that answer questions the charts above cannot: when the
-          money goes out, and which holding is losing it. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className={card + ' p-5'}>
-          <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>รายจ่ายรายวัน</h3>
-          <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>16 สัปดาห์ล่าสุด · ยิ่งสว่างยิ่งใช้เยอะ</p>
-          <SpendHeatmap txs={txs} theme={theme} hide={hideAmt||privacy}/>
-        </div>
-        <div className={card + ' p-5'}>
-          <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>แผนผังพอร์ต</h3>
-          <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>ขนาด = มูลค่า · สี = กำไร/ขาดทุน · ชี้เพื่อดูรายละเอียด</p>
-          <PortfolioTreemap assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy}/>
-        </div>
+      {/* The daily spending heatmap sat beside this and is gone. The idea was
+          sound — no other chart here says *when* money leaves — but the picture
+          it drew was not readable: spending on most days falls in a narrow band
+          well below the heaviest day, and scaling to that maximum pressed
+          almost every cell into the same shade. A grid of one colour is not a
+          pattern, it is noise with a legend.
+
+          Making it work would mean ranking days against each other rather than
+          against the largest, which is a different chart and a decision for
+          another day. The treemap takes the full width in the meantime, which
+          is what the small holdings needed anyway. */}
+      <div className={card + ' p-5'}>
+        <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>แผนผังพอร์ต</h3>
+        <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>ขนาด = มูลค่า · สี = กำไร/ขาดทุน · ชี้เพื่อดูรายละเอียด</p>
+        <PortfolioTreemap assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy}/>
       </div>
 
       {/* The last-10 transactions list used to sit here, collapsed, above the
@@ -6142,95 +6144,8 @@ const UnifiedTransferModal = ({open, onClose, onSave, wallets=[], assets=[], txs
 };
 
 // ── WALLET PAGE ──────────────────────────────────────────────
-// ── SPENDING HEATMAP ───────────────────────────────────────
-// One cell per day, brighter for more spent, laid out as weeks down and across
-// the way a contribution graph is. It answers a question none of the other
-// charts can: not how much went out, but *when*. A monthly bar chart flattens
-// four weeks into one number and the category donut says nothing about time, so
-// a habit — every Friday, or the days after payday — was invisible in an app
-// built to find exactly that sort of thing.
-//
-// Sixteen weeks because that is about a season: long enough for a pattern to
-// repeat several times, short enough that a cell stays big enough to point at.
-const SpendHeatmap = ({ txs, theme, hide=false, weeks=16 }) => {
-  const dk = theme==='dark';
-  const { cells, max, marks } = useMemo(()=>{
-    const byDay = {};
-    txs.forEach(t=>{ if(t.type==='expense' && t.date) byDay[t.date] = (byDay[t.date]||0) + Math.abs(t.amount); });
-    const today = new Date(); today.setHours(23,59,59,999);
-    // The grid ends on the Sunday of the current week, so today's column is the
-    // last one and the week reads left to right the way a calendar does.
-    const end = new Date(today);
-    end.setDate(end.getDate() + (6 - ((end.getDay()+6)%7)));
-    const n = weeks*7;
-    const start = new Date(end); start.setDate(start.getDate() - (n-1));
-    const arr = [];
-    for(let i=0;i<n;i++){
-      const d = new Date(start); d.setDate(start.getDate()+i);
-      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      arr.push({ key, d, v: byDay[key]||0, future: d>today });
-    }
-    // Scaled to the busiest day rather than to a fixed amount, so the picture
-    // reads the same whether the months shown are big or small.
-    const mx = Math.max(...arr.map(c=>c.v), 1);
-    const mk = [];
-    for(let w=0; w<weeks; w++){
-      const first = arr[w*7];
-      // A column is labelled when its first day falls in the opening week of a
-      // month — otherwise every column would want a label.
-      if(first && first.d.getDate()<=7) mk.push({ w, label: MONTHS_TH[first.d.getMonth()] });
-    }
-    return { cells:arr, max:mx, marks:mk };
-  },[txs,weeks]);
-
-  // Four steps, not a continuous scale: the eye cannot rank forty shades, and
-  // banding is what lets "a heavy day" be recognised rather than measured.
-  const shade = v => {
-    if(v<=0) return null;
-    const r = v/max;
-    return r>0.66 ? GOLD_RAMP[9] : r>0.33 ? GOLD_RAMP[7] : r>0.12 ? GOLD_RAMP[5] : GOLD_RAMP[3];
-  };
-  const empty = dk ? 'rgba(255,255,255,0.05)' : '#eceae6';
-  const DOW = ['จ','','พ','','ศ','','อา'];
-
-  return (
-    <div className="overflow-x-auto">
-      <div className="inline-flex flex-col gap-1 min-w-full">
-        <div className="flex gap-[3px] pl-6">
-          {Array.from({length:weeks},(_,w)=>{
-            const m = marks.find(x=>x.w===w);
-            return <div key={w} className={`w-3 text-[9px] ${dk?'text-slate-500':'text-slate-400'}`}>{m?m.label:''}</div>;
-          })}
-        </div>
-        <div className="flex gap-[3px]">
-          <div className="flex flex-col gap-[3px] w-6">
-            {DOW.map((d,i)=><div key={i} className={`h-3 text-[9px] leading-3 ${dk?'text-slate-500':'text-slate-400'}`}>{d}</div>)}
-          </div>
-          {Array.from({length:weeks},(_,w)=>(
-            <div key={w} className="flex flex-col gap-[3px]">
-              {Array.from({length:7},(_,r)=>{
-                const c = cells[w*7+r];
-                if(!c) return <div key={r} className="w-3 h-3"/>;
-                const bg = c.future ? 'transparent' : (shade(c.v) || empty);
-                return (
-                  <div key={r} className="w-3 h-3 rounded-[3px]"
-                    style={{background:bg, outline: c.future?'none':undefined}}
-                    title={c.future ? '' : `${c.d.getDate()} ${MONTHS_TH[c.d.getMonth()]} · ${hide?'฿ •••••':fmt(c.v)}`}/>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-        <div className={`flex items-center gap-1.5 mt-1 pl-6 text-[10px] ${dk?'text-slate-500':'text-slate-400'}`}>
-          <span>น้อย</span>
-          <span className="w-3 h-3 rounded-[3px]" style={{background:empty}}/>
-          {[3,5,7,9].map(i=><span key={i} className="w-3 h-3 rounded-[3px]" style={{background:GOLD_RAMP[i]}}/>)}
-          <span>มาก</span>
-        </div>
-      </div>
-    </div>
-  );
-};
+// SpendHeatmap lived here. Removed with its only caller — see the note on
+// the dashboard where it used to render.
 
 // ── PORTFOLIO TREEMAP ──────────────────────────────────────
 // Every holding as a rectangle: area is what it is worth, colour is whether it
