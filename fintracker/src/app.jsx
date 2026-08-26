@@ -6424,23 +6424,34 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
               <span className={`text-xs font-bold tabular-nums ${dk?'text-white':'text-slate-800'}`}>{fmt(total)}</span>
             </div>
 
-            <div className={`flex h-2 rounded-full overflow-hidden mb-2.5 ${dk?'bg-white/8':'bg-slate-100'}`}>
-              {segs.map(s=>(
-                <div key={s.key} title={`${s.name} · ${fmt(s.amt)}`}
-                  className="h-full transition-all duration-500"
-                  style={{width:`${s.amt/total*100}%`, background:s.clr}}/>
-              ))}
-            </div>
+            {/* One bar per row, on equal tracks — the same shape the P/L card
+                uses, so the two panels read the same way.
 
-            <div className="space-y-1">
-              {segs.map(s=>(
-                <div key={s.key} className="flex items-center gap-2 text-[11px]">
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{background:s.clr}}/>
-                  <span className={`flex-1 truncate ${dk?'text-slate-300':'text-slate-600'}`}>{s.name}</span>
-                  <span className={`font-semibold tabular-nums ${dk?'text-white':'text-slate-700'}`}>{fmt(s.amt)}</span>
-                  <span className={`w-9 text-right tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{Math.round(s.amt/total*100)}%</span>
-                </div>
-              ))}
+                The stacked bar that used to sit above this list is gone. It
+                encoded the split, and then the list encoded it again as
+                percentages, which is one fact drawn twice; and stretched across
+                the full card a 4% wallet became a sliver two pixels wide,
+                impossible to see and impossible to compare against anything.
+                Equal tracks give the small wallet somewhere to stand, and give
+                the eye a straight edge to read every row against.
+
+                The total at the top right is what says these are parts of a
+                whole, which is the one thing the stacked bar was better at. */}
+            <div className="space-y-1.5">
+              {segs.map(s=>{
+                const pct = s.amt/total*100;
+                return (
+                  <div key={s.key} className="flex items-center gap-2 text-[11px]">
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{background:s.clr}}/>
+                    <span className={`truncate flex-shrink-0 ${dk?'text-slate-300':'text-slate-600'}`} style={{width:'34%'}}>{s.name}</span>
+                    <span className={`flex-1 h-1.5 rounded-full overflow-hidden min-w-0 ${dk?'bg-white/8':'bg-slate-100'}`}>
+                      <span className="block h-full rounded-full transition-all duration-500" style={{width:`${pct}%`, background:s.clr}}/>
+                    </span>
+                    <span className={`font-semibold tabular-nums whitespace-nowrap ${dk?'text-white':'text-slate-700'}`}>{fmt(s.amt)}</span>
+                    <span className={`w-9 text-right tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{Math.round(pct)}%</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
