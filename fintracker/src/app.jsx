@@ -6193,9 +6193,36 @@ const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
     ro.observe(wrapRef.current);
     return ()=>ro.disconnect();
   },[]);
+  // Two different answers to "the small holdings are invisible", kept separate
+  // because only one of them is free.
+  //
+  // `tmType` narrows what is being compared. A ฿1.5M amulet collection and a
+  // ฿266K stock are not really comparable holdings, and once the view is only
+  // stocks the remaining values sit close enough together that every one of
+  // them gets a readable tile. Nothing is distorted — the question changed.
+  //
+  // `even` is the other answer, and it costs something: it lays the tiles out
+  // by the square root of value, which pulls the range in hard and shows
+  // everything at once, but area then no longer means value. It is off by
+  // default and its button says what it does, because a chart that quietly
+  // misrepresents its own numbers is worse than one that is hard to read.
+  const [tmType, setTmType] = useState('all');
+  const [even, setEven] = useState(false);
+  const TM_TABS = [
+    {k:'all',    l:'ทั้งหมด'},
+    {k:'stock',  l:'หุ้น'},
+    {k:'crypto', l:'คริปโต'},
+    {k:'gold',   l:'ทองคำ'},
+    {k:'other',  l:'อื่นๆ'},
+  ];
+
   const boxes = useMemo(()=>{
+    const inView = a => tmType==='all' ? a.type!=='cash'
+                  : tmType==='other'   ? (a.type==='other'||a.type==='property')
+                  : tmType==='stock'   ? ['stock','etf','fund','bond'].includes(a.type)
+                  : a.type===tmType;
     const items = assets
-      .filter(a=>a.type!=='cash')
+      .filter(inView)
       .map(a=>{
         const mult = a.currency==='USD' ? usdRate : 1;
         const {taggedIn, taggedOut} = assetTagged(txs, a.id);
@@ -6207,10 +6234,39 @@ const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
       .filter(i=>i.val>0)
       .sort((a,b)=>b.val-a.val);
     if(!items.length) return [];
-    return treemapLayout(items, 0, 0, 100, 100);
-  },[assets,txs,usdRate]);
+    // Laid out on `w`, labelled from `val` — so the figures printed on a tile
+    // stay true even when its size has been evened out.
+    const forLayout = items.map(i=>({...i, w: even ? Math.sqrt(i.val) : i.val}));
+    return treemapLayout(forLayout.map(i=>({...i, val:i.w, real:i})), 0, 0, 100, 100)
+      .map(b=>({...b.real, x:b.x, y:b.y, w:b.w, h:b.h}));
+  },[assets,txs,usdRate,tmType,even]);
 
-  if(!boxes.length) return null;
+  const tabs = (
+    <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+      <div className={`flex gap-0.5 p-0.5 rounded-full ${dk?'bg-white/5':'bg-slate-100'}`}>
+        {TM_TABS.map(t=>(
+          <button key={t.k} onClick={()=>setTmType(t.k)}
+            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors ${tmType===t.k?'bg-orange-400 text-orange-950':(dk?'text-slate-400 hover:text-slate-200':'text-slate-500 hover:text-slate-700')}`}>
+            {t.l}
+          </button>
+        ))}
+      </div>
+      <button onClick={()=>setEven(v=>!v)}
+        title="ย่อช่องว่างระหว่างรายการใหญ่กับเล็ก เพื่อให้เห็นรายการเล็กชัดขึ้น — พื้นที่จะไม่ตรงกับมูลค่าจริง"
+        className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${even?(dk?'border-orange-400/60 text-orange-300 bg-orange-400/10':'border-orange-400 text-orange-600 bg-orange-50'):(dk?'border-white/10 text-slate-400 hover:text-slate-200':'border-slate-200 text-slate-500 hover:text-slate-700')}`}>
+        {even ? '⚖ สเกลเท่ากันมากขึ้น (พื้นที่ ≠ มูลค่า)' : '⚖ เห็นรายการเล็กชัดขึ้น'}
+      </button>
+    </div>
+  );
+
+  if(!boxes.length) return (
+    <div>
+      {tabs}
+      <div className={`h-40 flex items-center justify-center text-xs rounded-xl ${dk?'text-slate-500 bg-white/[0.02]':'text-slate-400 bg-slate-50'}`}>
+        ไม่มีรายการในประเภทนี้
+      </div>
+    </div>
+  );
 
   // Colour says direction and strength, not category: a flat sage or terracotta
   // for a small move, deepening as the move gets larger, so a heavy loss is
@@ -6232,6 +6288,8 @@ const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
     // its figures. The bounds matter more than the ratio: min so a phone does
     // not collapse it to a strip, max so a wide monitor does not turn it back
     // into a wall.
+    <div>
+    {tabs}
     <div ref={wrapRef} className="relative w-full" style={{aspectRatio:'3/1', minHeight:'260px', maxHeight:'360px'}}>
       {boxes.map(b=>{
         // A box under roughly 7% of a side has no room for two lines of type;
@@ -6269,6 +6327,7 @@ const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
           </div>
         );
       })}
+    </div>
     </div>
   );
 };
