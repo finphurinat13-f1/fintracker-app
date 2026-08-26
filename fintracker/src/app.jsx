@@ -9216,34 +9216,63 @@ const App = () => {
     </div>
   );
 
+  // A skeleton's whole job is to reserve the shape the real content will take,
+  // so that when it arrives it fills a space already held rather than shoving
+  // the page around. This one was centred in a max-w-md column while the app it
+  // stands in for is a full-width grid — nothing lined up, so the content still
+  // jumped and all the skeleton bought was the feeling of loading, which a
+  // spinner gives for less.
+  //
+  // It matches the real geometry now: the same max-w-7xl, a nav bar in place so
+  // the chrome does not pop in, and blocks at the sizes the hero, the stat row
+  // and the charts actually occupy.
+  //
+  // The pulsing logo and "กำลังตรวจสอบ..." went with it. A caption explaining
+  // that loading is happening is the thing a skeleton exists to replace; the
+  // shapes say it, and they say what is coming as well.
   if (authLoading || dataLoading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6" style={bgStyle}>
-      <div className="w-full max-w-md">
-        <div className="flex flex-col items-center mb-7">
-          <div className="w-12 h-12 rounded-2xl logo-icon flex items-center justify-center mb-3 animate-pulse"><LogoSvg size={26}/></div>
-          <p className={`text-sm ${dk?'text-slate-400':'text-slate-500'}`}>{authLoading ? 'กำลังตรวจสอบ...' : 'กำลังโหลดข้อมูล...'}</p>
-        </div>
-        {(()=>{ const sk=`rounded-2xl animate-pulse ${dk?'bg-white/5':'bg-slate-100'}`;
-          if(page==='transactions') return (
-            <div className="space-y-2.5">
-              <div className={`h-11 ${sk}`}/>
-              {[0,1,2,3,4].map(i=><div key={i} className={`h-14 ${sk}`}/>)}
+    <div className="min-h-screen" style={bgStyle}>
+      {(()=>{ const sk=`rounded-2xl animate-pulse ${dk?'bg-white/[0.06]':'bg-slate-100'}`;
+        return (<>
+          <div className={`border-b ${dk?'border-gold-500/18':'border-gold-100'}`}>
+            <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl logo-icon flex items-center justify-center"><LogoSvg size={18}/></div>
+              <div className={`h-4 w-24 rounded-lg animate-pulse ${dk?'bg-white/[0.06]':'bg-slate-100'}`}/>
+              <div className="flex-1"/>
+              <div className={`h-7 w-7 rounded-lg animate-pulse ${dk?'bg-white/[0.06]':'bg-slate-100'}`}/>
             </div>
-          );
-          if(page==='assets'||page==='wallet') return (
-            <div className="grid grid-cols-2 gap-3">
-              {[0,1,2,3].map(i=><div key={i} className={`h-28 ${sk}`}/>)}
-            </div>
-          );
-          return (
-            <div className="space-y-3">
-              <div className={`h-24 ${sk}`}/>
-              <div className="grid grid-cols-2 gap-3"><div className={`h-20 ${sk}`}/><div className={`h-20 ${sk}`}/></div>
-              <div className={`h-32 ${sk}`}/>
-            </div>
-          );
-        })()}
-      </div>
+          </div>
+          <main className="max-w-7xl mx-auto px-4 py-6 space-y-5">
+            <div className={`h-6 w-52 ${sk}`}/>
+            {page==='transactions' ? (
+              <div className="space-y-2.5">
+                <div className={`h-12 ${sk}`}/>
+                {[0,1,2,3,4,5].map(i=><div key={i} className={`h-16 ${sk}`}/>)}
+              </div>
+            ) : page==='assets'||page==='wallet' ? (
+              <>
+                <div className={`h-28 ${sk}`}/>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[0,1,2,3,4,5].map(i=><div key={i} className={`h-52 ${sk}`}/>)}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={`h-40 ${sk}`}/>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[0,1,2,3].map(i=><div key={i} className={`h-24 ${sk}`}/>)}
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {[0,1,2].map(i=><div key={i} className={`h-28 ${sk}`}/>)}
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className={`h-72 ${sk}`}/><div className={`h-72 ${sk}`}/>
+                </div>
+              </>
+            )}
+          </main>
+        </>);
+      })()}
     </div>
   );
   // An account is required. Local mode was tried and dropped: it kept data off
