@@ -1631,7 +1631,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
         </div>
         <div className={card + ' p-5'}>
           <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>แผนผังพอร์ต</h3>
-          <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>ขนาด = มูลค่า · สี = กำไร/ขาดทุน</p>
+          <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>ขนาด = มูลค่า · สี = กำไร/ขาดทุน · ชี้เพื่อดูรายละเอียด</p>
           <PortfolioTreemap assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy}/>
         </div>
       </div>
@@ -6295,13 +6295,21 @@ const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
   };
 
   return (
-    <div className="relative w-full" style={{aspectRatio:'16/9', minHeight:'220px'}}>
+    // Taller, and closer to square. The small holdings were unreadable, but
+    // not because their share was wrong — a ฿1.5M position genuinely is 3.7
+    // times a ฿403K one and has to be drawn that way, or the picture stops
+    // telling the truth. They were unreadable because the panel was 16:9 and
+    // 220px tall, which left the tail with too few actual pixels to hold two
+    // lines of type. A 3:2 box at 320px is about 45% more area, shared out in
+    // the same proportions, and the split also produces squarer tiles when the
+    // container it cuts is itself squarer.
+    <div className="relative w-full" style={{aspectRatio:'3/2', minHeight:'320px'}}>
       {boxes.map(b=>{
         // A box under roughly 7% of a side has no room for two lines of type;
         // it keeps its colour and gives its name to the tooltip instead of
         // printing a truncated word nobody can read.
-        const roomy = b.w>13 && b.h>16;
-        const tiny  = b.w<7  || b.h<9;
+        const roomy = b.w>11 && b.h>13;
+        const tiny  = b.w<6  || b.h<7.5;
         return (
           <div key={b.id}
             title={`${b.name} · ${hide?'฿ •••••':fmt(b.val)} · ${b.pct>=0?'+':''}${b.pct.toFixed(1)}%`}
