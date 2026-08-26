@@ -32,9 +32,20 @@ firebase.initializeApp({
 const auth = firebase.auth();
 const db   = firebase.firestore();
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&display=swap" rel="stylesheet">
 <style>
-  * { font-family: 'Chakra Petch', sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+  /* IBM Plex Sans Thai, in place of Chakra Petch. Chakra Petch is a squared,
+     flat-terminal face built for a technical or gaming register; it read as
+     "software" where this needs to read as an instrument for handling money.
+     Plex was drawn for data and documentation, and its Thai and Latin were
+     designed together rather than fitted to each other — which matters here,
+     where a Thai label sits beside a Latin ticker on nearly every row.
+
+     Its figures are the real reason: wide, open, and clearly differentiated,
+     which is what a screen full of ฿ amounts needs. tabular-nums stays forced
+     globally so digits hold their column while a figure counts up or a value
+     refreshes. */
+  * { font-family: 'IBM Plex Sans Thai', sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
   .text-2xl, .text-3xl, .text-4xl, .text-5xl { letter-spacing: -0.025em; }
 
   /* ── Liquid Glass Background ── */

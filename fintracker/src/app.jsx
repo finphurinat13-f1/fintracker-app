@@ -27,7 +27,7 @@ const useCountUp = (value, dur=650, fromZero=false) => {
   return n;
 };
 
-Chart.defaults.font.family = 'Chakra Petch, sans-serif';
+Chart.defaults.font.family = 'IBM Plex Sans Thai, sans-serif';
 Chart.defaults.font.size = 11;
 Chart.defaults.color = 'rgba(148,163,184,0.75)';
 
@@ -358,7 +358,7 @@ const BarChart = ({ data, theme, hide=false }) => {
         { label:'รายจ่าย', data:data.expense, backgroundColor:dk?'rgba(201,114,106,0.75)':'rgba(201,114,106,0.65)', borderRadius:8, borderSkipped:false, barPercentage:0.65 },
       ]}, options:{ responsive:true, maintainAspectRatio:false,
         plugins:{
-          legend:{ labels:{ color:dk?'#94a3b8':'#64748b', usePointStyle:true, pointStyle:'circle', padding:20, font:{size:11,family:"'Chakra Petch',sans-serif"} } },
+          legend:{ labels:{ color:dk?'#94a3b8':'#64748b', usePointStyle:true, pointStyle:'circle', padding:20, font:{size:11,family:"'IBM Plex Sans Thai',sans-serif"} } },
           tooltip:{
             backgroundColor:dk?'rgba(13,27,46,0.95)':'rgba(255,255,255,0.97)',
             titleColor:dk?'#e2e8f0':'#1e293b', bodyColor:dk?'#94a3b8':'#64748b',
@@ -368,9 +368,9 @@ const BarChart = ({ data, theme, hide=false }) => {
           }
         },
         scales:{
-          x:{ grid:{display:false}, border:{display:false}, ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Chakra Petch',sans-serif"}} },
+          x:{ grid:{display:false}, border:{display:false}, ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'IBM Plex Sans Thai',sans-serif"}} },
           y:{ grid:{color:dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)'}, border:{display:false},
-              ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Chakra Petch',sans-serif"}, callback:v=>v>=1000?(v/1000).toFixed(0)+(hide?'':'K'):v} }
+              ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'IBM Plex Sans Thai',sans-serif"}, callback:v=>v>=1000?(v/1000).toFixed(0)+(hide?'':'K'):v} }
         }
       }
     });
@@ -401,10 +401,10 @@ const DonutChart = ({ data, theme, centerValue, hideAmt=false }) => {
         const cx=(left+right)/2, cy=(top+bottom)/2;
         ctx.save();
         ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.font=`600 13px 'Chakra Petch',sans-serif`;
+        ctx.font=`600 13px 'IBM Plex Sans Thai',sans-serif`;
         ctx.fillStyle=dk?'#f1f5f9':'#1e293b';
         ctx.fillText(displayCenter, cx, cy+6);
-        ctx.font=`10px 'Chakra Petch',sans-serif`;
+        ctx.font=`10px 'IBM Plex Sans Thai',sans-serif`;
         ctx.fillStyle=dk?'#64748b':'#94a3b8';
         ctx.fillText('รวม', cx, cy-12);
         ctx.restore();
@@ -434,7 +434,7 @@ const DonutChart = ({ data, theme, centerValue, hideAmt=false }) => {
     return (
       <div key={i} style={{display:'flex',alignItems:'center',gap:'7px',minWidth:0}}>
         <span style={{display:'inline-block',width:'14px',height:'2.5px',borderRadius:'2px',background:data.colors[i],flexShrink:0}}/>
-        <span style={{fontSize:'11px',fontFamily:"'Chakra Petch',sans-serif",color:dk?'#94a3b8':'#64748b',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+        <span style={{fontSize:'11px',fontFamily:"'IBM Plex Sans Thai',sans-serif",color:dk?'#94a3b8':'#64748b',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
           {narrow
             ? <>{label} <span style={{color:dk?'#c9a94b':'#d1b768'}}>{pct}%</span></>
             : hideAmt
@@ -479,7 +479,7 @@ const LineChart = ({ data, theme }) => {
       ]}, options:{ responsive:true, maintainAspectRatio:false,
         interaction:{ mode:'index', intersect:false },
         plugins:{
-          legend:{ labels:{ color:dk?'#94a3b8':'#64748b', usePointStyle:true, pointStyle:'circle', padding:20, font:{size:11,family:"'Chakra Petch',sans-serif"} } },
+          legend:{ labels:{ color:dk?'#94a3b8':'#64748b', usePointStyle:true, pointStyle:'circle', padding:20, font:{size:11,family:"'IBM Plex Sans Thai',sans-serif"} } },
           tooltip:{
             backgroundColor: dk?'rgba(13,27,46,0.95)':'rgba(255,255,255,0.97)',
             titleColor: dk?'#e2e8f0':'#1e293b',
@@ -490,9 +490,9 @@ const LineChart = ({ data, theme }) => {
           }
         },
         scales:{
-          x:{ grid:{display:false}, border:{display:false}, ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Chakra Petch',sans-serif"}} },
+          x:{ grid:{display:false}, border:{display:false}, ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'IBM Plex Sans Thai',sans-serif"}} },
           y:{ grid:{color:dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)'}, border:{display:false},
-              ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Chakra Petch',sans-serif"}, callback:v=>(v>=1000?(v/1000).toFixed(0)+'K':v)} }
+              ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'IBM Plex Sans Thai',sans-serif"}, callback:v=>(v>=1000?(v/1000).toFixed(0)+'K':v)} }
         }
       }
     });
@@ -515,7 +515,7 @@ const PlanChart = ({ data, theme }) => {
     if (!ref.current||!data) return;
     if (ch.current) ch.current.destroy();
     const dk = theme==='dark';
-    const axis = { color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Chakra Petch',sans-serif"} };
+    const axis = { color:dk?'#475569':'#94a3b8', font:{size:11,family:"'IBM Plex Sans Thai',sans-serif"} };
     ch.current = new Chart(ref.current, { type:'line', data:{
       labels: data.labels,
       datasets:[
@@ -528,7 +528,7 @@ const PlanChart = ({ data, theme }) => {
       ]}, options:{ responsive:true, maintainAspectRatio:false,
         interaction:{ mode:'index', intersect:false },
         plugins:{
-          legend:{ labels:{ color:dk?'#94a3b8':'#64748b', usePointStyle:true, pointStyle:'circle', padding:18, font:{size:11,family:"'Chakra Petch',sans-serif"} } },
+          legend:{ labels:{ color:dk?'#94a3b8':'#64748b', usePointStyle:true, pointStyle:'circle', padding:18, font:{size:11,family:"'IBM Plex Sans Thai',sans-serif"} } },
           tooltip:{
             backgroundColor: dk?'rgba(13,27,46,0.95)':'rgba(255,255,255,0.97)',
             titleColor: dk?'#e2e8f0':'#1e293b', bodyColor: dk?'#94a3b8':'#64748b',
@@ -1143,7 +1143,7 @@ const DiscoverOverlay = ({ active }) => {
         {rects.map((r,i)=>(
           <React.Fragment key={i}>
             <div style={{position:'fixed',top:r.top-3,left:r.left-3,width:r.w+6,height:r.h+6,border:'2px solid #c3a343',borderRadius:12,animation:'hintPulse 1.6s ease-in-out infinite',boxSizing:'border-box'}}/>
-            <div style={{position:'fixed',top:r.ly,left:r.lx,zIndex:71}}><span style={{display:'inline-block',background:'#c3a343',color:'#241d08',fontSize:11,fontWeight:700,padding:'3px 9px',borderRadius:8,boxShadow:'0 4px 12px rgba(0,0,0,.5)',whiteSpace:'nowrap',fontFamily:"'Chakra Petch',sans-serif"}}>💡 {r.hint}</span></div>
+            <div style={{position:'fixed',top:r.ly,left:r.lx,zIndex:71}}><span style={{display:'inline-block',background:'#c3a343',color:'#241d08',fontSize:11,fontWeight:700,padding:'3px 9px',borderRadius:8,boxShadow:'0 4px 12px rgba(0,0,0,.5)',whiteSpace:'nowrap',fontFamily:"'IBM Plex Sans Thai',sans-serif"}}>💡 {r.hint}</span></div>
           </React.Fragment>
         ))}
       </div>
