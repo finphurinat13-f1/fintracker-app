@@ -1798,6 +1798,8 @@ const TxPage = ({ txs, theme, onEdit, onAdd, onDelete, onBulkDelete, onExport, w
 
   return (
     <div className="space-y-4 fade-up">
+      <PageHeader theme={theme} lead="รายการ" accent="ทั้งหมด"
+        sub={`${txs.length} รายการ · รายรับ รายจ่าย โยกเงิน และปันผล`}/>
       {onAdd&&(
         <div className="flex items-center justify-between">
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>📋 รายการทั้งหมด</h2>
@@ -3459,6 +3461,8 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
 
   return (
     <div className="space-y-4 fade-up">
+      <PageHeader theme={theme} lead="สินทรัพย์" accent="ที่ถืออยู่"
+        sub={`${assets.length} รายการ · หุ้น คริปโต ทองคำ และอื่นๆ`}/>
       {/* Header */}
       <div className={`${card} p-4 flex items-center justify-between flex-wrap gap-3`}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -3596,7 +3600,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
             <div className={`flex gap-1 p-1 rounded-xl ${dk?'bg-white/5':'bg-slate-100'}`}>
               {[{k:'all',l:'ทั้งหมด'},{k:'stock',l:'📈 หุ้น'},{k:'crypto',l:'🪙 คริปโต'},{k:'gold',l:'🥇 ทองคำ'},{k:'cash',l:'💵 เงินสด'},{k:'other',l:'📦 อื่นๆ'}].map(({k,l})=>(
                 <button key={k} onClick={()=>setAssetTab(k)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${assetTab===k?(dk?'bg-gold-500 text-white':'bg-white text-gold-600 shadow-sm'):(dk?'text-slate-400 hover:text-white':'text-slate-500 hover:text-slate-700')}`}>
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${assetTab===k?(dk?'bg-orange-400 text-orange-950':'bg-white text-orange-600 shadow-sm'):(dk?'text-slate-400 hover:text-white':'text-slate-500 hover:text-slate-700')}`}>
                   {l}
                 </button>
               ))}
@@ -4192,6 +4196,8 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
 
   return (
     <div className="space-y-4 fade-up">
+      <PageHeader theme={theme} lead="สรุป" accent="ภาพรวม"
+        sub="รายเดือน รายปี และเป้าหมายเงินเก็บ"/>
       {/* Toggle */}
       <div className={`${card} p-4 flex items-center justify-between flex-wrap gap-3`}>
         <div>
@@ -4772,6 +4778,8 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
 
   return (
     <div className="space-y-4 fade-up">
+      <PageHeader theme={theme} lead="งบประมาณ" accent="เดือนนี้"
+        sub="ตั้งเพดานรายหมวด แล้วดูว่าใช้ไปเท่าไหร่แล้ว"/>
       <div className="grid grid-cols-3 gap-4">
         {[{l:'Budget รวม',v:fmt(totBudget),c:dk?'tg-gold':'text-gold-600',
            note: bSplit.irregular>0 ? `ประจำ ${fmt(bSplit.regular)} · ไม่ประจำ ${fmt(bSplit.irregular)}` : null},
@@ -5115,11 +5123,11 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 <label className={`text-xs font-medium mb-1.5 block ${dk?'text-slate-300':'text-slate-600'}`}>ประเภท</label>
                 <div className={`inline-flex w-full p-1 rounded-full ${dk?'bg-white/5':'bg-slate-100'}`}>
                   <button onClick={()=>setNewIrregular(false)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-sm font-medium transition-all ${!newIrregular?'bg-gold-500 text-white shadow-sm':(dk?'text-slate-400 hover:text-slate-200':'text-slate-500 hover:text-slate-700')}`}>
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-sm font-medium transition-all ${!newIrregular?'bg-orange-400 text-orange-950 shadow-sm':(dk?'text-slate-400 hover:text-slate-200':'text-slate-500 hover:text-slate-700')}`}>
                     🔁 ประจำ
                   </button>
                   <button onClick={()=>setNewIrregular(true)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-sm font-medium transition-all ${newIrregular?'bg-gold-500 text-white shadow-sm':(dk?'text-slate-400 hover:text-slate-200':'text-slate-500 hover:text-slate-700')}`}>
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-sm font-medium transition-all ${newIrregular?'bg-orange-400 text-orange-950 shadow-sm':(dk?'text-slate-400 hover:text-slate-200':'text-slate-500 hover:text-slate-700')}`}>
                     📦 ไม่ประจำ
                   </button>
                 </div>
@@ -5275,6 +5283,8 @@ const DebtPage = ({ theme, debts, setDebts }) => {
 
   return (
     <div className="space-y-4 fade-up">
+      <PageHeader theme={theme} lead="หนี้สิน" accent="คงเหลือ"
+        sub="ยอดค้าง ดอกเบี้ย และแผนการผ่อน"/>
       {debts.length>0&&(
         <div className="grid grid-cols-3 gap-4">
           {[{l:'หนี้คงเหลือ',v:fmt(totals.remaining),c:dk?'tg-red':'text-rose-500'},
@@ -5589,7 +5599,7 @@ const DCAModal = ({open, onClose, asset, usdRate=35, theme}) => {
           {/* Mode toggle */}
           <div className={`flex p-1 rounded-xl ${dk?'bg-white/5':'bg-slate-100'}`}>
             {[{k:'amount',l:`ซื้อเป็นเงิน (${cur})`},{k:'qty',l:'ซื้อเป็นจำนวน'}].map(({k,l})=>(
-              <button key={k} onClick={()=>setMode(k)} className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${mode===k?(dk?'bg-gold-500 text-white':'bg-white text-gold-600 shadow-sm'):(dk?'text-slate-400':'text-slate-500')}`}>{l}</button>
+              <button key={k} onClick={()=>setMode(k)} className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${mode===k?(dk?'bg-orange-400 text-orange-950':'bg-white text-orange-600 shadow-sm'):(dk?'text-slate-400':'text-slate-500')}`}>{l}</button>
             ))}
           </div>
           {/* Inputs */}
@@ -5888,6 +5898,31 @@ const UnifiedTransferModal = ({open, onClose, onSave, wallets=[], assets=[], txs
 };
 
 // ── WALLET PAGE ──────────────────────────────────────────────
+// ── PAGE HEADER ────────────────────────────────────────────
+// The reference opens every page with one large headline where a single word
+// carries the accent, and a quiet line under it. Two things make it work and
+// both are easy to lose: the accent falls on the word that says what the page
+// is about — never the generic half — and the supporting line stays small
+// enough that the heading is unmistakably the larger of the two.
+//
+// `lead` is the plain part, `accent` the coloured word. Splitting them as props
+// rather than parsing a marker out of one string means the colour cannot land
+// on the wrong word by accident.
+const PageHeader = ({ lead, accent, sub, theme, right=null }) => {
+  const dk = theme==='dark';
+  return (
+    <div className="flex items-end justify-between gap-4 flex-wrap mb-6">
+      <div className="min-w-0">
+        <h1 className={`text-3xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`} style={{textWrap:'balance'}}>
+          {lead} <span className="text-orange-400">{accent}</span>
+        </h1>
+        {sub && <p className={`text-sm mt-1.5 ${dk?'text-slate-400':'text-slate-500'}`}>{sub}</p>}
+      </div>
+      {right && <div className="flex items-center gap-2 flex-wrap">{right}</div>}
+    </div>
+  );
+};
+
 // ── WALLET CARD FACE ───────────────────────────────────────
 // The top of a wallet card, built to read as a physical bank card. Positions
 // map to the real thing rather than being decoration hung on a panel: the
@@ -5919,20 +5954,18 @@ const WalletCardFace = ({ w, meta, balanceText, usdText, hidden, accent }) => (
       <circle cx="300" cy="30"  r="150" fill="none" stroke={accent} strokeWidth="0.8" opacity="0.18"/>
     </svg>
 
+    {/* The top-right corner is left empty on purpose: the card's edit and delete
+        buttons are positioned there by the wallet card around this one, and the
+        first version put the type badge under them. They overlapped, and since
+        the badge sits in a stacking context of its own it took the clicks. The
+        badge moved down beside the wallet name, which is where a card prints
+        its network mark anyway. */}
     <div className="relative px-4 pt-3.5 pb-3">
-      <div className="flex items-start justify-between gap-2">
-        {/* Chip */}
-        <svg width="30" height="23" viewBox="0 0 30 23" aria-hidden="true">
-          <rect x="0.5" y="0.5" width="29" height="22" rx="4" fill="rgba(212,175,69,0.18)" stroke={accent} strokeWidth="0.8" opacity="0.85"/>
-          <path d="M0 8h9M0 15h9M21 8h9M21 15h9M9 0v23M21 0v23" stroke={accent} strokeWidth="0.7" opacity="0.55" fill="none"/>
-        </svg>
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-md flex items-center justify-center text-sm flex-shrink-0 overflow-hidden">
-            {w.type==='bank' ? detectBankIcon(w.name,24) : w.type==='crypto' ? detectCryptoWalletIcon(w.name,24) : (meta.icon || w.icon)}
-          </div>
-          <span className="text-[11px] font-medium uppercase truncate" style={{color:accent, letterSpacing:'0.08em'}}>{meta.label}</span>
-        </div>
-      </div>
+      {/* Chip */}
+      <svg width="30" height="23" viewBox="0 0 30 23" aria-hidden="true">
+        <rect x="0.5" y="0.5" width="29" height="22" rx="4" fill="rgba(212,175,69,0.18)" stroke={accent} strokeWidth="0.8" opacity="0.85"/>
+        <path d="M0 8h9M0 15h9M21 8h9M21 15h9M9 0v23M21 0v23" stroke={accent} strokeWidth="0.7" opacity="0.55" fill="none"/>
+      </svg>
 
       {/* Balance sits on the card-number line: same weight, same wide tracking,
           same tabular figures, so a masked balance keeps the card's shape. */}
@@ -5941,9 +5974,14 @@ const WalletCardFace = ({ w, meta, balanceText, usdText, hidden, accent }) => (
       </div>
 
       <div className="flex items-end justify-between gap-3 mt-2">
-        <div className="min-w-0">
-          <div className="text-[9px] uppercase" style={{color:'rgba(240,230,205,0.45)', letterSpacing:'0.12em'}}>กระเป๋า</div>
-          <div className="text-xs font-semibold truncate" style={{color:'rgba(240,230,205,0.92)'}}>{w.name}</div>
+        <div className="min-w-0 flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md flex items-center justify-center text-sm flex-shrink-0 overflow-hidden">
+            {w.type==='bank' ? detectBankIcon(w.name,24) : w.type==='crypto' ? detectCryptoWalletIcon(w.name,24) : (meta.icon || w.icon)}
+          </div>
+          <div className="min-w-0">
+            <div className="text-[9px] uppercase truncate" style={{color:accent, letterSpacing:'0.12em'}}>{meta.label}</div>
+            <div className="text-xs font-semibold truncate" style={{color:'rgba(240,230,205,0.92)'}}>{w.name}</div>
+          </div>
         </div>
         <div className="text-right flex-shrink-0">
           <div className="text-[9px] uppercase" style={{color:'rgba(240,230,205,0.45)', letterSpacing:'0.12em'}}>USD</div>
@@ -6174,6 +6212,8 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
 
   return (
     <div className="space-y-4 fade-up">
+      <PageHeader theme={theme} lead="กระเป๋าเงิน" accent="ทั้งหมด"
+        sub={`${wallets.length} กระเป๋า · เงินสด บัญชีธนาคาร และวอลเล็ตคริปโต`}/>
       {/* Summary header */}
       <div className={`${card} p-5`}>
         <div className="flex flex-col gap-3">
@@ -6367,7 +6407,10 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                 {editOrder&&<div className={`absolute top-3 left-4 text-lg select-none ${dk?'text-slate-500':'text-slate-300'}`}>⠿</div>}
                 <div className="pl-5 pr-5 pt-5 pb-0">
                   {/* Action buttons */}
-                  <div className={`absolute top-3 right-3 flex gap-1 transition-opacity ${editOrder?'opacity-0 pointer-events-none':'opacity-0 group-hover:opacity-100'}`}>
+                  {/* z-20 keeps these above the card face below them. The face
+                      paints its own stacking context for the grain and arcs, so
+                      without it the buttons rendered but could not be clicked. */}
+                  <div className={`absolute top-3 right-3 z-20 flex gap-1 transition-opacity ${editOrder?'opacity-0 pointer-events-none':'opacity-0 group-hover:opacity-100'}`}>
                     <button data-hint="แก้ไขกระเป๋า — เปิด/ปิดฟีเจอร์ นับแบงค์, รับปันผล ได้ที่นี่" title="แก้ไขกระเป๋า" onClick={()=>onOpenWalletModal(w)}
                       className={`p-1.5 rounded-lg ${dk?'hover:bg-white/15 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="edit" s={13}/></button>
                     <button title="ลบกระเป๋า" onClick={()=>ask('ลบกระเป๋าเงิน',`ยืนยันการลบกระเป๋า "${w.name}"? การดำเนินการนี้ไม่สามารถย้อนกลับได้`,()=>onDelete(w.id))}
@@ -9214,7 +9257,7 @@ const App = () => {
             const active = page===k;
             return (
               <button key={k} onClick={()=>{setPage(k);localStorage.setItem('ft-page',k);}}
-                className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-2xl transition-all active:scale-90 ${active?(dk?'text-gold-400':'text-gold-600'):(dk?'text-slate-500':'text-slate-400')}`}>
+                className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-2xl transition-all active:scale-90 ${active?(dk?'text-orange-400':'text-orange-600'):(dk?'text-slate-500':'text-slate-400')}`}>
                 <div className={`p-1.5 rounded-xl transition-all ${active?(dk?'bg-gold-500/15':'bg-gold-50'):''}`}>
                   <Ic n={i} s={20}/>
                 </div>

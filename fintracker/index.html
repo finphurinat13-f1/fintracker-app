@@ -100,11 +100,42 @@ const db   = firebase.firestore();
   .card-solid:hover   { border-color: rgba(201,169,75,0.28); }
   .glass-light:hover  { border-color: rgba(201,169,75,0.35); }
 
-  /* Tighter corners throughout. rounded-2xl (16px) on every card is what makes
-     a dense screen read as a pile of pills; 10-12px keeps the shape without
-     rounding the data away. Overridden here rather than at ~200 call sites. */
-  .rounded-2xl { border-radius: 0.75rem !important; }
-  .rounded-xl  { border-radius: 0.625rem !important; }
+  /* Corners opened up for the new look — 18px where cards were 12px. The
+     earlier 12px was a reaction to 16px-on-everything, which read as a pile of
+     pills because every element had the same radius. What makes a large radius
+     work in the reference is that only the big panels carry it while rows and
+     chips inside stay tight, so the curve marks the panel edge instead of
+     repeating at four scales. Set here rather than at ~200 call sites. */
+  .rounded-2xl { border-radius: 1.125rem !important; }
+  .rounded-xl  { border-radius: 0.75rem  !important; }
+
+  /* ── Pill controls ───────────────────────────────────────────────────────
+     Buttons go fully round, which is the single most recognisable thing about
+     the reference. Applied to real controls only: a pill is a shape that says
+     "press me", so putting it on a static chip or a card would spend the signal
+     on things that do nothing. */
+  .btn-primary, .btn-ghost { border-radius: 999px !important; }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--pill-edge, rgba(240,230,205,0.22));
+    color: inherit;
+    transition: border-color .18s ease, background .18s ease;
+  }
+  .btn-ghost:hover { border-color: rgba(232,118,58,0.55); background: rgba(232,118,58,0.06); }
+
+  /* ── Panel weave ─────────────────────────────────────────────────────────
+     The faint diagonal grid the reference runs behind its dark panels. At 2%
+     it is under the threshold of being seen as lines; what it does is stop a
+     large black panel from reading as a hole in the page. */
+  .card-solid { position: relative; }
+  .card-solid::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    border-radius: inherit;
+    background-image:
+      repeating-linear-gradient(45deg, rgba(212,175,69,0.02) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(-45deg, rgba(212,175,69,0.02) 0 1px, transparent 1px 34px);
+  }
+  .card-solid > * { position: relative; }
 
   /* ── Type scale ──────────────────────────────────────────────────────────
      The sizes in use were 9, 10, 11, 12, 14, 16, 18, 20, 24, 30 — four of them
@@ -180,14 +211,20 @@ const db   = firebase.firestore();
   .tg-emerald { color: #7aab8a; }
 
   /* ── Institutional Button ── */
+  /* The primary button is the one place orange runs at full strength. It used
+     to be gold, which meant the app's most-pressed control was the same colour
+     as every card border and every accent figure around it — the button had to
+     shout to be found. Flat rather than a gradient: the reference's buttons are
+     solid, and a gradient reads as a surface where a solid reads as a control.
+     Dark ink on it, because orange at full saturation loses white text. */
   .btn-primary {
-    background: linear-gradient(135deg, rgba(201,169,74,0.97) 0%, rgba(168,134,47,0.97) 100%);
-    border: 1px solid rgba(220,190,110,0.5);
-    box-shadow: inset 0 1px 0 rgba(255,244,210,0.35), 0 4px 18px rgba(168,134,47,0.35);
+    background: #e8763a;
+    border: 1px solid #e8763a;
+    box-shadow: 0 4px 18px rgba(232,118,58,0.28);
     transition: all 0.2s cubic-bezier(0.22,1,0.36,1);
-    color: #10173a;
+    color: #1b0d05;
   }
-  .btn-primary:hover { background: linear-gradient(135deg, rgba(214,184,92,0.99) 0%, rgba(184,148,55,0.99) 100%); box-shadow: inset 0 1px 0 rgba(255,244,210,0.45), 0 6px 24px rgba(168,134,47,0.5); transform: translateY(-1px); }
+  .btn-primary:hover { background: #f08849; border-color: #f08849; box-shadow: 0 6px 24px rgba(232,118,58,0.42); transform: translateY(-1px); }
   .btn-primary:active { transform: translateY(0); }
   /* Solid gold fills read as classic navy-on-gold (complementary hue, near-black
      contrast): [class~=] matches only the solid utility token, never /opacity tints. */
@@ -199,8 +236,11 @@ const db   = firebase.firestore();
   .badge-neg { background: rgba(251,113,133,0.1) !important; border: 1px solid rgba(251,113,133,0.3) !important; }
 
   /* ── Nav & Logo ── */
-  .nav-active-dk { background: rgba(201,169,74,0.16); border: 1px solid rgba(220,190,110,0.35); box-shadow: inset 0 1px 0 rgba(255,244,210,0.1); }
-  .nav-active-lt { background: rgba(168,134,47,0.1); border: 1px solid rgba(168,134,47,0.35); box-shadow: 0 2px 8px rgba(168,134,47,0.12); }
+  /* The active tab is a full capsule in the action colour, the way the
+     reference marks the page you are on — and gold-bordered nav items sitting
+     among gold-bordered cards had stopped standing out at all. */
+  .nav-active-dk { background: rgba(232,118,58,0.16); border: 1px solid rgba(232,118,58,0.45); border-radius: 999px; box-shadow: none; }
+  .nav-active-lt { background: rgba(232,118,58,0.10); border: 1px solid rgba(232,118,58,0.40); border-radius: 999px; box-shadow: none; }
   .logo-icon { background: linear-gradient(135deg,rgba(201,169,74,0.25) 0%,rgba(168,134,47,0.4) 100%); border: 1px solid rgba(220,190,110,0.4); box-shadow: inset 0 1px 0 rgba(255,244,210,0.25), 0 4px 14px rgba(168,134,47,0.25); }
 
   /* ── Nav bar background override ── */

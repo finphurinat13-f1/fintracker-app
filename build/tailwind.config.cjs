@@ -28,6 +28,44 @@ module.exports = {
     // terracotta would have been more honest and would also have meant editing
     // all 345 sites to gain nothing a comment cannot say.
     colors: {
+      // The action colour. Gold says what the app is made of; orange says where
+      // to press. Splitting them settles an argument the interface could not
+      // otherwise win: with one colour doing both, "this is the brand" and
+      // "this is the live control" looked identical, and every gold border made
+      // the gold buttons quieter. Orange is used sparingly and at full strength
+      // — buttons, the active tab, one word in a page heading — which is what
+      // gives a single accent its force.
+      orange: {
+        50:  '#fdf3ee',
+        100: '#fae1d4',
+        200: '#f4c1a6',
+        300: '#ee9d74',
+        400: '#e8763a',
+        500: '#d8602a',
+        600: '#b44c20',
+        700: '#8f3d1b',
+        800: '#733219',
+        900: '#5e2b18',
+        950: '#33140a',
+      },
+      // Neutral, and warm rather than blue. Tailwind's slate is a blue-grey, so
+      // 565 pieces of secondary text were quietly tinted with gold's opposite —
+      // the same fight the page ground had before it went neutral, just spread
+      // thinner and everywhere. These greys carry a trace of the accent instead,
+      // which is what makes a neutral read as chosen rather than defaulted to.
+      slate: {
+        50:  '#f7f6f4',
+        100: '#eceae6',
+        200: '#d8d5cf',
+        300: '#b8b4ac',
+        400: '#908b82',
+        500: '#736e66',
+        600: '#5c5851',
+        700: '#484540',
+        800: '#333029',
+        900: '#1f1d1a',
+        950: '#121110',
+      },
       emerald: {
         50:  '#f0f5f2',
         100: '#dceae1',
