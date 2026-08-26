@@ -1551,7 +1551,7 @@ const MonthGroup = ({ month, txs, dk, defaultOpen=false, sel, toggleSel, onEdit,
     <div className={`border-b last:border-0 ${dk?'border-white/5':'border-slate-100'}`}>
       {/* Parent summary row */}
       <div onClick={()=>setOpen(o=>!o)}
-        className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer select-none transition-colors ${dk?(open?'bg-white/[0.04]':'bg-white/[0.02] hover:bg-white/[0.04]'):(open?'bg-slate-50':'hover:bg-slate-50')}`}>
+        className={`flex items-center gap-3 px-4 py-4 cursor-pointer select-none transition-colors ${dk?(open?'bg-white/[0.04]':'bg-white/[0.02] hover:bg-white/[0.04]'):(open?'bg-slate-50':'hover:bg-slate-50')}`}>
         <div className={`flex-shrink-0 transition-transform duration-200 ${dk?'text-slate-400':'text-slate-500'}`}
           style={{transform:open?'rotate(90deg)':'rotate(0deg)'}}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -1591,7 +1591,7 @@ const MonthGroup = ({ month, txs, dk, defaultOpen=false, sel, toggleSel, onEdit,
               </div>
             )}
             <div
-              className={`flex items-center gap-3 px-4 py-3.5 border-t group transition-colors ${dk?(i%2===0?'border-white/[0.04] bg-white/[0.01] hover:bg-white/[0.05]':'border-white/[0.04] bg-black/[0.08] hover:bg-white/[0.04]'):(i%2===0?'border-slate-100 bg-white hover:bg-slate-50':'border-slate-100 bg-slate-50/50 hover:bg-slate-100/60')}`}>
+              className={`flex items-center gap-3 px-4 py-4 border-t group transition-colors ${dk?(i%2===0?'border-white/[0.04] bg-white/[0.01] hover:bg-white/[0.05]':'border-white/[0.04] bg-black/[0.08] hover:bg-white/[0.04]'):(i%2===0?'border-slate-100 bg-white hover:bg-slate-50':'border-slate-100 bg-slate-50/50 hover:bg-slate-100/60')}`}>
               <input type="checkbox" checked={sel.includes(t.id)} onChange={()=>toggleSel(t.id)} className="rounded w-3.5 h-3.5 flex-shrink-0 opacity-50 hover:opacity-100 transition-opacity"/>
               {/* Category color bar */}
               <div className="w-[3px] h-8 rounded-full flex-shrink-0 opacity-70" style={{background:txBarClr(t)}}/>
@@ -1922,7 +1922,7 @@ const TxPage = ({ txs, theme, onEdit, onAdd, onDelete, onBulkDelete, onExport, w
       {/* ── Recurring Collapsible Block ── */}
       <div className={`rounded-2xl overflow-hidden ${dk?'card-solid':'glass-light shadow-sm'}`}>
         <div onClick={()=>setRecOpen(o=>!o)}
-          className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer select-none transition-colors ${dk?'hover:bg-white/5':'hover:bg-slate-50'}`}>
+          className={`flex items-center gap-3 px-4 py-4 cursor-pointer select-none transition-colors ${dk?'hover:bg-white/5':'hover:bg-slate-50'}`}>
           <div className={`flex-shrink-0 transition-transform duration-200 ${dk?'text-slate-400':'text-slate-500'}`} style={{transform:recOpen?'rotate(90deg)':'rotate(0deg)'}}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
@@ -2229,15 +2229,19 @@ const detectBankIcon = (name, s=22) => {
   return <BankIcon s={s}/>;
 };
 
+// Circles, not rounded squares, and a size up. The badge is the thing that lets
+// a long table be scanned by shape instead of read line by line, and a circle
+// is the more distinct silhouette against rows of rectangular cells — which is
+// why every dashboard that does this well uses one.
 const AssetIcon = ({a, ti, size='md'}) => {
-  const dim = size==='sm' ? 'w-7 h-7' : 'w-8 h-8';
+  const dim = size==='sm' ? 'w-7 h-7' : 'w-9 h-9';
   if (a.type === 'stock') {
     const ticker = (a.ticker || a.name).replace(/[^A-Za-z0-9]/g,'').toUpperCase() || a.name.substring(0,4).toUpperCase();
     const CUSTOM_ICONS = { 'SOFI': SoFiIcon };
     if (CUSTOM_ICONS[ticker]) {
       const CustomIcon = CUSTOM_ICONS[ticker];
       const px = size==='sm' ? 28 : 32;
-      return <div className={`${dim} rounded-xl overflow-hidden flex-shrink-0`}><CustomIcon s={px}/></div>;
+      return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><CustomIcon s={px}/></div>;
     }
     // Initials on a colour hashed from the ticker. They were all the
     // same gold, so twenty holdings read as one shape repeated and every row had
@@ -2245,7 +2249,7 @@ const AssetIcon = ({a, ti, size='md'}) => {
     if (ticker) {
       const c = tickerClr(ticker);
       return (
-        <div className={`${dim} rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center`}
+        <div className={`${dim} rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center`}
           style={{background:`linear-gradient(135deg, ${c}, ${c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)'}}>
           <span className="text-xs font-bold text-white">{ticker.substring(0,2)}</span>
         </div>
@@ -2253,7 +2257,7 @@ const AssetIcon = ({a, ti, size='md'}) => {
     }
     const initials = a.name.replace(/[^A-Za-z]/g,'').substring(0,2).toUpperCase() || a.name.substring(0,2).toUpperCase();
     return (
-      <div className={`${dim} rounded-xl flex items-center justify-center text-[10px] font-bold flex-shrink-0`} style={{background:ti.c+'28',color:ti.c}}>
+      <div className={`${dim} rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0`} style={{background:ti.c+'28',color:ti.c}}>
         {initials}
       </div>
     );
@@ -2267,12 +2271,12 @@ const AssetIcon = ({a, ti, size='md'}) => {
       .replace(/-(USD|USDT|THB|EUR|GBP|JPY|BTC)$/i,'')
       .replace(/[^A-Za-z]/g,'').toUpperCase();
     const px = size==='sm' ? 28 : 32;
-    if (sym==='BTC'||sym==='BITCOIN'||sym==='XBT') return <div className={`${dim} rounded-xl overflow-hidden flex-shrink-0`}><BtcIcon s={px}/></div>;
-    if (sym==='ETH'||sym==='ETHEREUM') return <div className={`${dim} rounded-xl overflow-hidden flex-shrink-0`}><EthIcon s={px}/></div>;
-    if (sym==='USDT'||sym==='TETHER') return <div className={`${dim} rounded-xl overflow-hidden flex-shrink-0`}><UsdtIcon s={px}/></div>;
-    if (sym==='TRX'||sym==='TRON'||sym==='TRC') return <div className={`${dim} rounded-xl overflow-hidden flex-shrink-0`}><TronIcon s={px}/></div>;
+    if (sym==='BTC'||sym==='BITCOIN'||sym==='XBT') return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><BtcIcon s={px}/></div>;
+    if (sym==='ETH'||sym==='ETHEREUM') return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><EthIcon s={px}/></div>;
+    if (sym==='USDT'||sym==='TETHER') return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><UsdtIcon s={px}/></div>;
+    if (sym==='TRX'||sym==='TRON'||sym==='TRC') return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><TronIcon s={px}/></div>;
     return (
-      <div className={`${dim} rounded-xl flex items-center justify-center text-[10px] font-bold flex-shrink-0`} style={{background:ti.c+'28',color:ti.c}}>
+      <div className={`${dim} rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0`} style={{background:ti.c+'28',color:ti.c}}>
         {sym.substring(0,2)||'C'}
       </div>
     );
@@ -3756,30 +3760,39 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
                       worth keeping. Dark mode keeps its striping: on near-black
                       the bands are what carry across a wide row. */}
                   <tr className={`row-mod border-b transition-colors group ${dk?(i%2===0?'border-white/5 bg-white/[0.01] hover:bg-white/[0.05]':'border-white/5 bg-black/[0.08] hover:bg-white/[0.04]'):'border-slate-100 bg-white hover:bg-slate-50'}`}>
-                    <td className="px-4 py-3.5 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
                         <AssetIcon a={a} ti={ti}/>
                         <div>
                           <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>{a.name}</div>
-                          <div className={`text-xs ${sub}`}>{ti.l.substring(3)}{a.note?' · '+a.note:''}{(()=>{const w=wallets.find(x=>x.id===a.walletId);return w?<span data-hint="สินทรัพย์นี้เชื่อมกับกระเป๋าเงิน — ไปโผล่ในหน้ากระเป๋าด้วย" className={`ml-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${dk?'bg-gold-500/20 text-gold-300':'bg-gold-50 text-gold-500'}`}>👛 {w.name}</span>:null;})()}{a.address&&<AddressChip address={a.address} dk={dk}/>}</div>
+                          {/* The type was plain grey text at the head of the
+                              sub-line, indistinguishable from the note that
+                              followed it. As a tinted pill in the type's own
+                              colour it matches the badge to its left, so the
+                              two agree at a glance and the note beside it stops
+                              being read as part of the category. */}
+                          <div className={`text-xs flex items-center gap-1.5 flex-wrap ${sub}`}>
+                            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap"
+                              style={{background:ti.c+'22', color:ti.c}}>{ti.l.substring(3)}</span>
+                            {a.note?<span>{a.note}</span>:null}{(()=>{const w=wallets.find(x=>x.id===a.walletId);return w?<span data-hint="สินทรัพย์นี้เชื่อมกับกระเป๋าเงิน — ไปโผล่ในหน้ากระเป๋าด้วย" className={`ml-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${dk?'bg-gold-500/20 text-gold-300':'bg-gold-50 text-gold-500'}`}>👛 {w.name}</span>:null;})()}{a.address&&<AddressChip address={a.address} dk={dk}/>}</div>
                           {a.type==='crypto'&&<div className={`text-[11px] mt-0.5 tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{fmtQty(a.qty)} {(a.ticker||a.name).trim().split(/\s+/)[0].toUpperCase()} <span className="opacity-70">≈ {fmt(a.valTHB)}</span></div>}
                         </div>
                       </div>
                     </td>
-                    <td className={`px-4 py-3.5 text-sm ${dk?'text-slate-300':'text-slate-600'}`}>{fmtQty(a.qty)}</td>
+                    <td className={`px-4 py-4 text-sm ${dk?'text-slate-300':'text-slate-600'}`}>{fmtQty(a.qty)}</td>
                     {/* Both money columns are per unit, which for a collection is
                         an average across things that are not alike: nine amulets
                         of ฿1.5M showed ฿166,666.67 twice, a figure no amulet has.
                         Collections print the totals instead. Gated on having
                         pieces, so every other holding keeps its unit price. */}
-                    <td className={`px-4 py-3.5 text-sm ${dk?'text-slate-300':'text-slate-600'}`}
+                    <td className={`px-4 py-4 text-sm ${dk?'text-slate-300':'text-slate-600'}`}
                       title={(a.items||[]).length?'ทุนรวมทั้งหมด':''}>
                       {a.type==='cash'?'—':fmtA((a.items||[]).length?a.avgCost*a.qty:a.avgCost, a.currency)}
                     </td>
                     {/* A collection's price is the average of its pieces, not a
                         figure of its own — typing over it here would leave the
                         total disagreeing with the list that explains it. */}
-                    <td className={`px-4 py-3.5 text-sm font-medium ${dk?'text-white':'text-slate-700'}`}
+                    <td className={`px-4 py-4 text-sm font-medium ${dk?'text-white':'text-slate-700'}`}
                       data-hint={a.type!=='cash'&&!(a.items||[]).length?"ดับเบิลคลิกแก้ราคา":undefined}
                       onDoubleClick={a.type!=='cash'&&!(a.items||[]).length?()=>setEditingPrice({id:a.id,value:String(a.currentPrice)}):undefined}
                       title={a.type==='cash'?"":(a.items||[]).length?"มูลค่ารวมของทุกชิ้น — แก้ที่ยอดเงินของชิ้นนั้น":"ดับเบิลคลิกเพื่อแก้ราคา"}>
@@ -3803,11 +3816,11 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
                         return <div className={`text-[10px] mt-0.5 font-normal ${stale?(dk?'text-amber-500/80':'text-amber-600/80'):(dk?'text-slate-500':'text-slate-400')}`}>{priceAge(a.priceAt)}</div>;
                       })()}
                     </td>
-                    <td className="px-4 py-3.5 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <div className={`text-sm ${dk?'text-slate-400':'text-slate-500'}`}>{a.purchaseDate||'—'}</div>
                       {a.holdDays!==null&&<div className={`text-[11px] tabular-nums mt-0.5 ${dk?'text-slate-500':'text-slate-400'}`}>{fmtHold(a.holdDays)}</div>}
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-4">
                       {a.isCash
                         ? <><div className={`text-sm font-bold whitespace-nowrap ${a.valTot<0?'text-rose-500':'text-emerald-500'}`}>{fmtSigned(a.valTot)}</div>
                           <div className={`text-[10px] ${sub}`}>ยอดคงเหลือ</div></>
@@ -3815,7 +3828,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
                           {a.currency==='USD'&&<div className={`text-xs ${sub}`}>≈ {fmt(a.costTHB)}</div>}</>
                       }
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-4">
                       {a.isCash
                         ? <span className={`text-sm ${dk?'text-slate-500':'text-slate-400'}`}>—</span>
                         : <><div className={`text-sm font-semibold whitespace-nowrap ${a.pl>=0?'text-emerald-400':'text-rose-400'}`}>{a.pl>=0?'+':''}{fmtA(a.pl,a.currency)}</div>
@@ -3825,14 +3838,14 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
                           {a.currency==='USD'&&<div className={`text-xs ${sub}`}>≈ {a.plTHB>=0?'+':''}{fmtSigned(a.plTHB)}</div>}</>
                       }
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-4">
                       {a.isCash
                         ? <span className={`text-sm ${dk?'text-slate-500':'text-slate-400'}`}>—</span>
                         : <><div className={`text-sm font-bold whitespace-nowrap ${dk?'text-white':'text-slate-800'}`}>{fmtA(a.valTot,a.currency)}</div>
                           {a.currency==='USD'&&<div className={`text-xs ${sub}`}>≈ {fmt(a.valTHB)}</div>}</>
                       }
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-4">
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button title="แก้ไขสินทรัพย์" onClick={()=>onEdit(a)} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="edit" s={13}/></button>
                         {onDCA&&a.type!=='cash'&&<button title="คำนวณ DCA — วางแผนซื้อถัวเฉลี่ยต้นทุน (Dollar-Cost Averaging)" onClick={()=>onDCA(a)} className={`p-1.5 rounded-lg ${dk?'hover:bg-gold-500/20 text-slate-400 hover:text-gold-400':'hover:bg-gold-50 text-slate-400 hover:text-gold-500'}`}>🧮</button>}
@@ -3873,16 +3886,16 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
                       it. Each figure now lines up under its own heading, and
                       the percentage sits under the gain here exactly as it does
                       in the rows above. */}
-                  <td colSpan={2} className={`px-4 py-3.5 text-sm ${dk?'text-slate-300':'text-slate-600'}`}>รวมทั้งหมด (THB)</td>
+                  <td colSpan={2} className={`px-4 py-4 text-sm ${dk?'text-slate-300':'text-slate-600'}`}>รวมทั้งหมด (THB)</td>
                   <td/>
                   <td/>
                   <td/>
-                  <td className={`px-4 py-3.5 text-sm font-bold ${dk?'text-slate-300':'text-slate-600'}`}>{fmt(totCost)}</td>
-                  <td className="px-4 py-3.5">
+                  <td className={`px-4 py-4 text-sm font-bold ${dk?'text-slate-300':'text-slate-600'}`}>{fmt(totCost)}</td>
+                  <td className="px-4 py-4">
                     <div className={`text-sm font-bold whitespace-nowrap ${totPL>=0?'text-emerald-400':'text-rose-400'}`}>{totPL>=0?'+':''}{fmtSigned(totPL)}</div>
                     <div className={`text-xs font-medium ${totPLPct>=0?'text-emerald-400/80':'text-rose-400/80'}`}>{totPLPct>=0?'+':''}{totPLPct.toFixed(2)}%</div>
                   </td>
-                  <td className={`px-4 py-3.5 text-sm font-bold whitespace-nowrap ${dk?'text-white':'text-slate-800'}`}>{fmt(totVal)}</td>
+                  <td className={`px-4 py-4 text-sm font-bold whitespace-nowrap ${dk?'text-white':'text-slate-800'}`}>{fmt(totVal)}</td>
                   <td/>
                 </tr>
               </tfoot>
@@ -4347,7 +4360,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
                       onClick={()=>view==='monthly'&&toggleMonth(row.key)}
                       className={`border-b transition-colors ${view==='monthly'?'cursor-pointer':''} ${dk?'border-white/5 hover:bg-white/5':'border-slate-100 hover:bg-slate-50'}`}
                     >
-                      <td className={`px-4 py-3.5 text-sm font-medium ${dk?'text-white':'text-slate-700'}`}>
+                      <td className={`px-4 py-4 text-sm font-medium ${dk?'text-white':'text-slate-700'}`}>
                         <div className="flex items-center gap-2">
                           {view==='monthly'&&(
                             <span className={`text-[10px] transition-transform duration-200 ${isOpen?'rotate-90':''} ${dk?'text-slate-400':'text-slate-500'}`}>▶</span>
@@ -4355,20 +4368,20 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
                           {row.label}
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 text-sm text-right text-gold-400 font-medium">+{fmt(row.income)}</td>
-                      <td className="px-4 py-3.5 text-sm text-right text-rose-400 font-medium">-{fmt(row.expense)}</td>
+                      <td className="px-4 py-4 text-sm text-right text-gold-400 font-medium">+{fmt(row.income)}</td>
+                      <td className="px-4 py-4 text-sm text-right text-rose-400 font-medium">-{fmt(row.expense)}</td>
                       {/* fmtSigned, not fmt: a month that only spent money nets negative,
                           and fmt() drops the sign — leaving ฿95,908 in a column headed
                           คงเหลือ, which reads as money left over rather than money gone. */}
-                      <td className={`px-4 py-3.5 text-sm text-right font-semibold ${row.balance>=0?'text-emerald-400':'text-rose-400'}`}>{row.balance>=0?'+':''}{fmtSigned(row.balance)}</td>
-                      <td className="px-4 py-3.5 text-right"><RateBadge r={row.rate}/></td>
+                      <td className={`px-4 py-4 text-sm text-right font-semibold ${row.balance>=0?'text-emerald-400':'text-rose-400'}`}>{row.balance>=0?'+':''}{fmtSigned(row.balance)}</td>
+                      <td className="px-4 py-4 text-right"><RateBadge r={row.rate}/></td>
                       {view==='monthly'&&(
-                        <td className={`px-4 py-3.5 text-sm text-right ${dk?'text-slate-400':'text-slate-500'}`}>
+                        <td className={`px-4 py-4 text-sm text-right ${dk?'text-slate-400':'text-slate-500'}`}>
                           <span className={`font-medium ${dk?'text-amber-400':'text-amber-500'}`}>{fmt(row.avgExp)}</span>
                           <span className={`text-[10px] ml-1 ${dk?'text-slate-500':'text-slate-400'}`}>/วัน</span>
                         </td>
                       )}
-                      {view==='yearly'&&<td className={`px-4 py-3.5 text-sm text-right ${dk?'text-slate-400':'text-slate-500'}`}>{row.months} เดือน</td>}
+                      {view==='yearly'&&<td className={`px-4 py-4 text-sm text-right ${dk?'text-slate-400':'text-slate-500'}`}>{row.months} เดือน</td>}
                     </tr>
                     {isOpen && days.map(day=>(
                       <tr key={day.date} className={`border-b ${dk?'border-white/5 bg-white/[0.02]':'border-slate-100 bg-slate-50/60'}`}>
@@ -9141,7 +9154,7 @@ const App = () => {
       `} style={{top:'max(12px, env(safe-area-inset-top))',left:'12px',bottom:'12px',width:'240px'}}>
 
         {/* Header */}
-        <div className={`flex items-center justify-between px-4 py-3.5 flex-shrink-0 border-b ${dk?'border-white/[0.07]':'border-slate-100'}`}>
+        <div className={`flex items-center justify-between px-4 py-4 flex-shrink-0 border-b ${dk?'border-white/[0.07]':'border-slate-100'}`}>
           <div className="flex items-center gap-2.5">
             <LogoSvg size={32}/>
             <span className={`font-bold text-sm tracking-wide ${dk?'text-white':'text-slate-800'}`}>FinTracker</span>
