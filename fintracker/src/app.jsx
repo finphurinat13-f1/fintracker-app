@@ -172,10 +172,45 @@ const CatIc = ({ n, s=18 }) => (
 );
 const CatGlyph = ({ v, s=18, color }) => (
   <span className="inline-flex items-center justify-center flex-shrink-0" style={{color, width:s, height:s, fontSize:s*0.92, lineHeight:1}}>
-    {CAT_SVG[v] ? <CatIc n={v} s={s}/> : (v||'●')}
+    {CAT_SVG[v] ? <CatIc n={v} s={s}/> : TYPE_SVG[v] ? <TypeIc n={v} s={s}/> : (v||'●')}
   </span>
 );
 const CAT_ICON_KEYS = Object.keys(CAT_SVG);
+
+// ── TYPE ICONS ─────────────────────────────────────────────
+// Wallet, asset and debt types, in the same two-tone currentColor idiom as
+// CAT_SVG — a soft shape at 30% carrying the silhouette, solid detail on top.
+//
+// These replace the emoji that were standing in for them. Emoji are full-colour
+// artwork drawn by the operating system: 📈💵📦💼🔒💰👛💳 put eight unrelated
+// palettes on a screen whose colours were argued over all day, and each one
+// looks different on Windows, on a Mac and on a phone, so the app had no say in
+// its own iconography. Drawn in currentColor they take the type's colour from
+// the ramp and are the same everywhere.
+//
+// Kept apart from CAT_SVG deliberately: those keys feed the category icon
+// picker, and a wallet type has no business being offered as an icon for a
+// spending category.
+const TYPE_SVG = {
+  bank:    <><path d="M4.2 10.4h15.6v8.2H4.2z" opacity=".3"/><path d="M11.5 2.6a1 1 0 0 1 1 0l9 4.9a1 1 0 0 1-.48 1.88H2.98A1 1 0 0 1 2.5 7.5z"/><rect x="5.6" y="11" width="2.2" height="6.4" rx="1"/><rect x="10.9" y="11" width="2.2" height="6.4" rx="1"/><rect x="16.2" y="11" width="2.2" height="6.4" rx="1"/><rect x="3" y="18.8" width="18" height="2.4" rx="1.2"/></>,
+  cash:    <><rect x="2.2" y="6" width="19.6" height="12" rx="2.2" opacity=".3"/><rect x="2.2" y="6" width="19.6" height="12" rx="2.2" fill="none" stroke="currentColor" strokeWidth="1.7"/><circle cx="12" cy="12" r="2.8"/><circle cx="5.9" cy="12" r="1"/><circle cx="18.1" cy="12" r="1"/></>,
+  stock:   <><path d="M3 20.2V13l4.6-3.4 4.4 3 4.6-5.2L21 4.8v15.4z" opacity=".3"/><path d="M2.9 14.2a1 1 0 0 1 .2-1.4l4.6-3.4a1 1 0 0 1 1.16-.02l3.62 2.47 4.03-4.55a1 1 0 1 1 1.5 1.32l-4.6 5.2a1 1 0 0 1-1.31.16L8.3 11.44l-4 2.96a1 1 0 0 1-1.4-.2z"/><circle cx="17.4" cy="7.6" r="1.9"/></>,
+  credit:  <><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.6" opacity=".3"/><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.6" fill="none" stroke="currentColor" strokeWidth="1.7"/><rect x="2.2" y="8.2" width="19.6" height="2.8"/><rect x="5" y="14" width="5.2" height="2" rx="1"/></>,
+  crypto:  <><path d="M12 2.4 20 5.6v6.1c0 4.4-3.1 8.4-8 9.9-4.9-1.5-8-5.5-8-9.9V5.6z" opacity=".3"/><path d="M12 2.4 20 5.6v6.1c0 4.4-3.1 8.4-8 9.9-4.9-1.5-8-5.5-8-9.9V5.6z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M10 8.4h3.1a2.1 2.1 0 0 1 0 4.2H10zm0 4.2h3.4a2.1 2.1 0 0 1 0 4.2H10zm1.1-6.5v2m0 9v2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></>,
+  ewallet: <><rect x="5.4" y="2.2" width="13.2" height="19.6" rx="2.8" opacity=".3"/><rect x="5.4" y="2.2" width="13.2" height="19.6" rx="2.8" fill="none" stroke="currentColor" strokeWidth="1.7"/><path d="M10.4 7.6h2.7a1.9 1.9 0 0 1 0 3.8h-2.7zm0 3.8h3a1.9 1.9 0 0 1 0 3.8h-3zm1-5.6v1.8m0 7.6v1.8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></>,
+  fund:    <><path d="M12 3a9 9 0 1 1-9 9h9z" opacity=".3"/><path d="M12 2a1 1 0 0 1 1-1 11 11 0 0 1 11 11 1 1 0 0 1-1 1H13a1 1 0 0 1-1-1z" transform="translate(-1 1)"/><path d="M11 12.6 3.6 12a9 9 0 0 0 8.4 9.6" fill="none" stroke="currentColor" strokeWidth="1.7"/></>,
+  fixed:   <><rect x="4" y="10.2" width="16" height="10.6" rx="2.4" opacity=".3"/><rect x="4" y="10.2" width="16" height="10.6" rx="2.4" fill="none" stroke="currentColor" strokeWidth="1.7"/><path d="M7.8 10V7.4a4.2 4.2 0 0 1 8.4 0V10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="12" cy="15.4" r="1.7"/></>,
+  savings: <><circle cx="12" cy="12" r="9" opacity=".3"/><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.7"/><circle cx="12" cy="12" r="4.8" fill="none" stroke="currentColor" strokeWidth="1.6"/><circle cx="12" cy="12" r="1.9"/></>,
+  wallet:  <><path d="M3 7.4a2.4 2.4 0 0 1 2.4-2.4h12.2A2.4 2.4 0 0 1 20 7.4v11.2a2.4 2.4 0 0 1-2.4 2.4H5.4A2.4 2.4 0 0 1 3 18.6z" opacity=".3"/><path d="M3 7.4a2.4 2.4 0 0 1 2.4-2.4h12.2A2.4 2.4 0 0 1 20 7.4v11.2a2.4 2.4 0 0 1-2.4 2.4H5.4A2.4 2.4 0 0 1 3 18.6z" fill="none" stroke="currentColor" strokeWidth="1.7"/><path d="M15 11h5.6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H15a2 2 0 0 1 0-4z"/></>,
+  gold:    <><path d="M6.4 8.6h11.2l2.2 4.6-7.8 7-7.8-7z" opacity=".3"/><path d="M6.4 8.6h11.2l2.2 4.6-7.8 7-7.8-7z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M6.4 8.6 12 3.4l5.6 5.2" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M9.6 13.2h4.8" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></>,
+  box:     <><path d="M3.4 7.8 12 4l8.6 3.8v8.4L12 20l-8.6-3.8z" opacity=".3"/><path d="M3.4 7.8 12 4l8.6 3.8v8.4L12 20l-8.6-3.8z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M3.4 7.8 12 11.6l8.6-3.8M12 11.6V20" fill="none" stroke="currentColor" strokeWidth="1.6"/></>,
+  car:     <><path d="M4.6 11.4 6.2 7.2a2.4 2.4 0 0 1 2.2-1.6h7.2a2.4 2.4 0 0 1 2.2 1.6l1.6 4.2z" opacity=".3"/><path d="M2.4 12.8a2 2 0 0 1 2-2h15.2a2 2 0 0 1 2 2v3.8a1.4 1.4 0 0 1-1.4 1.4H3.8a1.4 1.4 0 0 1-1.4-1.4z"/><circle cx="6.9" cy="18.2" r="1.9"/><circle cx="17.1" cy="18.2" r="1.9"/></>,
+  house:   <><path d="M4.8 10.9 12 5.3l7.2 5.6V20a1.2 1.2 0 0 1-1.2 1.2H6A1.2 1.2 0 0 1 4.8 20z" opacity=".3"/><path d="M2.24 11.79a1 1 0 0 1 .17-1.4l9-7.1a1 1 0 0 1 1.24 0l9 7.1a1 1 0 1 1-1.24 1.57L12 5.37 3.64 11.96a1 1 0 0 1-1.4-.17z"/><rect x="10" y="14.6" width="4" height="6.6" rx=".8"/></>,
+  briefcase:<><rect x="2.6" y="7.2" width="18.8" height="12.6" rx="2.2" opacity=".3"/><rect x="2.6" y="7.2" width="18.8" height="12.6" rx="2.2" fill="none" stroke="currentColor" strokeWidth="1.7"/><path d="M8.6 7V5.8a2 2 0 0 1 2-2h2.8a2 2 0 0 1 2 2V7" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/><rect x="2.6" y="12" width="18.8" height="1.9"/></>,
+};
+const TypeIc = ({ n, s=18, cls='' }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" className={cls} aria-hidden="true">{TYPE_SVG[n]}</svg>
+);
 
 // ── DATE RANGE PICKER ──────────────────────────────────────
 // Two native date fields used to do this. Empty they rendered as the browser's
@@ -861,8 +896,11 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[], c
           twice before saying anything. The term carries the title; the Thai
           line under it does the explaining, which is the part a translated
           heading was never going to do on its own. */}
-      <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>Unrealized P/L</div>
-      <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>กำไร/ขาดทุนของที่ถืออยู่</div>
+      {/* The heading names both halves now that the allocation table lives here
+          — the card had been introducing itself as only the second of the two
+          things it shows. Orange because this is the panel the page is for. */}
+      <div className="text-base font-bold text-orange-400">Asset Allocation &amp; Unrealized P/L</div>
+      <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>สัดส่วนสินทรัพย์ และกำไร/ขาดทุนของที่ถืออยู่</div>
 
       <div className="flex items-baseline gap-3 flex-wrap mt-4">
         <div className={`text-3xl font-bold tracking-wider ${tone(up)}`}>{f(totPl)}</div>
@@ -911,7 +949,11 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[], c
                       </div>
                     </div>
                   </td>
-                  <td className={`py-2 pl-3 text-right tabular-nums ${dk?'text-slate-300':'text-slate-600'}`}>{fv(g.val)}</td>
+                  {/* Value is the figure this table is scanned for, so it is the
+                      one column set above the body size and in the brightest
+                      ink. Cost stays small and dim: it exists to be subtracted
+                      from, not read. */}
+                  <td className={`py-2 pl-3 text-right tabular-nums text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{fv(g.val)}</td>
                   <td className={`py-2 pl-3 text-right tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{fv(g.cost)}</td>
                   <td className={`py-2 pl-3 text-right tabular-nums font-semibold ${g.type==='cash'?(dk?'text-slate-600':'text-slate-300'):tone(g.pl>=0)}`}>
                     {/* Cash has no cost basis, so a P/L of exactly zero here
@@ -927,7 +969,7 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[], c
           <tfoot>
             <tr className={`border-t ${dk?'border-white/10 text-slate-400':'border-slate-200 text-slate-500'}`}>
               <td className="py-2 pr-3 font-medium">รวม</td>
-              <td className="py-2 pl-3 text-right tabular-nums font-semibold">{fv(allocTot)}</td>
+              <td className={`py-2 pl-3 text-right tabular-nums text-sm font-bold ${dk?'text-white':'text-slate-800'}`}>{fv(allocTot)}</td>
               <td colSpan={3}/>
             </tr>
           </tfoot>
@@ -2181,29 +2223,10 @@ const TronIcon = ({s=18})=><svg width={s} height={s} viewBox="0 0 32 32"><circle
 const UsdtIcon = ({s=18})=><svg width={s} height={s} viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#26A17B"/><path fill="#fff" d="M17.9 17.3v-.01c-.11.01-.68.04-1.95.04-1.01 0-1.72-.03-1.97-.04v.02c-3.6-.16-6.29-.79-6.29-1.54s2.69-1.38 6.29-1.55v2.47c.26.02.98.06 1.99.06 1.21 0 1.82-.05 1.93-.06v-2.46c3.59.16 6.27.79 6.27 1.54s-2.68 1.38-6.27 1.54zm0-3.34v-2.21h5.02V8.4H9.12v3.35h5.02v2.21c-4.08.19-7.15 1-7.15 1.96s3.07 1.77 7.15 1.96v7.02h3.76v-7.03c4.07-.19 7.13-1 7.13-1.95s-3.06-1.76-7.13-1.95z"/></svg>;
 const GoldIcon = ({s=18})=><svg width={s} height={s} viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="100" height="120" rx="18" fill="#FFB300"/><rect x="8" y="8" width="84" height="104" rx="13" fill="#FFCA28"/><rect x="16" y="16" width="68" height="88" rx="9" fill="#FFB300"/><text x="50" y="50" textAnchor="middle" fill="#FFE082" fontSize="22" fontWeight="bold" fontFamily="sans-serif">GOLD</text><text x="50" y="78" textAnchor="middle" fill="#FFE082" fontSize="18" fontWeight="bold" fontFamily="sans-serif">999.9</text><text x="50" y="102" textAnchor="middle" fill="#FFE082" fontSize="18" fontWeight="bold" fontFamily="sans-serif">1M</text></svg>;
 const BankIcon = ({s=18})=><svg width={s} height={s} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="28" width="52" height="5" rx="2" fill="#3d4a5c"/><rect x="10" y="33" width="7" height="20" rx="2" fill="#3d4a5c"/><rect x="22" y="33" width="7" height="20" rx="2" fill="#3d4a5c"/><rect x="35" y="33" width="7" height="20" rx="2" fill="#3d4a5c"/><rect x="47" y="33" width="7" height="20" rx="2" fill="#3d4a5c"/><rect x="4" y="53" width="56" height="6" rx="3" fill="#3d4a5c"/><polygon points="32,8 4,28 60,28" fill="#3d4a5c"/><circle cx="32" cy="18" r="12" fill="#4caf50" stroke="white" strokeWidth="2"/><text x="32" y="23" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold" fontFamily="Arial,sans-serif">$</text></svg>;
-const CashIcon = ({s=18})=><svg width={s} height={s} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-  {/* Back note (bottom-left) */}
-  <g transform="rotate(-12,32,32)">
-    <rect x="4" y="20" width="52" height="32" rx="4" fill="#e8e0d0" stroke="#c8b89a" strokeWidth="1"/>
-    <rect x="8" y="24" width="44" height="24" rx="2" fill="#f0e8d8"/>
-    <text x="30" y="40" textAnchor="middle" fill="#b8a888" fontSize="8" fontWeight="bold" fontFamily="Arial,sans-serif">1000</text>
-  </g>
-  {/* Middle note */}
-  <g transform="rotate(6,32,32)">
-    <rect x="4" y="20" width="52" height="32" rx="4" fill="#ede5d5" stroke="#c8b89a" strokeWidth="1"/>
-    <rect x="8" y="24" width="44" height="24" rx="2" fill="#f5ede0"/>
-    <text x="30" y="40" textAnchor="middle" fill="#b8a888" fontSize="8" fontWeight="bold" fontFamily="Arial,sans-serif">1000</text>
-  </g>
-  {/* Front note */}
-  <rect x="6" y="18" width="52" height="32" rx="4" fill="#f0e8d8" stroke="#c8b89a" strokeWidth="1.5"/>
-  <rect x="10" y="22" width="44" height="24" rx="2" fill="#faf4e8"/>
-  {/* ฿ circle */}
-  <circle cx="32" cy="34" r="9" fill="#c8a96e" stroke="#f0e8d8" strokeWidth="1.5"/>
-  <text x="32" y="38" textAnchor="middle" fill="white" fontSize="11" fontWeight="bold" fontFamily="Arial,sans-serif">฿</text>
-  {/* Corner numbers */}
-  <text x="13" y="29" fill="#a89878" fontSize="6" fontWeight="bold" fontFamily="Arial,sans-serif">1000</text>
-  <text x="45" y="44" fill="#a89878" fontSize="6" fontWeight="bold" fontFamily="Arial,sans-serif" textAnchor="end">1000</text>
-</svg>;
+// CashIcon was three overlapping banknotes in fixed cream and tan. It went with
+// its last caller: TYPE_SVG.cash is drawn in currentColor, so the cash wallet
+// now takes its colour from the ramp like every other type instead of carrying
+// a palette of its own.
 const KBankIcon = ({s=18})=>{
   const [err,setErr]=useState(false);
   if(err) return <span style={{width:s,height:s,borderRadius:Math.round(s*0.28),background:'#13a538',color:'#fff',display:'inline-flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:Math.round(s*0.56),lineHeight:1}}>K</span>;
@@ -5471,17 +5494,21 @@ const WalletModal = ({ open, onClose, onSave, editData, theme }) => {
   // for exactly that reason. fund is for a mutual-fund account, savings for a
   // goal pot, and other for whatever is left — better an honest "อื่นๆ" than
   // forcing a wallet into a category it does not belong to.
+  // `i` is a TYPE_SVG key, not an emoji. It is stored on the wallet as its icon,
+  // and CatGlyph falls through to rendering the raw string when it matches no
+  // drawn icon — which is what keeps wallets created before this, and any emoji
+  // someone typed in by hand, working exactly as they did.
   const WALLET_TYPES = [
-    { k:'bank',    l:'บัญชีธนาคาร',  e:'🏦' },
-    { k:'cash',    l:'เงินสด',        e:'💵' },
-    { k:'stock',   l:'พอร์ตหุ้น',     e:'📈' },
-    { k:'credit',  l:'บัตรเครดิต',    e:'💳' },
-    { k:'crypto',  l:'Crypto Wallet', e:'🔐' },
-    { k:'ewallet', l:'e-Wallet',      e:'📱' },
-    { k:'fund',    l:'กองทุนรวม',     e:'📊' },
-    { k:'fixed',   l:'ฝากประจำ',      e:'🔏' },
-    { k:'savings', l:'เงินเก็บ/เป้าหมาย', e:'🎯' },
-    { k:'other',   l:'อื่นๆ',          e:'👛' },
+    { k:'bank',    l:'บัญชีธนาคาร',  i:'bank' },
+    { k:'cash',    l:'เงินสด',        i:'cash' },
+    { k:'stock',   l:'พอร์ตหุ้น',     i:'stock' },
+    { k:'credit',  l:'บัตรเครดิต',    i:'credit' },
+    { k:'crypto',  l:'Crypto Wallet', i:'crypto' },
+    { k:'ewallet', l:'e-Wallet',      i:'ewallet' },
+    { k:'fund',    l:'กองทุนรวม',     i:'fund' },
+    { k:'fixed',   l:'ฝากประจำ',      i:'fixed' },
+    { k:'savings', l:'เงินเก็บ/เป้าหมาย', i:'savings' },
+    { k:'other',   l:'อื่นๆ',          i:'wallet' },
   ];
   useEffect(()=>{
     if (editData) setF({...editData, initialBalance:String(editData.initialBalance)});
@@ -5508,19 +5535,15 @@ const WalletModal = ({ open, onClose, onSave, editData, theme }) => {
           </div>
           <div>
             <label className={lbl}>ประเภท</label>
-            <div className="grid grid-cols-3 gap-2">
-              {WALLET_TYPES.slice(0,3).map(wt=>(
-                <button key={wt.k} onClick={()=>setF(p=>({...p,type:wt.k,icon:wt.e}))}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm transition-all ${f.type===wt.k?(dk?'border-gold-500 bg-gold-500/15 text-white':'border-gold-400 bg-gold-50 text-gold-700'):(dk?'border-white/10 bg-white/5 text-slate-400':'border-slate-200 bg-white text-slate-500')}`}>
-                  <span>{wt.e}</span><span className="font-medium text-xs">{wt.l}</span>
-                </button>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {WALLET_TYPES.slice(3).map(wt=>(
-                <button key={wt.k} onClick={()=>setF(p=>({...p,type:wt.k,icon:wt.e}))}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm transition-all ${f.type===wt.k?(dk?'border-gold-500 bg-gold-500/15 text-white':'border-gold-400 bg-gold-50 text-gold-700'):(dk?'border-white/10 bg-white/5 text-slate-400':'border-slate-200 bg-white text-slate-500')}`}>
-                  <span>{wt.e}</span><span className="font-medium text-xs">{wt.l}</span>
+            {/* One even grid rather than a row of three and then pairs. With
+                five types the split read as deliberate; with ten it read as a
+                layout that had run out of room. Selected takes the action
+                colour, which is what selection is. */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {WALLET_TYPES.map(wt=>(
+                <button key={wt.k} onClick={()=>setF(p=>({...p,type:wt.k,icon:wt.i}))}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm transition-all ${f.type===wt.k?(dk?'border-orange-400 bg-orange-400/15 text-white':'border-orange-400 bg-orange-50 text-orange-700'):(dk?'border-white/10 bg-white/5 text-slate-400 hover:border-white/20':'border-slate-200 bg-white text-slate-500 hover:border-slate-300')}`}>
+                  <TypeIc n={wt.i} s={17}/><span className="font-medium text-xs truncate">{wt.l}</span>
                 </button>
               ))}
             </div>
@@ -6295,16 +6318,16 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
   // rather than a gap — so new types get a colour off the same ramp as the
   // originals instead of a fresh hue.
   const TYPE_META = {
-    bank:    { label:'บัญชีธนาคาร',  color:'#e8cf90' },
-    stock:   { label:'พอร์ตหุ้น',     color:'#c9a94b', icon:'📈' },
-    crypto:  { label:'Crypto Wallet', color:'#a8894a', icon:'🔐' },
-    cash:    { label:'เงินสด',        color:'#7d6a3f', icon:<CashIcon s={22}/> },
-    credit:  { label:'บัตรเครดิต',    color:'#584b31', icon:'💳' },
-    ewallet: { label:'e-Wallet',      color:'#d4b876', icon:'📱' },
-    fund:    { label:'กองทุนรวม',     color:'#af924f', icon:'📊' },
-    fixed:   { label:'ฝากประจำ',      color:'#856b35', icon:'🔏' },
-    savings: { label:'เงินเก็บ/เป้าหมาย', color:'#c3a65f', icon:'🎯' },
-    other:   { label:'อื่นๆ',          color:'#6b6154', icon:'👛' },
+    bank:    { label:'บัญชีธนาคาร',  color:'#e8cf90', icon:<TypeIc n="bank" s={22}/> },
+    stock:   { label:'พอร์ตหุ้น',     color:'#c9a94b', icon:<TypeIc n="stock" s={22}/> },
+    crypto:  { label:'Crypto Wallet', color:'#a8894a', icon:<TypeIc n="crypto" s={22}/> },
+    cash:    { label:'เงินสด',        color:'#7d6a3f', icon:<TypeIc n="cash" s={22}/> },
+    credit:  { label:'บัตรเครดิต',    color:'#584b31', icon:<TypeIc n="credit" s={22}/> },
+    ewallet: { label:'e-Wallet',      color:'#d4b876', icon:<TypeIc n="ewallet" s={22}/> },
+    fund:    { label:'กองทุนรวม',     color:'#af924f', icon:<TypeIc n="fund" s={22}/> },
+    fixed:   { label:'ฝากประจำ',      color:'#856b35', icon:<TypeIc n="fixed" s={22}/> },
+    savings: { label:'เงินเก็บ/เป้าหมาย', color:'#c3a65f', icon:<TypeIc n="savings" s={22}/> },
+    other:   { label:'อื่นๆ',          color:'#6b6154', icon:<TypeIc n="wallet" s={22}/> },
   };
 
   const now = new Date();
