@@ -5910,13 +5910,18 @@ const UnifiedTransferModal = ({open, onClose, onSave, wallets=[], assets=[], txs
 // on the wrong word by accident.
 const PageHeader = ({ lead, accent, sub, theme, right=null }) => {
   const dk = theme==='dark';
+  // text-xl, not text-3xl. At 36px the heading was competing with the figures
+  // rather than introducing them — on a page whose subject is a ฿9.5M balance,
+  // the largest thing on screen should not be the word for what kind of page it
+  // is. 23px still reads as the page title against the 14px card headings under
+  // it, which is all it needs to do.
   return (
-    <div className="flex items-end justify-between gap-4 flex-wrap mb-6">
+    <div className="flex items-end justify-between gap-4 flex-wrap mb-5">
       <div className="min-w-0">
-        <h1 className={`text-3xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`} style={{textWrap:'balance'}}>
+        <h1 className={`text-xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`} style={{textWrap:'balance'}}>
           {lead} <span className="text-orange-400">{accent}</span>
         </h1>
-        {sub && <p className={`text-sm mt-1.5 ${dk?'text-slate-400':'text-slate-500'}`}>{sub}</p>}
+        {sub && <p className={`text-xs mt-1 ${dk?'text-slate-400':'text-slate-500'}`}>{sub}</p>}
       </div>
       {right && <div className="flex items-center gap-2 flex-wrap">{right}</div>}
     </div>
