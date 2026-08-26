@@ -423,6 +423,7 @@ const BarChart = ({ data, theme, hide=false }) => {
 
 const DonutChart = ({ data, theme, centerValue, hideAmt=false }) => {
   const ref = useRef(); const ch = useRef();
+  const activeRef = useRef(null);   // slice under the pointer, or null for the total
   const containerRef = useRef();
   const dk = theme==='dark';
   const [narrow, setNarrow] = useState(false);
@@ -436,19 +437,38 @@ const DonutChart = ({ data, theme, centerValue, hideAmt=false }) => {
     if (!ref.current||!data||!data.labels.length) return;
     if (ch.current) ch.current.destroy();
     const displayCenter = hideAmt ? '฿ •••••' : centerValue;
+    const total = data.values.reduce((s,v)=>s+v,0);
+    // Labels drawn in the hole rather than around the rim. Leader lines out to
+    // the edge are the handsomer arrangement and they work at four slices; at
+    // thirteen, four of them under 1%, the lines for the thin slices have to
+    // travel furthest and end up crossing each other and the labels. The centre
+    // is empty, always in the same place, and has room for the amount as well
+    // as the name — which the rim never would have.
     const centerPlugin = centerValue ? [{
       id:'centerText',
       beforeDraw(chart){
         const {ctx,chartArea:{top,right,bottom,left}} = chart;
         const cx=(left+right)/2, cy=(top+bottom)/2;
+        const i = activeRef.current;
+        const on = i!=null && data.labels[i]!=null;
+        // A long category name would run out past the ring, so it is cut to fit
+        // the hole rather than allowed to overlap the slices it describes.
+        const name = on ? (data.labels[i].length>14 ? data.labels[i].slice(0,13)+'…' : data.labels[i]) : 'รวม';
+        const amt  = on ? (hideAmt ? '฿ •••••' : fmt(data.values[i])) : displayCenter;
+        const pct  = on && total>0 ? (data.values[i]/total*100).toFixed(1)+'%' : null;
         ctx.save();
         ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.font=`10px 'Noto Sans Thai',sans-serif`;
+        ctx.fillStyle = on ? (data.colors[i]||'#c9a94b') : (dk?'#64748b':'#94a3b8');
+        ctx.fillText(name, cx, cy-13);
         ctx.font=`600 13px 'Noto Sans Thai',sans-serif`;
         ctx.fillStyle=dk?'#f1f5f9':'#1e293b';
-        ctx.fillText(displayCenter, cx, cy+6);
-        ctx.font=`10px 'Noto Sans Thai',sans-serif`;
-        ctx.fillStyle=dk?'#64748b':'#94a3b8';
-        ctx.fillText('รวม', cx, cy-12);
+        ctx.fillText(amt, cx, cy+4);
+        if(pct){
+          ctx.font=`10px 'Noto Sans Thai',sans-serif`;
+          ctx.fillStyle=dk?'#64748b':'#94a3b8';
+          ctx.fillText(pct, cx, cy+19);
+        }
         ctx.restore();
       }
     }] : [];
@@ -456,15 +476,19 @@ const DonutChart = ({ data, theme, centerValue, hideAmt=false }) => {
       labels:data.labels,
       datasets:[{ data:data.values, backgroundColor:data.colors, borderWidth:0, hoverOffset:6, borderRadius:4 }]
     }, options:{ responsive:true, maintainAspectRatio:false, cutout:'68%',
+      // The index is held in a ref, not in state: state would rebuild the chart
+      // on every pixel of mouse movement. draw() is called directly, and only
+      // when the slice under the pointer actually changes.
+      onHover:(e,els,chart)=>{
+        const idx = els.length ? els[0].index : null;
+        if(activeRef.current !== idx){ activeRef.current = idx; chart.draw(); }
+      },
       plugins:{
         legend:{ display:false },
-        tooltip:{
-          backgroundColor:dk?'rgba(13,27,46,0.95)':'rgba(255,255,255,0.97)',
-          titleColor:dk?'#e2e8f0':'#1e293b', bodyColor:dk?'#94a3b8':'#64748b',
-          borderColor:dk?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)',
-          borderWidth:1, padding:10, cornerRadius:10,
-          callbacks:{ label:ctx=>` ${ctx.label}: ${fmt(ctx.parsed)}` }
-        }
+        // No tooltip. It carried the same two facts the centre now shows, in a
+        // box that follows the cursor and covers the slices next to the one
+        // being read.
+        tooltip:{ enabled:false }
       }
     }, plugins: centerPlugin });
     return () => ch.current?.destroy();
