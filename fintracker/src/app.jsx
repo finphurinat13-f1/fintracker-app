@@ -6214,6 +6214,7 @@ const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
   // misrepresents its own numbers is worse than one that is hard to read.
   const [tmType, setTmType] = useState('all');
   const [even, setEven] = useState(false);
+  const [hoverId, setHoverId] = useState(null);
   const TM_TABS = [
     {k:'all',    l:'ทั้งหมด'},
     {k:'stock',  l:'หุ้น'},
@@ -6234,7 +6235,11 @@ const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
         const {taggedIn, taggedOut} = assetTagged(txs, a.id);
         const val  = (a.qty*a.currentPrice + taggedIn - taggedOut) * mult;
         const cost = (a.qty*a.avgCost) * mult;
-        return { id:a.id, name:a.ticker||a.name, val, pl:val-cost,
+        // The name you gave it, not the symbol the price feed knows it by.
+        // ticker-first turned ทองคำ into GC=F and the dollar holding into
+        // THB=X — strings that identify a quote on Yahoo and nothing at all to
+        // the person who owns the thing.
+        return { id:a.id, name:a.name||a.ticker, val, pl:val-cost,
                  pct: cost>0 ? (val-cost)/cost*100 : 0 };
       })
       .filter(i=>i.val>0)
@@ -6310,14 +6315,18 @@ const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
         const showName = pxW >= 42 && pxH >= 24;
         const showVal  = pxW >= 58 && pxH >= 40;
         const showPct  = pxW >= 58 && pxH >= 54;
+        const on = hoverId === b.id;
         return (
           <div key={b.id}
-            title={`${b.name} · ${hide?'฿ •••••':fmt(b.val)} · ${b.pct>=0?'+':''}${b.pct.toFixed(1)}%`}
-            className="absolute overflow-hidden rounded-md flex flex-col items-center justify-center text-center px-1"
+            onMouseEnter={()=>setHoverId(b.id)}
+            onMouseLeave={()=>setHoverId(h=>h===b.id?null:h)}
+            onTouchStart={()=>setHoverId(h=>h===b.id?null:b.id)}
+            className="absolute overflow-hidden rounded-md flex flex-col items-center justify-center text-center px-1 transition-[border-color] cursor-default"
             style={{
               left:`${b.x}%`, top:`${b.y}%`, width:`${b.w}%`, height:`${b.h}%`,
               background: fill(b.pct),
-              border:`1px solid ${dk?'rgba(0,0,0,0.35)':'rgba(255,255,255,0.6)'}`,
+              border:`1px solid ${on ? (dk?'rgba(255,255,255,0.75)':'rgba(0,0,0,0.55)') : (dk?'rgba(0,0,0,0.35)':'rgba(255,255,255,0.6)')}`,
+              zIndex: on ? 2 : 1,
             }}>
             {showName && (
               <div className={`text-[10px] font-bold leading-tight truncate max-w-full ${dk?'text-white':'text-slate-800'}`}>{b.name}</div>
@@ -6333,6 +6342,41 @@ const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
           </div>
         );
       })}
+
+      {/* Our own label rather than the browser's. A title attribute waits about
+          a second before appearing, renders in the operating system's styling,
+          and cannot be triggered by touch at all — so on a phone the small
+          tiles had no way to identify themselves.
+
+          Drawn for every tile, not only the unlabelled ones: a labelled tile
+          still truncates its name and rounds nothing, and having one mechanism
+          that always behaves the same is worth more than saving a hover on the
+          large ones. Clamped away from the panel edges so a tile in the corner
+          does not push its own label out of view. */}
+      {(()=>{
+        const b = boxes.find(x=>x.id===hoverId);
+        if(!b) return null;
+        const cx = Math.min(Math.max(b.x + b.w/2, 14), 86);
+        const above = b.y + b.h/2 > 45;      // flip to the other side near the bottom
+        return (
+          <div className="absolute pointer-events-none px-2.5 py-1.5 rounded-lg whitespace-nowrap"
+            style={{
+              left:`${cx}%`, top:`${b.y + (above?0:b.h)}%`,
+              transform:`translate(-50%, ${above?'calc(-100% - 6px)':'6px'})`,
+              background: dk?'rgba(12,12,13,0.97)':'rgba(255,255,255,0.98)',
+              border:`1px solid ${dk?'rgba(212,175,69,0.3)':'rgba(0,0,0,0.1)'}`,
+              boxShadow:'0 6px 20px rgba(0,0,0,0.35)', zIndex:5,
+            }}>
+            <div className={`text-[11px] font-bold ${dk?'text-white':'text-slate-800'}`}>{b.name}</div>
+            <div className={`text-[10px] tabular-nums ${dk?'text-slate-300':'text-slate-600'}`}>
+              {hide?'฿ •••••':fmt(b.val)}
+              <span className={`ml-1.5 font-semibold ${b.pct>=0?'text-emerald-400':'text-rose-400'}`}>
+                {b.pct>=0?'+':''}{b.pct.toFixed(2)}%
+              </span>
+            </div>
+          </div>
+        );
+      })()}
     </div>
     </div>
   );
