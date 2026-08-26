@@ -6347,7 +6347,11 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                         {w.walletCashOnly!==0&&<span className={`font-medium ${w.walletCashOnly<0?'text-rose-400':(dk?'text-amber-400':'text-amber-600')}`}>· เงินในกระเป๋า {fmtSigned(w.walletCashOnly)}</span>}
                       </div>
                     )}
-                    {w.assetValue===0&&w.cashAssetValue===0&&w.initialBalance!==0&&<p className={`text-xs mt-0.5 ${dk?'text-slate-500':'text-slate-400'}`}>ยอดเริ่มต้น {fmtSigned(w.initialBalance)}</p>}
+                    {/* The opening balance line is gone. It only appeared on a
+                        wallet holding no assets, where it repeated the balance
+                        already shown above it — the two figures are equal until
+                        something is recorded against the wallet, and once
+                        something is, the line disappears. */}
                     {/* Loose cash cannot really be negative — a wallet does not owe
                         itself money. Paired with a positive cash asset it means a
                         transfer was taken from the wallet while the money sat in the

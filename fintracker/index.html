@@ -266,6 +266,46 @@ const db   = firebase.firestore();
 </head>
 <body>
 <div id="root"></div>
+<!-- A blank page is the worst thing this app can show, because it says nothing
+     about what went wrong or whether the data is still there. The app hangs off
+     six scripts on three outside hosts, so one blocked CDN, one offline moment
+     mid-load, or one render error and the screen goes white with no way to tell
+     which. This catches the error if there is one, waits to see whether React
+     ever mounts, and puts something readable on screen if it does not. -->
+<script>
+(function(){
+  var err = null;
+  window.addEventListener('error', function(e){ err = err || (e.message || String(e.error||'')); });
+  window.addEventListener('unhandledrejection', function(e){ err = err || String((e.reason&&e.reason.message)||e.reason||''); });
+  window.addEventListener('load', function(){
+    setTimeout(function(){
+      var root = document.getElementById('root');
+      if (root && root.childElementCount > 0) return;   // mounted fine
+      var missing = [];
+      if (typeof React === 'undefined')    missing.push('React');
+      if (typeof ReactDOM === 'undefined') missing.push('ReactDOM');
+      if (typeof Chart === 'undefined')    missing.push('Chart.js');
+      if (typeof firebase === 'undefined') missing.push('Firebase');
+      var why = missing.length
+        ? 'โหลดไฟล์จากอินเทอร์เน็ตไม่สำเร็จ: ' + missing.join(', ')
+        : (err || 'แอปเปิดไม่ขึ้น แต่ไม่มีข้อความบอกสาเหตุ');
+      root.innerHTML =
+        '<div style="max-width:30rem;margin:12vh auto;padding:1.75rem;font-family:system-ui,sans-serif;' +
+        'background:#0d0d10;border:1px solid rgba(212,160,23,.25);border-radius:.75rem;color:#e6d3a8">' +
+        '<div style="font-size:1.05rem;font-weight:700;margin-bottom:.5rem">เปิดแอปไม่สำเร็จค่ะ</div>' +
+        '<div style="font-size:.85rem;line-height:1.6;color:#a8905c">ข้อมูลของคุณยังอยู่ครบ ไม่ได้หายไปไหน — ' +
+        'หน้านี้แค่โหลดไม่ขึ้นเท่านั้น</div>' +
+        '<pre style="margin:1rem 0;padding:.7rem;background:rgba(255,255,255,.04);border-radius:.5rem;' +
+        'font-size:.75rem;white-space:pre-wrap;word-break:break-word;color:#c9726a">' +
+        String(why).replace(/[<>&]/g,'') + '</pre>' +
+        '<button onclick="location.reload()" style="padding:.5rem 1.1rem;border-radius:.5rem;border:0;' +
+        'background:#c49e30;color:#241c0a;font-weight:600;cursor:pointer">ลองใหม่</button>' +
+        '</div>';
+      document.documentElement.style.background = '#030304';
+    }, 6000);
+  });
+})();
+</script>
 <!--APP_BUNDLE-->
 <script>
 if('serviceWorker' in navigator){
