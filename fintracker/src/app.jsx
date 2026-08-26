@@ -3802,7 +3802,16 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
             )}
           </div>
         ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-auto" style={{maxHeight:'70vh'}}>
+          {/* The wrapper has to be the scroll container for the pinned header to
+              have anything to pin against. It was overflow-x-auto, and a box
+              with overflow-x: auto gets overflow-y: auto forced on it by the
+              spec — so it already was one, with the header stuck to a top edge
+              that never moves. Giving it a height makes the rows scroll inside
+              it rather than the page, which is what the header was written for.
+
+              70vh rather than a pixel figure: the table should use most of
+              whatever screen it is on, with the headings in view throughout. */}
           <table className="w-full">
             <thead><tr className={`border-b ${dk?'border-white/5':'border-slate-100'}`}>
               {[{h:'สินทรัพย์',f:'name'},{h:'จำนวน',f:'qty'},{h:'ทุน/หน่วย',f:'avgCost',tip:'ราคาต้นทุนเฉลี่ยต่อหน่วยที่ซื้อมา'},{h:'ราคาตลาด',f:'currentPrice',tip:'ราคาล่าสุดต่อหน่วย'},{h:'วันที่ซื้อ',f:'purchaseDate'},{h:'ต้นทุนรวม',f:'costTHB',tip:'จำนวน × ต้นทุนเฉลี่ย = เงินที่ลงทุนไปทั้งหมด'},{h:'กำไร/ขาดทุน',f:'plTHB',tip:'มูลค่าปัจจุบัน − ต้นทุนรวม (ยังไม่ขาย = กำไรบนกระดาษ)'},{h:'มูลค่าปัจจุบัน',f:'valTHB',tip:'ต้นทุนรวม + กำไร/ขาดทุน = มูลค่าตอนนี้'}].map(({h,f,tip})=>(
@@ -4423,7 +4432,10 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
 
       {/* Table */}
       <div className={`${card} overflow-hidden`}>
-        <div className="overflow-x-auto">
+        {/* Same fix as the assets table: the wrapper must be the scroll
+            container, with a height, or the pinned header has nothing to pin
+            against. */}
+        <div className="overflow-auto" style={{maxHeight:'70vh'}}>
           <table className="w-full">
             <thead>
               <tr className={`border-b ${dk?'border-white/5':'border-slate-100'}`}>
