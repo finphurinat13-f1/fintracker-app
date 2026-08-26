@@ -1,12 +1,12 @@
 /** Tailwind config for the FinTracker production build.
- *  Mirrors the runtime CDN config (darkMode class + IBM Plex Sans Thai).
+ *  Mirrors the runtime CDN config (darkMode class + Noto Sans Thai).
  *  `content` scans the inline JSX in index.html so every className literal
  *  used in the app is emitted into the static stylesheet. */
 module.exports = {
   content: ['./fintracker/index.html', './fintracker/src/**/*.{js,jsx}'],
   darkMode: 'class',
   theme: { extend: {
-    fontFamily: { sans: ['IBM Plex Sans Thai', 'sans-serif'] },
+    fontFamily: { sans: ['Noto Sans Thai', 'sans-serif'] },
     // Bright antique-gold accent (Wall Street terminal). Kept genuinely bright so
     // fills pop against the near-black bg instead of blending in. Solid gold fills
     // (bg-gold-500/600/700) get dark ink via a CSS rule in index.html, so they read
