@@ -55,22 +55,37 @@ export const MONTHS_TH    = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','
 // The steps are wide on purpose. Ten shades of one colour only works if adjacent
 // ones are far enough apart to survive a 9px legend swatch; each is about 10%
 // lighter than the last rather than evenly split across the range.
+// The ramp every chart and allocation bar draws from. Orange now, where it used
+// to be gold — the same ten steps, burnt through to pale.
+//
+// The risk this runs is that orange already means "press this". What keeps the
+// two apart is chroma: the action colour is one bright saturated #e8763a and
+// appears on nothing but controls, while these are deliberately muted and
+// earthy, and the ramp does not contain that value at any step. A dark burnt
+// segment in a bar and a live button are not going to be confused for each
+// other; two golds at the same saturation would have been.
+//
+// Kept as a single exported array rather than per-chart lists, because the
+// alternative is what this app already had once: six palettes describing the
+// same five things.
 export const GOLD_RAMP = [
-  '#5e4a23', '#71592b', '#856b35', '#9a7e41', '#af924f',
-  '#c3a65f', '#d4b876', '#e2ca93', '#eddcb6', '#f7ecd6',
+  '#5c2b12', '#73381a', '#8a4622', '#a1552b', '#b76736',
+  '#c97e4d', '#d99669', '#e6b18e', '#f0cbb2', '#f8e3d5',
 ];
+// One step of GOLD_RAMP each, in the same order as before so no category
+// changes its position in the ramp — only its hue.
 export const CAT_CLR  = {
-  'ลงทุน/ปันผล':'#5e4a23',
-  'ที่พัก':'#71592b',
-  'Home & Utilities':'#71592b',   // the same thing under two names
-  'อินเตอร์เน็ต/โทรศัพท์':'#856b35',
-  'Subscription':'#9a7e41',
-  'การเดินทาง':'#af924f',
-  'สุขภาพ':'#c3a65f',
-  'การศึกษา':'#d4b876',
-  'บันเทิง':'#e2ca93',
-  'ช้อปปิ้ง':'#eddcb6',
-  'อาหาร':'#f7ecd6',
+  'ลงทุน/ปันผล':'#5c2b12',
+  'ที่พัก':'#73381a',
+  'Home & Utilities':'#73381a',   // the same thing under two names
+  'อินเตอร์เน็ต/โทรศัพท์':'#8a4622',
+  'Subscription':'#a1552b',
+  'การเดินทาง':'#b76736',
+  'สุขภาพ':'#c97e4d',
+  'การศึกษา':'#d99669',
+  'บันเทิง':'#e6b18e',
+  'ช้อปปิ้ง':'#f0cbb2',
+  'อาหาร':'#f8e3d5',
   'อื่นๆ':'#6b6154',              // the only grey: everything uncategorised
   'default':'#6b6154',
 };
@@ -155,7 +170,7 @@ export const catClr  = (c) => { const m=getCatMeta()[c]; if(m&&m.clr) return m.c
 // Same ramp, interleaved rather than in order: hashing lands adjacent names on
 // adjacent slots often enough that a sequential ramp would give two new
 // categories nearly the same shade.
-export const CAT_PALETTE = ['#f7ecd6','#9a7e41','#d4b876','#71592b','#c3a65f','#856b35','#e2ca93','#af924f'];
+export const CAT_PALETTE = ['#f8e3d5','#a1552b','#d99669','#73381a','#c97e4d','#8a4622','#e6b18e','#b76736'];
 // The pool a category with no icon of its own is hashed into — same name always
 // lands on the same icon, so nothing shuffles when a category is renamed back.
 // Keys into CAT_SVG, not emoji, despite the name this export has always had.

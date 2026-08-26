@@ -1047,7 +1047,7 @@ const SegmentedProgress = ({ segments, total, theme }) => {
   // ASSET_TYPES and CAT_CLR while describing the same five asset types those
   // already colour. Same ramp as everywhere else now, and unknown types fall
   // through it rather than into a set of pastels nothing else uses.
-  const SEG_COLOR_MAP = {stock:'#f7ecd6',crypto:'#d4b876',gold:'#af924f',cash:'#856b35',other:'#6b6154',bond:'#71592b'};
+  const SEG_COLOR_MAP = {stock:'#f8e3d5',crypto:'#d99669',gold:'#b76736',cash:'#8a4622',other:'#6b6154',bond:'#73381a'};
   const getColor = (type,i) => SEG_COLOR_MAP[type] || GOLD_RAMP[(i*2+1) % GOLD_RAMP.length];
   return (
     <div className="mt-3">
@@ -2347,12 +2347,16 @@ const AddressChip = ({address, dk}) => {
 //
 // Ordered brightest to dimmest by how much attention the type usually wants —
 // the traded holdings first, then cash, with everything uncategorised last.
+// Colours off the same ramp as everything else, so an asset type is the same
+// colour in the allocation bar, the P/L table and its own row badge. 'other'
+// must stay at index 4 — typeInfo falls back to ASSET_TYPES[4] for an unknown
+// type, and reordering this list silently repaints every one of them.
 const ASSET_TYPES = [
-  {v:'stock', l:'📈 หุ้น',    c:'#e8cf90', icon:'📈'},
-  {v:'crypto',l:'🟠 Crypto', c:'#c9a94b', icon:<BtcIcon/>},
-  {v:'gold',  l:'🪙 ทองคำ',  c:'#a8894a', icon:<GoldIcon/>},
-  {v:'cash',  l:'💵 เงินสด', c:'#7d6a3f', icon:'💵'},
-  {v:'other', l:'📦 อื่นๆ',   c:'#584b31', icon:'📦'},
+  {v:'stock', l:'📈 หุ้น',    c:'#f0cbb2', icon:<TypeIc n="stock" s={18}/>},
+  {v:'crypto',l:'🟠 Crypto', c:'#d99669', icon:<BtcIcon/>},
+  {v:'gold',  l:'🪙 ทองคำ',  c:'#b76736', icon:<GoldIcon/>},
+  {v:'cash',  l:'💵 เงินสด', c:'#8a4622', icon:<TypeIc n="cash" s={18}/>},
+  {v:'other', l:'📦 อื่นๆ',   c:'#5c2b12', icon:<TypeIc n="box" s={18}/>},
 ];
 const BUDGET_DEFAULTS = {'อาหาร':7000,'การเดินทาง':2000,'Home & Utilities':8000,'ช้อปปิ้ง':1500,'อินเตอร์เน็ต/โทรศัพท์':500,'สุขภาพ':1000,'Subscription':500,'การศึกษา':1000,'บันเทิง':1500,'ลงทุน/ปันผล':2000,'อื่นๆ':1000};
 // Empty on purpose. This list used to ship the author's real standing
