@@ -3378,7 +3378,7 @@ const AssetRelBody = ({a, investTxs, dk, onAddTx, onDeleteTx, onTopUp, wallets=[
   );
 };
 
-const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPriceUpdate, onQuickPrice, onDCA, onAddAssetTx, onDeleteAssetTx, onTopUpAsset, onDeleteMove, onRenameMove, onAddItem, onDelItem, theme, wallets=[], txs=[]}) => {
+const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, onQuickPrice, onDCA, onAddAssetTx, onDeleteAssetTx, onTopUpAsset, onDeleteMove, onRenameMove, onAddItem, onDelItem, theme, wallets=[], txs=[]}) => {
   const dk = theme==='dark';
   const [usdRate,      setUsdRate]    = useState(()=>parseFloat(localStorage.getItem('ft-usdrate')||'35'));
   const [rateLoading,  setRateLoad]   = useState(false);
@@ -3666,10 +3666,16 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onTransfer, onInvest, onPr
               </button>
             </div>
           </div>
-          <button data-hint="โยกเงิน / ซื้อสินทรัพย์ ระหว่างกระเป๋า" onClick={onTransfer} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-colors ${dk?'border-gold-500/50 text-gold-400 hover:bg-gold-500/15':'border-gold-300 text-gold-600 hover:bg-gold-50'}`}>
-            <Ic n="repeat" s={13}/>
-            <span className="hidden sm:inline">โยกเงิน / ลงทุน</span>
-          </button>
+          {/* The "โยกเงิน / ลงทุน" button stood here and opened the transfer
+              modal with nothing preset. The wallets page has a button that
+              opens the same modal with the same empty preset, so this was the
+              second of two doors into one room — and the worse of the two,
+              because a transfer starts from a wallet and that is the page you
+              are on when you think of making one.
+
+              The contextual routes are untouched and are better than either:
+              starting from a specific asset or wallet fills in one side of the
+              transfer instead of presenting two empty pickers. */}
           <button data-hint="เพิ่มหุ้น/ทอง/คริปโต/เงินสด" onClick={onAdd} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gold-500 hover:bg-gold-600 text-white text-xs font-semibold">
             <Ic n="plus" s={13}/> เพิ่มสินทรัพย์
           </button>
@@ -9786,7 +9792,7 @@ const App = () => {
         {privacy && lockOn ? <LockedPanel dk={theme==='dark'} onUnlock={()=>setPinGate('unlock')}/> : (<>
         {page==='dashboard'    && <Dashboard     txs={txs} assets={assets} theme={theme} nwHistory={nwHistory} wallets={wallets} user={user} debts={debts} custodial={custodial} privacy={privacy} hideAmt={hideAmt} onToggleHide={toggleHideAmt}/>}
         {page==='transactions' && <TxPage        txs={txs}    theme={theme} onEdit={openEdit} onAdd={()=>setModal({open:true,editData:null})} onDelete={delOne} onBulkDelete={delBulk} onExport={()=>exportCSV(txs)} wallets={wallets} assets={assets} onAddRecurring={openQuickRecur} onRecordRecurring={addRecur} onQuickEdit={quickEditTx} favKeys={favKeys}/>}
-        {page==='assets'       && <AssetsPage    assets={assets} theme={theme} onEdit={editAsset} onDelete={delAsset} onAdd={()=>setAModal({open:true,editData:null})} onTransfer={()=>setUnifiedOpen({open:true,from:null,to:null})} onInvest={assetId=>setUnifiedOpen({open:true,from:null,to:typeof assetId==='number'?`a-${assetId}`:null})} onPriceUpdate={updatePrices} onQuickPrice={quickPriceEdit} onDCA={a=>setDcaModal({open:true,asset:a})} onAddAssetTx={addAssetTx} onDeleteAssetTx={delAssetTx} onTopUpAsset={topUpAsset} onDeleteMove={deleteAssetMove} onRenameMove={renameAssetMove} onAddItem={addAssetItem} onDelItem={delAssetItem} wallets={wallets} txs={txs}/>}
+        {page==='assets'       && <AssetsPage    assets={assets} theme={theme} onEdit={editAsset} onDelete={delAsset} onAdd={()=>setAModal({open:true,editData:null})} onInvest={assetId=>setUnifiedOpen({open:true,from:null,to:typeof assetId==='number'?`a-${assetId}`:null})} onPriceUpdate={updatePrices} onQuickPrice={quickPriceEdit} onDCA={a=>setDcaModal({open:true,asset:a})} onAddAssetTx={addAssetTx} onDeleteAssetTx={delAssetTx} onTopUpAsset={topUpAsset} onDeleteMove={deleteAssetMove} onRenameMove={renameAssetMove} onAddItem={addAssetItem} onDelItem={delAssetItem} wallets={wallets} txs={txs}/>}
         {page==='budget'       && <BudgetPage    key={`budget-${dataKey}`}    txs={txs}    theme={theme} onEdit={openEdit} onRenameCategory={renameCategoryInTxs}/>}
         {page==='debt'         && <DebtPage      theme={theme} debts={debts} setDebts={setDebts}/>}
         {page==='wallet'       && <WalletPage     key={`wallet-${dataKey}`}    wallets={sortedWallets} txs={txs} assets={assets} onAdd={addWallet} onEdit={editWallet} onDelete={delWallet} onAddTx={openAddTxForWallet} onEditTx={openEdit} onDeleteTx={delOne} onAddAsset={openAddAssetForWallet} onUnlinkAsset={unlinkAsset} onAssetTransfer={assetId=>setUnifiedOpen({open:true,from:`a-${assetId}`,to:null})} onReorder={reorderWallets} theme={theme} onOpenWalletModal={editData=>setWModal({open:true,editData:editData||null})} onUnifiedTransfer={()=>setUnifiedOpen({open:true,from:null,to:null})} onAdjust={addWalletAdjust} onDividend={addWalletDividend} onSaveCashCount={saveCashCount} custodial={custodial} setCustodial={setCustodial}/>}
