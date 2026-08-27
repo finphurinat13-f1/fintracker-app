@@ -1484,18 +1484,24 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
     <div className="space-y-5 stagger">
 
       {/* ── Hero + Quote (merged) ──
-          No inline background in dark mode. This band carried a hardcoded navy
-          gradient that overrode card-solid — which is why the very first strip
-          of the app announced a blue nothing else uses, on a page whose palette
-          was argued down to gold and orange. It was also the last blue left
-          after twenty-nine others were removed.
+          This band is the masthead — logo, greeting, quote, date — not a data
+          card, and it should read as part of the frame rather than as the first
+          panel of content.
 
-          The card class already gives it a lifted surface, a warm corner light
-          and the curve every other panel has, so the fix is to stop overriding
-          it rather than to pick a different colour. Light mode keeps its own
-          wash: there the pale blue reads as paper, not as a competing accent. */}
+          It used to do that with a hardcoded navy gradient, which made the very
+          first strip of the app announce a colour nothing else uses, on a page
+          whose palette was argued down to gold and orange. Dropping the
+          override removed the blue and the distinction together: left to
+          card-solid it became indistinguishable from the panels below it.
+
+          So it keeps a gradient, in the app's own accent instead of against it
+          — gold into orange, fading to the card colour before the right edge.
+          Distinct because it is warm, not because it is foreign. */}
       <div className={`rounded-2xl px-5 py-3.5 fade-up ${dk?'card-solid':'glass-light shadow-sm'}`}
-        style={dk?undefined:{background:'linear-gradient(135deg,#f8fafc 0%,#eff6ff 100%)',border:'1px solid rgba(199,210,254,0.5)'}}>
+        style={dk
+          ? {background:'linear-gradient(115deg,rgba(212,175,69,0.13) 0%,rgba(232,118,58,0.09) 42%,#0c0c0d 88%)',
+             border:'1px solid rgba(212,175,69,0.22)'}
+          : {background:'linear-gradient(135deg,#f8fafc 0%,#eff6ff 100%)',border:'1px solid rgba(199,210,254,0.5)'}}>
         <div className="flex items-center gap-3">
 
           {/* Left: Logo + Name */}
