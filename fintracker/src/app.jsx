@@ -745,7 +745,7 @@ const Modal = ({ open, onClose, onSave, editData, theme, wallets=[], assets=[], 
         <div className="p-5 space-y-4">
           <div className={`flex rounded-xl p-1 ${dk?'bg-white/5':'bg-slate-100'}`}>
             {['income','expense','transfer'].map(t=>(
-              <button key={t} onClick={()=>set('type',t)} className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${f.type===t?(t==='income'?'bg-gold-500 text-white':t==='transfer'?'bg-gold-500 text-white':'bg-rose-500 text-white'):(dk?'text-slate-400':'text-slate-700')}`}>
+              <button key={t} onClick={()=>set('type',t)} className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${f.type===t?(t==='income'?'bg-emerald-500 text-white':t==='transfer'?'bg-gold-500 text-white':'bg-rose-500 text-white'):(dk?'text-slate-400':'text-slate-700')}`}>
                 {t==='income'?'รับ':t==='transfer'?'โยก':'จ่าย'}
               </button>))}
           </div>
@@ -5564,7 +5564,9 @@ const DebtModal = ({ open, onClose, onSave, editData, theme }) => {
             </div>
           </div>
           <div><label className={lbl}>ชื่อหนี้</label>
-            <input className={inp} placeholder="เช่น ผ่อนรถ Honda" value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))}/>
+            {/* "ผ่อนรถ Honda" named a real make for the same reason the wallet
+                hint named a real bank. Generic now. */}
+            <input className={inp} placeholder="เช่น ผ่อนรถ" value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))}/>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className={lbl}>ยอดกู้ทั้งหมด (฿)</label>
@@ -5829,7 +5831,12 @@ const WalletModal = ({ open, onClose, onSave, editData, theme }) => {
         </div>
         <div className="p-5 space-y-4">
           <div><label className={lbl}>ชื่อกระเป๋า</label>
-            <input className={inp} placeholder="เช่น กสิกร, เงินสด, OKX, OneKey" value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()}/>
+            {/* No examples. The label above already says what goes here, and
+                the four that used to sit in this placeholder — กสิกร, OKX,
+                OneKey — were the author's own bank and exchanges, written into
+                a repository that is public. A hint drawn from real holdings is
+                personal data that nobody thinks to check. */}
+            <input className={inp} placeholder="" value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&save()}/>
           </div>
           <div>
             <label className={lbl}>ประเภท</label>
@@ -7556,7 +7563,7 @@ const RecurringModal = ({open, onClose, onSave, editData, theme, wallets=[], add
         <div className="p-5 space-y-4">
           <div className={`flex rounded-xl p-1 ${dk?'bg-white/5':'bg-slate-100'}`}>
             {['income','expense'].map(t=>(
-              <button key={t} onClick={()=>set('type',t)} className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${f.type===t?(t==='income'?'bg-gold-500 text-white':'bg-rose-500 text-white'):(dk?'text-slate-400':'text-slate-700')}`}>
+              <button key={t} onClick={()=>set('type',t)} className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${f.type===t?(t==='income'?'bg-emerald-500 text-white':'bg-rose-500 text-white'):(dk?'text-slate-400':'text-slate-700')}`}>
                 {t==='income'?'💰 รายรับ':'💸 รายจ่าย'}
               </button>))}
           </div>
