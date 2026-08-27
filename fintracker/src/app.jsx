@@ -6901,6 +6901,15 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
   const totalBalance  = useMemo(()=>walletData.reduce((s,w)=>s+w.balance,0),[walletData]);
   const cashTotal        = useMemo(()=>walletData.filter(w=>w.type==='bank'||w.type==='cash'||w.type==='credit').reduce((s,w)=>s+w.balance,0),[walletData]);
   const cryptoTotal      = useMemo(()=>walletData.filter(w=>w.type==='crypto').reduce((s,w)=>s+w.balance,0),[walletData]);
+  // Everything the named buckets do not claim. Written as "not these five"
+  // rather than as a list of the rest on purpose: the page total is the sum of
+  // these buckets, so a type nobody remembered to add would have its balance
+  // drop silently out of it — which is exactly what happened when e-Wallet,
+  // กองทุนรวม, ฝากประจำ, เงินเก็บ and อื่นๆ were added and this line was not.
+  // Phrased this way a future type is counted before anyone thinks about it.
+  const CLAIMED_TYPES    = ['bank','cash','credit','crypto','stock'];
+  const otherTotal       = useMemo(()=>walletData.filter(w=>!CLAIMED_TYPES.includes(w.type)).reduce((s,w)=>s+w.balance,0),[walletData]);
+  const hasOtherWallets  = useMemo(()=>walletData.some(w=>!CLAIMED_TYPES.includes(w.type)),[walletData]);
   const stockWalletTotal = useMemo(()=>walletData.filter(w=>w.type==='stock').reduce((s,w)=>s+w.balance,0),[walletData]);
   const hasCrypto        = useMemo(()=>walletData.some(w=>w.type==='crypto'),[walletData]);
   const walletIds     = useMemo(()=>new Set(wallets.map(w=>w.id)),[wallets]);
@@ -6920,7 +6929,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className={`text-xs font-medium uppercase tracking-widest mb-1 ${dk?'text-slate-400':'text-slate-500'}`}>ยอดรวมกระเป๋าเงิน</p>
-              <div className={`text-2xl lg:text-3xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`}>{fmt(cashTotal+cryptoTotal+stockTotal)}</div>
+              <div className={`text-2xl lg:text-3xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`}>{fmt(cashTotal+cryptoTotal+stockTotal+otherTotal)}</div>
               <p className={`text-xs mt-1 ${dk?'text-slate-400':'text-slate-500'}`}>{walletData.length} กระเป๋า{hasStocks?` · ${stockCount} สินทรัพย์`:''}</p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -6928,8 +6937,11 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                 {key:'cash',   icon:'💵', label:'เงินสด', val:cashTotal,   color:'#9AA374', show:true},
                 {key:'crypto', icon:'🔐', label:'Crypto', val:cryptoTotal, color:'#DB5A6B', show:hasCrypto},
                 {key:'stock',  icon:'📈', label:'หุ้น',   val:stockTotal,  color:'#26c6da', show:hasStocks},
+                {key:'other',  icon:'👛', label:'อื่นๆ',  val:otherTotal,  color:'#6b6154', show:hasOtherWallets},
               ].filter(c=>c.show).map(c=>{
-                const grand = cashTotal+cryptoTotal+stockTotal;
+                // Must match the headline above, or the chips add up to a
+                // different number than the total they sit beside.
+                const grand = cashTotal+cryptoTotal+stockTotal+otherTotal;
                 const pct = grand>0 ? (c.val/grand*100) : 0;
                 return (
                   <div key={c.key} className={`flex items-center gap-2 px-3 py-2 rounded-xl ${dk?'bg-white/5 border border-white/10':'bg-slate-50 border border-slate-200'}`}>
@@ -6956,10 +6968,14 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
             {/* Filter pills — left */}
             <div className="flex gap-1.5 flex-wrap">
               {[
+                // One tab per chip above, and each covering exactly what its
+                // chip counts — a filter that selects a different set from the
+                // figure it is named after is a quiet way to lose money.
                 {k:'all', l:'ทั้งหมด'},
                 {k:'cash-group', l:'💵 เงินสด'},
                 ...(walletData.some(w=>w.type==='stock')?[{k:'stock', l:'📈 พอร์ตหุ้น'}]:[]),
                 ...(hasCrypto?[{k:'crypto', l:'🔐 Crypto'}]:[]),
+                ...(hasOtherWallets?[{k:'other-group', l:'👛 อื่นๆ'}]:[]),
               ].map(f=>(
                 <button key={f.k} onClick={()=>setFilterType(f.k)}
                   className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${filterType===f.k?(dk?'bg-gold-500/25 text-gold-300 border border-gold-500/40':'bg-gold-100 text-gold-600 border border-gold-200'):(dk?'bg-white/5 text-slate-400 border border-white/8 hover:bg-white/10':'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50')}`}>
@@ -7046,11 +7062,15 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* The เงินสด filter means "money I can spend", so the new everyday
-              types belong in it. e-Wallet and a savings pot are spendable; a
-              fixed deposit and a fund are not, and stay out — being unable to
-              touch it without breaking it is the whole point of the category. */}
-          {walletData.filter(w=>filterType==='all'||(filterType==='cash-group'&&['bank','cash','credit','ewallet','savings','other'].includes(w.type))||(filterType===w.type)).map(w=>{
+          {/* Each filter selects exactly what its chip counts. เงินสด was
+              briefly widened to include e-Wallet and the savings pot, which
+              read sensibly on its own but meant the tab and the ฿ figure above
+              it described different sets of wallets — and a filter that
+              disagrees with its own total is how money goes missing quietly. */}
+          {walletData.filter(w=>filterType==='all'
+            ||(filterType==='cash-group'&&['bank','cash','credit'].includes(w.type))
+            ||(filterType==='other-group'&&!CLAIMED_TYPES.includes(w.type))
+            ||(filterType===w.type)).map(w=>{
             const meta = TYPE_META[w.type] || { label:w.type, color:'#c9a94b' };
             return (
               <div key={w.id}
