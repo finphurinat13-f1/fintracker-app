@@ -2534,6 +2534,26 @@ const needsRing = bg => {
   return (x+0.05)/(y+0.05) < 1.6;
 };
 
+// Finds the brand behind whatever the holding is actually called. The plain
+// lookup only fired on an exact match, so it caught NVDA and missed almost
+// everything else a real ledger contains: "GOOG A" cleans to GOOGA, "MP
+// Materials Corp." to MPMATERIALSCORP, and a Yahoo quote arrives as "NVDA.BK"
+// or "TSM-USD". None of those are the ticker, and all of them contain it.
+//
+// Tries the whole string, then the part before any suffix, then each word of
+// the name — longest first, so MP does not match inside a longer word by luck.
+const brandOf = (rawTicker, name='') => {
+  const clean = s => (s||'').replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+  const direct = clean(rawTicker);
+  if (BRAND[direct]) return BRAND[direct];
+  // Yahoo suffixes: NVDA.BK, TSM-USD, 2330.TW
+  const base = clean((rawTicker||'').split(/[.\-:]/)[0]);
+  if (BRAND[base]) return BRAND[base];
+  const words = (name||'').split(/\s+/).map(clean).filter(Boolean).sort((x,y)=>y.length-x.length);
+  for (const w of words) if (BRAND[w]) return BRAND[w];
+  return null;
+};
+
 const AssetIcon = ({a, ti, size='md'}) => {
   const dim = size==='sm' ? 'w-7 h-7' : 'w-9 h-9';
   if (a.type === 'stock') {
@@ -2550,7 +2570,7 @@ const AssetIcon = ({a, ti, size='md'}) => {
     // colour is arbitrary, and NVDA in NVIDIA green is recognised before the
     // letters are read.
     if (ticker) {
-      const c = BRAND[ticker] || tickerClr(ticker);
+      const c = brandOf(a.ticker || a.name, a.name) || tickerClr(ticker);
       return (
         // A ring only when the fill is too near the card to have an edge of its
         // own. Four of the brand colours are essentially black — Rocket Lab,
