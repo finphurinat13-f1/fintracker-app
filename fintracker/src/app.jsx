@@ -2600,6 +2600,9 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
     setSearch(''); setPicked([]); setTuQty(''); setTuRate(''); setTuNote(''); setTuMode('qty'); setEditMove(null);
     setIName(''); setIValue(''); setEditItem(null);
     setCostTotal(editData && editData.qty ? String(parseFloat(((editData.avgCost||0)*editData.qty).toFixed(2))) : '');
+    // Re-locks whenever the modal is opened again, so unlocking once does not
+    // leave the field open for every asset edited afterwards.
+    setQtyUnlocked(false);
     setF(editData?{...editData,qty:String(editData.qty),avgCost:String(editData.avgCost),currentPrice:String(editData.currentPrice),moves:editData.moves||[],items:editData.items||[]}:{...blank,walletId:defaultWalletId||''});
   },[editData,open,defaultWalletId]);
   const set = (k,v) => setF(p=>({...p,[k]:v}));
@@ -2689,6 +2692,15 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
   // apart from the pieces because they say what the collection is worth now,
   // which is a different fact and would report a gain of zero forever.
   const [costTotal,setCostTotal] = useState('');
+  // Locked only for a holding that already exists and has recorded movements.
+  // A brand-new asset has to be typed in somewhere, and one with no history has
+  // no realised profit to lose — the lock exists to protect a record, so it
+  // starts when there is a record.
+  const [qtyUnlocked,setQtyUnlocked] = useState(false);
+  const qtyLocked = !!editData && (editData.moves||[]).length > 0 && !qtyUnlocked;
+  const unlockQty = () => {
+    if(window.confirm('แก้จำนวนตรงๆ จะไม่บันทึกกำไร/ขาดทุนที่รับรู้ และไม่คำนวณทุนเฉลี่ยใหม่\n\nถ้ากำลังจะซื้อเพิ่มหรือขาย ให้ใช้ "เติม / เอาออก" ด้านล่างแทนค่ะ\n\nจะแก้ตรงๆ ต่อไหม?')) setQtyUnlocked(true);
+  };
   const items = f.items||[];
   const iTot  = itemTotals(items);
   const applyItems = list => setF(p=>{
@@ -2837,7 +2849,31 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
               they would be a second place to state the same money, and the two
               would drift the first time a piece was revalued. */}
           <div className="grid grid-cols-2 gap-3">
-            <div><label className={lbl}>{iTot.count>0?'จำนวน (ชิ้น)':'จำนวน (หุ้น/เหรียญ/บาท)'}</label><input type="number" readOnly={iTot.count>0} className={`${inp}${iTot.count>0?' opacity-60 cursor-not-allowed':''}`} placeholder="0" value={f.qty} onChange={e=>set('qty',e.target.value)}/></div>
+            {/* Locked once the holding has a history. Typing a smaller number
+                here is how you sell without the app ever knowing you sold: the
+                quantity changes, the average cost is left where it was, no
+                movement is written, and the realised profit or loss on those
+                units is never recorded. เติม/เอาออก below does all four.
+
+                Locked, not removed. Correcting a typo from the first entry, or
+                reconciling against an exchange after a fee, are real reasons to
+                set the figure directly — so the lock opens, and says on the way
+                what it is that opening it skips. */}
+            <div>
+              <div className="flex items-baseline justify-between gap-2">
+                <label className={lbl}>{iTot.count>0?'จำนวน (ชิ้น)':'จำนวน (หุ้น/เหรียญ/บาท)'}</label>
+                {qtyLocked && iTot.count===0 && (
+                  <button type="button" onClick={unlockQty}
+                    className={`text-[10px] font-medium mb-1 ${dk?'text-slate-500 hover:text-orange-400':'text-slate-400 hover:text-orange-600'}`}>
+                    🔒 แก้ตรงๆ
+                  </button>
+                )}
+              </div>
+              <input type="number" readOnly={iTot.count>0 || qtyLocked}
+                title={qtyLocked?'ล็อกไว้ — ถ้าจะซื้อเพิ่มหรือขาย ให้ใช้ "เติม / เอาออก" ด้านล่าง':undefined}
+                className={`${inp}${(iTot.count>0||qtyLocked)?' opacity-60 cursor-not-allowed':''}`}
+                placeholder="0" value={f.qty} onChange={e=>set('qty',e.target.value)}/>
+            </div>
             <div><label className={lbl}>สกุลเงิน</label>
               <select className={inp} value={f.currency} onChange={e=>set('currency',e.target.value)}>
                 <option value="THB">🇹🇭 THB (บาท)</option>
@@ -2856,7 +2892,10 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
                 ? <input type="number" className={inp} placeholder="ที่จ่ายไปทั้งหมด" value={costTotal}
                     onChange={e=>{ const v=e.target.value; setCostTotal(v);
                       const n=parseFloat(v); set('avgCost', String(isFinite(n)&&iTot.count>0 ? parseFloat((n/iTot.count).toFixed(6)) : 0)); }}/>
-                : <input type="number" className={inp} placeholder="0" value={f.avgCost} onChange={e=>set('avgCost',e.target.value)}/>}
+                : <input type="number" readOnly={qtyLocked}
+                    title={qtyLocked?'ล็อกไว้ — ทุนเฉลี่ยคำนวณจากประวัติ เติม/เอาออก':undefined}
+                    className={`${inp}${qtyLocked?' opacity-60 cursor-not-allowed':''}`}
+                    placeholder="0" value={f.avgCost} onChange={e=>set('avgCost',e.target.value)}/>}
             </div>
             <div><label className={lbl}>{iTot.count>0?'มูลค่ารวมตอนนี้':'ราคาปัจจุบัน / หน่วย'}</label>
               <input type="number" readOnly={iTot.count>0} className={`${inp}${iTot.count>0?' opacity-60 cursor-not-allowed':''}`} placeholder="0"
@@ -3064,13 +3103,14 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
             />
             <p className={`text-xs mt-1 ${dk?'text-slate-500':'text-slate-400'}`}>พิมพ์ชื่อบริษัทหรือเหรียญ เช่น nvidia, rocket lab, ethereum แล้วเลือกจากรายการ · ทองคำโลก (ทรอยออนซ์) ใส่ <b>GC=F</b> · ทองไทย (บาท) ยังต้องกรอกเอง</p>
           </div>
-          {f.type==='crypto'&&(
-            <div>
-              <label className={lbl}>🔑 ที่อยู่รับเงิน (Wallet Address) — ไม่บังคับ</label>
-              <input className={inp} placeholder="เช่น bc1q..., 0x..., T..." value={f.address||''} onChange={e=>set('address',e.target.value)}/>
-              <p className={`text-xs mt-1 ${dk?'text-slate-500':'text-slate-400'}`}>เก็บได้เฉพาะที่อยู่รับเงิน (public address) เท่านั้น — ห้ามใส่ Private Key หรือ Seed Phrase เด็ดขาด</p>
-            </div>
-          )}
+          {/* The wallet-address field is gone. It stored a public receiving
+              address, which is safe to hold but does nothing here — the app
+              never sends to it, never reads a balance from it, and never checks
+              it. It was a place to type a secret next to a warning not to,
+              which is a risk with no matching benefit.
+
+              Addresses already saved are untouched and still show as a chip in
+              the assets table; nothing on screen changes for them. */}
           {wallets.length>0&&(
             <div>
               <label className={lbl}>👛 กระเป๋าเงิน (เชื่อมสินทรัพย์)</label>
