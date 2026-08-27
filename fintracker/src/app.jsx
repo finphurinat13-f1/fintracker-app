@@ -932,8 +932,15 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[], c
       {/* The heading names both halves now that the allocation table lives here
           — the card had been introducing itself as only the second of the two
           things it shows. Orange because this is the panel the page is for. */}
-      <div className="text-base font-bold text-orange-400">Asset Allocation &amp; Unrealized P/L</div>
-      <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>สัดส่วนสินทรัพย์ และกำไร/ขาดทุนของที่ถืออยู่</div>
+      {/* One line, baseline-aligned. Stacked, the Thai read as a second heading
+          rather than as the gloss on the first — two lines of title above a
+          card whose first real content is a ฿203,142 figure. Beside it, at a
+          smaller size and in grey, it is plainly the explanation of the term.
+          flex-wrap so it still breaks cleanly on a narrow screen. */}
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <span className="text-base font-bold text-orange-400">Asset Allocation &amp; Unrealized P/L</span>
+        <span className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>สัดส่วนสินทรัพย์ และกำไร/ขาดทุนของที่ถืออยู่</span>
+      </div>
 
       <div className="flex items-baseline gap-3 flex-wrap mt-4">
         <div className={`text-3xl font-bold tracking-wider ${tone(up)}`}>{f(totPl)}</div>
