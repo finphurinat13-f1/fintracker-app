@@ -2471,6 +2471,33 @@ const detectBankIcon = (name, s=22) => {
 // a long table be scanned by shape instead of read line by line, and a circle
 // is the more distinct silhouette against rows of rectangular cells — which is
 // why every dashboard that does this well uses one.
+// Ink that survives whatever it is printed on. The badges fill with a colour
+// picked from the ramp — sometimes #f8e3d5, sometimes #73381a — and white on
+// the pale end measures 1.24, which is a letter you can tell is there and not
+// read. The ticker badges have had this since they were written; a holding
+// whose hash landed on a light step simply had no visible initials.
+//
+// Measures both candidates and takes the better one, rather than splitting on a
+// luminance threshold. A fixed cut-off has to be placed somewhere, and whatever
+// value it lands on the colours nearest it get the marginally worse of the two
+// inks — #c97e4d fell just on the light side of 0.34 and came out at 3.19.
+// Comparing the actual contrasts has no such edge, and needs no tuning when a
+// colour is added.
+//
+// Worst case across the whole ramp is 4.28, on #b76736. These glyphs are bold
+// at 14–16px, where the applicable bar is 3.0 rather than the 4.5 that governs
+// normal-size text — so the floor clears by a wide margin, and the ramp did not
+// have to be bent to reach a threshold that does not apply.
+const inkOn = bg => {
+  const rel = h => {
+    const c = [1,3,5].map(i => parseInt(h.slice(i,i+2),16) / 255)
+      .map(v => v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4));
+    return 0.2126*c[0] + 0.7152*c[1] + 0.0722*c[2];
+  };
+  const contrast = (a, b) => { const [x,y] = [rel(a), rel(b)].sort((p,q) => q-p); return (x+0.05)/(y+0.05); };
+  return contrast('#ffffff', bg) >= contrast('#241304', bg) ? '#ffffff' : '#241304';
+};
+
 const AssetIcon = ({a, ti, size='md'}) => {
   const dim = size==='sm' ? 'w-7 h-7' : 'w-9 h-9';
   if (a.type === 'stock') {
@@ -2488,14 +2515,14 @@ const AssetIcon = ({a, ti, size='md'}) => {
       const c = tickerClr(ticker);
       return (
         <div className={`${dim} rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center`}
-          style={{background:`linear-gradient(135deg, ${c}, ${c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)'}}>
-          <span className="text-xs font-bold text-white">{ticker.substring(0,2)}</span>
+          style={{background:`linear-gradient(135deg, ${c}, ${c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)', color:inkOn(c)}}>
+          <span className="text-xs font-bold">{ticker.substring(0,2)}</span>
         </div>
       );
     }
     const initials = a.name.replace(/[^A-Za-z]/g,'').substring(0,2).toUpperCase() || a.name.substring(0,2).toUpperCase();
     return (
-      <div className={`${dim} rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0`} style={{background:ti.c+'4d',color:'#fff'}}>
+      <div className={`${dim} rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0`} style={{background:`linear-gradient(135deg, ${ti.c}, ${ti.c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)', color:inkOn(ti.c)}}>
         {initials}
       </div>
     );
@@ -2514,18 +2541,24 @@ const AssetIcon = ({a, ti, size='md'}) => {
     if (sym==='USDT'||sym==='TETHER') return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><UsdtIcon s={px}/></div>;
     if (sym==='TRX'||sym==='TRON'||sym==='TRC') return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><TronIcon s={px}/></div>;
     return (
-      <div className={`${dim} rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0`} style={{background:ti.c+'4d',color:'#fff'}}>
+      <div className={`${dim} rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0`} style={{background:`linear-gradient(135deg, ${ti.c}, ${ti.c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)', color:inkOn(ti.c)}}>
         {sym.substring(0,2)||'C'}
       </div>
     );
   }
-  // White here too. ti.icon is a TypeIc drawn in currentColor, so without a
-  // colour set it inherited whatever the surrounding row happened to be —
-  // usually a muted grey, which is how the drawn icons ended up darker than the
-  // brand marks beside them.
+  // Round, not a rounded square: this was the last badge still a different
+  // shape from its neighbours, so a row of circles had one squarish tile in it.
+  //
+  // Cash prints ฿ as a character rather than the drawn icon. On a solid disc
+  // the drawn version's soft backing disc has nothing to sit against and only
+  // muddies the glyph — and a single letter is what makes the stock badges
+  // legible at this size, which is the treatment being matched.
   return (
-    <div className={`${dim} rounded-xl flex items-center justify-center text-base flex-shrink-0`} style={{background:ti.c+'4d', color:'#fff'}}>
-      {ti.icon}
+    <div className={`${dim} rounded-full flex items-center justify-center flex-shrink-0`}
+      style={{background:`linear-gradient(135deg, ${ti.c}, ${ti.c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)', color:inkOn(ti.c)}}>
+      {a.type==='cash'
+        ? <span className="text-sm font-bold leading-none">฿</span>
+        : <span className="text-base leading-none">{ti.icon}</span>}
     </div>
   );
 };
@@ -4131,7 +4164,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                               being read as part of the category. */}
                           <div className={`text-xs flex items-center gap-1.5 flex-wrap ${sub}`}>
                             <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap"
-                              style={{background:ti.c+'4d', color:'#fff'}}>{ti.l.substring(3)}</span>
+                              style={{background:`linear-gradient(135deg, ${ti.c}, ${ti.c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)', color:inkOn(ti.c)}}>{ti.l.substring(3)}</span>
                             {a.note?<span>{a.note}</span>:null}{(()=>{const w=wallets.find(x=>x.id===a.walletId);return w?<span data-hint="สินทรัพย์นี้เชื่อมกับกระเป๋าเงิน — ไปโผล่ในหน้ากระเป๋าด้วย" className={`ml-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${dk?'bg-gold-500/20 text-gold-300':'bg-gold-50 text-gold-500'}`}>👛 {w.name}</span>:null;})()}{a.address&&<AddressChip address={a.address} dk={dk}/>}</div>
                           {a.type==='crypto'&&<div className={`text-[11px] mt-0.5 tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{fmtQty(a.qty)} {(a.ticker||a.name).trim().split(/\s+/)[0].toUpperCase()} <span className="opacity-70">≈ {fmt(a.valTHB)}</span></div>}
                         </div>
