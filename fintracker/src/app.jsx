@@ -3738,7 +3738,10 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
       const pl      = isCash ? 0 : valTot - costTot;
       const plPct   = isCash ? 0 : (costTot>0 ? (pl/costTot*100) : 0);
       const holdDays = a.purchaseDate ? Math.floor((new Date()-new Date(a.purchaseDate))/86400000) : null;
-      return {...a, costTot, valTot, pl, plPct, costTHB:costTot*mult, valTHB:valTot*mult, plTHB:pl*mult, holdDays, taggedIn, taggedOut, hasTagged, isCash};
+      // Same helper the dashboard ranking uses, so a holding cannot show one
+      // annual figure in the table and another in the panel above it.
+      const cagr = isCash ? null : annualisedReturn({ value: valTot, cost: costTot, days: holdDays });
+      return {...a, costTot, valTot, pl, plPct, cagr, costTHB:costTot*mult, valTHB:valTot*mult, plTHB:pl*mult, holdDays, taggedIn, taggedOut, hasTagged, isCash};
     });
     // Group by type, but order the groups by their total value (biggest group on
     // top). Within a group, keep the user's chosen column; default is value desc.
@@ -3747,8 +3750,8 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
     mapped.sort((a,b)=>{
       const to = (typeTotals[b.type]||0) - (typeTotals[a.type]||0);   // bigger type-group first
       if(to !== 0) return to;
-      const va = sortBy==='plTHB'?a.plTHB:sortBy==='plPct'?a.plPct:sortBy==='valTHB'?a.valTHB:sortBy==='costTHB'?a.costTHB:sortBy==='holdDays'?(a.holdDays||0):sortBy==='purchaseDate'?(a.purchaseDate||''):(a[sortBy]??'');
-      const vb = sortBy==='plTHB'?b.plTHB:sortBy==='plPct'?b.plPct:sortBy==='valTHB'?b.valTHB:sortBy==='costTHB'?b.costTHB:sortBy==='holdDays'?(b.holdDays||0):sortBy==='purchaseDate'?(b.purchaseDate||''):(b[sortBy]??'');
+      const va = sortBy==='cagr'?(a.cagr??-Infinity):sortBy==='plTHB'?a.plTHB:sortBy==='plPct'?a.plPct:sortBy==='valTHB'?a.valTHB:sortBy==='costTHB'?a.costTHB:sortBy==='holdDays'?(a.holdDays||0):sortBy==='purchaseDate'?(a.purchaseDate||''):(a[sortBy]??'');
+      const vb = sortBy==='cagr'?(b.cagr??-Infinity):sortBy==='plTHB'?b.plTHB:sortBy==='plPct'?b.plPct:sortBy==='valTHB'?b.valTHB:sortBy==='costTHB'?b.costTHB:sortBy==='holdDays'?(b.holdDays||0):sortBy==='purchaseDate'?(b.purchaseDate||''):(b[sortBy]??'');
       if(typeof va==='string') return sortDir==='asc'?va.localeCompare(vb):vb.localeCompare(va);
       return sortDir==='asc'?va-vb:vb-va;
     });
@@ -4040,7 +4043,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
               whatever screen it is on, with the headings in view throughout. */}
           <table className="w-full">
             <thead><tr className={`border-b ${dk?'border-white/5':'border-slate-100'}`}>
-              {[{h:'สินทรัพย์',f:'name'},{h:'จำนวน',f:'qty'},{h:'ทุน/หน่วย',f:'avgCost',tip:'ราคาต้นทุนเฉลี่ยต่อหน่วยที่ซื้อมา'},{h:'ราคาตลาด',f:'currentPrice',tip:'ราคาล่าสุดต่อหน่วย'},{h:'วันที่ซื้อ',f:'purchaseDate'},{h:'ต้นทุนรวม',f:'costTHB',tip:'จำนวน × ต้นทุนเฉลี่ย = เงินที่ลงทุนไปทั้งหมด'},{h:'กำไร/ขาดทุน',f:'plTHB',tip:'มูลค่าปัจจุบัน − ต้นทุนรวม (ยังไม่ขาย = กำไรบนกระดาษ)'},{h:'มูลค่าปัจจุบัน',f:'valTHB',tip:'ต้นทุนรวม + กำไร/ขาดทุน = มูลค่าตอนนี้'}].map(({h,f,tip})=>(
+              {[{h:'สินทรัพย์',f:'name'},{h:'จำนวน',f:'qty'},{h:'ทุน/หน่วย',f:'avgCost',tip:'ราคาต้นทุนเฉลี่ยต่อหน่วยที่ซื้อมา'},{h:'ราคาตลาด',f:'currentPrice',tip:'ราคาล่าสุดต่อหน่วย'},{h:'วันที่ซื้อ',f:'purchaseDate'},{h:'ต้นทุนรวม',f:'costTHB',tip:'จำนวน × ต้นทุนเฉลี่ย = เงินที่ลงทุนไปทั้งหมด'},{h:'กำไร/ขาดทุน',f:'plTHB',tip:'มูลค่าปัจจุบัน − ต้นทุนรวม (ยังไม่ขาย = กำไรบนกระดาษ)'},{h:'ต่อปี',f:'cagr',tip:'ผลตอบแทนต่อปีแบบทบต้น — หารเวลาที่ถือออก จึงเทียบข้ามรายการที่ซื้อคนละเวลาได้ · ถือไม่ถึง 3 เดือนจะไม่คำนวณ'},{h:'มูลค่าปัจจุบัน',f:'valTHB',tip:'ต้นทุนรวม + กำไร/ขาดทุน = มูลค่าตอนนี้'}].map(({h,f,tip})=>(
                 // Pinned. Reading the twentieth of thirty-four holdings meant
                 // having scrolled the column names off the top, so ทุน/หน่วย and
                 // มูลค่า became two unlabelled columns of baht that look alike.
@@ -4051,10 +4054,16 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                   className={`sticky top-0 z-10 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer select-none whitespace-nowrap ${dk?'text-slate-200 hover:text-white':'text-slate-700 hover:text-slate-900'}`}
                   style={{background: dk ? '#14140f' : '#e8e6e1'}}>{h}{tip&&<span className="ml-0.5 opacity-40 normal-case">ⓘ</span>}<SI f={f}/></th>
               ))}
-              <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${dk?'text-slate-200 bg-white/[0.09]':'text-slate-700 bg-slate-200'}`}>จัดการ</th>
+              {/* The actions heading is not in the sortable list, so it missed
+                  the sticky treatment the others got and stayed on the old
+                  tint — leaving one column heading that scrolled away while its
+                  neighbours held, and a translucent patch in a bar that is
+                  otherwise opaque. */}
+              <th className={`sticky top-0 z-10 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${dk?'text-slate-200':'text-slate-700'}`}
+                style={{background: dk ? '#14140f' : '#e8e6e1'}}>จัดการ</th>
             </tr></thead>
             <tbody>
-              {enriched.length===0&&<tr><td colSpan={8} className="py-14 text-center">
+              {enriched.length===0&&<tr><td colSpan={10} className="py-14 text-center">
                 <div className="text-4xl mb-3 opacity-60">{assets.length===0?'📈':'🔍'}</div>
                 <p className={`text-sm font-semibold mb-1 ${dk?'text-slate-300':'text-slate-600'}`}>{assets.length===0?'ยังไม่มีสินทรัพย์':'ไม่พบสินทรัพย์ที่ตรงกับตัวกรอง'}</p>
                 <p className={`text-xs mb-4 ${sub}`}>{assets.length===0?'เพิ่มหุ้น คริปโต ทอง หรือเงินสด เพื่อเริ่มติดตามพอร์ต':'ลองเปลี่ยนตัวกรองหรือคำค้นหา'}</p>
@@ -4158,6 +4167,26 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                           {a.currency==='USD'&&<div className={`text-xs ${sub}`}>≈ {a.plTHB>=0?'+':''}{fmtSigned(a.plTHB)}</div>}</>
                       }
                     </td>
+                    {/* Annualised, in its own column rather than stacked under
+                        the P/L figures. It is a different question — not how
+                        much, but how fast — and burying it as a fourth line
+                        would have made the one figure that can be compared
+                        between holdings the least visible thing in the cell.
+                        Its own column is also what makes it sortable, which is
+                        most of the value: ranking by it is how you find out
+                        which holding is actually working. */}
+                    <td className="px-4 py-4">
+                      {a.cagr==null
+                        ? <span title={a.isCash?'':'ถือไม่ถึง 3 เดือน — คิดเป็นต่อปีแล้วยังเชื่อถือไม่ได้'}
+                            className={`text-sm ${dk?'text-slate-600':'text-slate-300'}`}>—</span>
+                        : <>
+                            <div className={`text-sm font-semibold whitespace-nowrap ${a.cagr>=0?'text-emerald-400':'text-rose-400'}`}>
+                              {a.cagr>=0?'+':''}{a.cagr.toFixed(1)}%
+                            </div>
+                            <div className={`text-xs ${sub}`}>ต่อปี</div>
+                          </>
+                      }
+                    </td>
                     <td className="px-4 py-4">
                       {a.isCash
                         ? <span className={`text-sm ${dk?'text-slate-500':'text-slate-400'}`}>—</span>
@@ -4215,6 +4244,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                     <div className={`text-sm font-bold whitespace-nowrap ${totPL>=0?'text-emerald-400':'text-rose-400'}`}>{totPL>=0?'+':''}{fmtSigned(totPL)}</div>
                     <div className={`text-xs font-medium ${totPLPct>=0?'text-emerald-400/80':'text-rose-400/80'}`}>{totPLPct>=0?'+':''}{totPLPct.toFixed(2)}%</div>
                   </td>
+                  <td/>
                   <td className={`px-4 py-4 text-sm font-bold whitespace-nowrap ${dk?'text-white':'text-slate-800'}`}>{fmt(totVal)}</td>
                   <td/>
                 </tr>
