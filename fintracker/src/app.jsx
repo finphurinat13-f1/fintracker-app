@@ -920,8 +920,10 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[], c
   const fp = v => hide ? '•••' : `${v>=0?'+':''}${v.toFixed(2)}%`;
   const tone = g => g ? 'text-emerald-400' : 'text-rose-400';
 
+  // No mt-4 on the card: it sits in a grid cell now, and its own top margin
+  // would push it out of line with the panel beside it.
   return (
-    <div className={`rounded-2xl fade-up p-5 mt-4 ${dk?'card-solid':'glass-light shadow-sm'}`}>
+    <div className={`rounded-2xl fade-up p-5 ${dk?'card-solid':'glass-light shadow-sm'}`}>
       {/* One heading, not two. The Thai title and the English eyebrow opposite
           it were a translation of each other, so the card announced itself
           twice before saying anything. The term carries the title; the Thai
@@ -1632,22 +1634,10 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           against the largest, which is a different chart and a decision for
           another day. The treemap takes the full width in the meantime, which
           is what the small holdings needed anyway. */}
-      {/* Two views of the same holdings that answer different questions: the
-          treemap says what is big and whether it is up, the ranking says what
-          is earning fastest for the time it has been held. A position can be
-          the largest tile and the worst performer at once, which is exactly the
-          pairing worth seeing side by side. */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className={card + ' p-5 lg:col-span-2'}>
-          <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>แผนผังพอร์ต</h3>
-          <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>ขนาด = มูลค่า · สี = กำไร/ขาดทุน · ชี้เพื่อดูรายละเอียด</p>
-          <PortfolioTreemap assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy}/>
-        </div>
-        <div className={card + ' p-5'}>
-          <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>ผลตอบแทนต่อปี</h3>
-          <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>คิดแบบทบต้น เทียบกันได้ข้ามระยะเวลาถือ</p>
-          <ReturnRanking assets={assets} txs={txs} usdRate={usdRate} theme={theme}/>
-        </div>
+      <div className={card + ' p-5'}>
+        <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>แผนผังพอร์ต</h3>
+        <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>ขนาด = มูลค่า · สี = กำไร/ขาดทุน · ชี้เพื่อดูรายละเอียด</p>
+        <PortfolioTreemap assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy}/>
       </div>
 
       {/* The last-10 transactions list used to sit here, collapsed, above the
@@ -1656,7 +1646,22 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           ever be the worse of the two — and it carried its own edit and delete
           buttons, which meant a second place to change data that had to be
           kept in step with the real one for no gain. */}
-      <UnrealizedPL assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy} nwHistory={nwHistory} cashTotal={walletCashTotal}/>
+      {/* Paired because they answer the same question two ways: what the
+          holdings are worth against what they cost, and how fast that gain
+          arrived. Two thirds to one, because the P/L table carries five rows of
+          figures and the ranking carries five names — and because the totals
+          are what the page is for. The treemap keeps its own row above: size is
+          a different question from performance. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+        <div className="lg:col-span-2">
+          <UnrealizedPL assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy} nwHistory={nwHistory} cashTotal={walletCashTotal}/>
+        </div>
+        <div className={card + ' p-5'}>
+          <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>ผลตอบแทนต่อปี</h3>
+          <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>คิดแบบทบต้น เทียบกันได้ข้ามระยะเวลาถือ</p>
+          <ReturnRanking assets={assets} txs={txs} usdRate={usdRate} theme={theme}/>
+        </div>
+      </div>
     </div>
   );
 };
