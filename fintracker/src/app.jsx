@@ -200,7 +200,18 @@ const CAT_ICON_KEYS = Object.keys(CAT_SVG);
 // spending category.
 const TYPE_SVG = {
   bank:    <><path d="M4.2 10.4h15.6v8.2H4.2z" opacity=".3"/><path d="M11.5 2.6a1 1 0 0 1 1 0l9 4.9a1 1 0 0 1-.48 1.88H2.98A1 1 0 0 1 2.5 7.5z"/><rect x="5.6" y="11" width="2.2" height="6.4" rx="1"/><rect x="10.9" y="11" width="2.2" height="6.4" rx="1"/><rect x="16.2" y="11" width="2.2" height="6.4" rx="1"/><rect x="3" y="18.8" width="18" height="2.4" rx="1.2"/></>,
-  cash:    <><rect x="2.2" y="6" width="19.6" height="12" rx="2.2" opacity=".3"/><rect x="2.2" y="6" width="19.6" height="12" rx="2.2" fill="none" stroke="currentColor" strokeWidth="1.7"/><circle cx="12" cy="12" r="2.8"/><circle cx="5.9" cy="12" r="1"/><circle cx="18.1" cy="12" r="1"/></>,
+  // A ฿ on a disc, rather than a drawn banknote. The note was 19.6 × 12 in a
+  // 24-box — half the height, all of the width — so it read as a bar, and its
+  // r=1 corner dots vanished at the 22px this is actually drawn at. One glyph
+  // beats a picture at small sizes, the same reason the app logo is a letter.
+  //
+  // Drawn as paths, not as the ฿ character in a <text> element: a glyph would
+  // depend on the loaded font rendering it identically everywhere, and this has
+  // to look the same on a phone that has never seen Noto.
+  //
+  // The stem runs past both bowls top and bottom — that overhang is the whole
+  // difference between ฿ and a capital B.
+  cash:    <><circle cx="12" cy="12" r="10" opacity=".3"/><rect x="8.1" y="3.4" width="2.6" height="17.2" rx="1"/><path d="M10.7 6.6h4.1a2.75 2.75 0 0 1 0 5.5h-4.1z"/><path d="M10.7 12.1h4.9a2.9 2.9 0 0 1 0 5.8h-4.9z"/></>,
   stock:   <><path d="M3 20.2V13l4.6-3.4 4.4 3 4.6-5.2L21 4.8v15.4z" opacity=".3"/><path d="M2.9 14.2a1 1 0 0 1 .2-1.4l4.6-3.4a1 1 0 0 1 1.16-.02l3.62 2.47 4.03-4.55a1 1 0 1 1 1.5 1.32l-4.6 5.2a1 1 0 0 1-1.31.16L8.3 11.44l-4 2.96a1 1 0 0 1-1.4-.2z"/><circle cx="17.4" cy="7.6" r="1.9"/></>,
   credit:  <><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.6" opacity=".3"/><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.6" fill="none" stroke="currentColor" strokeWidth="1.7"/><rect x="2.2" y="8.2" width="19.6" height="2.8"/><rect x="5" y="14" width="5.2" height="2" rx="1"/></>,
   crypto:  <><path d="M12 2.4 20 5.6v6.1c0 4.4-3.1 8.4-8 9.9-4.9-1.5-8-5.5-8-9.9V5.6z" opacity=".3"/><path d="M12 2.4 20 5.6v6.1c0 4.4-3.1 8.4-8 9.9-4.9-1.5-8-5.5-8-9.9V5.6z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M10 8.4h3.1a2.1 2.1 0 0 1 0 4.2H10zm0 4.2h3.4a2.1 2.1 0 0 1 0 4.2H10zm1.1-6.5v2m0 9v2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></>,
@@ -7050,8 +7061,15 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
     bank:    { label:'บัญชีธนาคาร',  color:'#e8cf90', icon:<TypeIc n="bank" s={22}/> },
     stock:   { label:'พอร์ตหุ้น',     color:'#c9a94b', icon:<TypeIc n="stock" s={22}/> },
     crypto:  { label:'Crypto Wallet', color:'#a8894a', icon:<TypeIc n="crypto" s={22}/> },
-    cash:    { label:'เงินสด',        color:'#7d6a3f', icon:<TypeIc n="cash" s={22}/> },
-    credit:  { label:'บัตรเครดิต',    color:'#584b31', icon:<TypeIc n="credit" s={22}/> },
+    // Bright enough to be a glyph colour. #7d6a3f was a step from the old gold
+    // ramp — dark by design, which works for a bar on a light track and not at
+    // all for an icon on a dark chip, where it came out as a shape you could
+    // tell was there but not what it was.
+    cash:    { label:'เงินสด',        color:'#f0cbb2', icon:<TypeIc n="cash" s={22}/> },
+    // #584b31 measured 2.19 against the chip it is drawn on — below the 3.0 an
+    // icon needs to be identifiable rather than merely present. It was the only
+    // one under the line; the rest of the set clears it.
+    credit:  { label:'บัตรเครดิต',    color:'#b08f52', icon:<TypeIc n="credit" s={22}/> },
     ewallet: { label:'e-Wallet',      color:'#d4b876', icon:<TypeIc n="ewallet" s={22}/> },
     fund:    { label:'กองทุนรวม',     color:'#af924f', icon:<TypeIc n="fund" s={22}/> },
     fixed:   { label:'ฝากประจำ',      color:'#856b35', icon:<TypeIc n="fixed" s={22}/> },
