@@ -403,10 +403,12 @@ const DateRangePicker = ({from, to, onPick, dk, years=[]}) => {
 const LogoSvg = ({size=32}) => (
   <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <rect width="100" height="100" fill="#05080f" rx="12"/>
-    {/* Stem, top arm, middle arm — three rectangles and nothing else */}
-    <rect x="24" y="8"  width="20" height="84" fill="#d4af45"/>
-    <rect x="44" y="8"  width="40" height="20" fill="#d4af45"/>
-    <rect x="44" y="42" width="30" height="20" fill="#e8763a"/>
+    {/* One polygon: stem, then both arms ending in a downward chamfer. The cut
+        ends were what the original mark was recognisable for — square arms read
+        as any bold F, while the diagonal gives it an edge that belongs to this
+        one. Drawn as a single shape so the letter cannot come apart at small
+        sizes the way separate rectangles can. */}
+    <polygon points="24,8 88,8 68,28 44,28 44,42 76,42 56,62 44,62 44,92 24,92" fill="#d4af45"/>
   </svg>
 );
 
