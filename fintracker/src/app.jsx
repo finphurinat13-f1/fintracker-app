@@ -2731,7 +2731,32 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
   const togglePick = id => setPicked(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
   const save = () => {
     if(!f.name.trim()||!f.qty||!f.avgCost||!f.currentPrice) return;
-    onSave({...f,qty:parseFloat(f.qty),avgCost:parseFloat(f.avgCost),currentPrice:parseFloat(f.currentPrice)});
+    const qty = parseFloat(f.qty), avgCost = parseFloat(f.avgCost);
+    let out = {...f, qty, avgCost, currentPrice:parseFloat(f.currentPrice)};
+
+    // A hand-edit leaves its own line in the history. Locking the field stopped
+    // a sale being recorded as a silent shrink, but an unlocked correction was
+    // still invisible afterwards — the number simply differed from what it had
+    // been, with nothing to say who changed it or from what.
+    //
+    // realized is 0 on purpose. This is a correction, not a disposal; counting
+    // it as profit would put money in the yearly realised figure that nobody
+    // ever received. The note carries the old values so the change can be read
+    // and, if it was a mistake, undone by hand.
+    if(qtyUnlocked && editData){
+      const oldQty = editData.qty||0, oldAvg = editData.avgCost||0;
+      const moved  = Math.abs(qty-oldQty) > 1e-8 || Math.abs(avgCost-oldAvg) > 1e-8;
+      if(moved){
+        out = {...out, moves:[...(f.moves||[]), {
+          id: uid(), date: today(), manual: true,
+          note: `แก้ด้วยมือ · จำนวน ${fmtQty(oldQty)} → ${fmtQty(qty)}${Math.abs(avgCost-oldAvg)>1e-8?` · ทุนเฉลี่ย ${oldAvg} → ${avgCost}`:''}`,
+          qty: parseFloat((qty-oldQty).toFixed(8)), rate: 0,
+          newQty: parseFloat(qty.toFixed(8)), newAvg: parseFloat(avgCost.toFixed(6)),
+          realized: 0,
+        }]};
+      }
+    }
+    onSave(out);
     onClose();
   };
   const assign = () => {
@@ -2865,7 +2890,13 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
                 {qtyLocked && iTot.count===0 && (
                   <button type="button" onClick={unlockQty}
                     className={`text-[10px] font-medium mb-1 ${dk?'text-slate-500 hover:text-orange-400':'text-slate-400 hover:text-orange-600'}`}>
-                    🔒 แก้ตรงๆ
+                    {/* "ปลดล็อก", not "แก้". A plain edit label reads as an
+                        ordinary edit button and gets pressed without thought,
+                        which lands the reader in a warning dialogue they were
+                        not expecting. Unlock pairs with the padlock beside it
+                        and says in advance that something deliberately shut is
+                        about to open. */}
+                    🔒 ปลดล็อก
                   </button>
                 )}
               </div>
