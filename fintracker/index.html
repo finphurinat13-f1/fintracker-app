@@ -78,9 +78,16 @@ const db   = firebase.firestore();
      eye an edge to catch on between each number and the next.
      What replaces it is a 1px line and nothing else, which is what the current
      generation of finance tools (Linear, Mercury, Ramp) settled on. */
+  /* Off-white, not white. Cards cover most of the screen, and #ffffff is the
+     brightest value a display can produce — over that much area it is what
+     makes a light theme glare rather than read. A warm near-white keeps the
+     card clearly above the page without being the maximum.
+
+     The border warms with it: a blue-grey hairline was the same mistake the
+     dark theme's ground had, spread across every card edge on the page. */
   .glass-light {
-    background: #ffffff;
-    border: 1px solid rgba(15,23,42,0.08);
+    background: #fbf9f4;
+    border: 1px solid rgba(120,104,68,0.16);
     box-shadow: none;
   }
 

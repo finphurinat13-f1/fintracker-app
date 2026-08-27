@@ -1501,7 +1501,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
         style={dk
           ? {background:'linear-gradient(115deg,rgba(212,175,69,0.13) 0%,rgba(232,118,58,0.09) 42%,#0c0c0d 88%)',
              border:'1px solid rgba(212,175,69,0.22)'}
-          : {background:'linear-gradient(135deg,#f8fafc 0%,#eff6ff 100%)',border:'1px solid rgba(199,210,254,0.5)'}}>
+          : {background:'linear-gradient(115deg,#faf3e6 0%,#f6efe3 45%,#fbf9f4 90%)',border:'1px solid rgba(212,175,69,0.30)'}}>
         <div className="flex items-center gap-3">
 
           {/* Left: Logo + Name */}
@@ -2012,16 +2012,18 @@ const TxPage = ({ txs, theme, onEdit, onAdd, onDelete, onBulkDelete, onExport, w
 
   return (
     <div className="space-y-4 fade-up">
+      {/* The add button moves into the header, the way Budget already does it.
+          It had a strip of its own below, headed "📋 รายการทั้งหมด" — a title
+          restating the page title two lines under it, existing only to give the
+          button something to sit opposite. */}
       <PageHeader theme={theme} lead="All" accent="Transactions"
-        sub={`${txs.length} รายการ · รายรับ รายจ่าย โยกเงิน และปันผล`}/>
-      {onAdd&&(
-        <div className="flex items-center justify-between">
-          <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>📋 รายการทั้งหมด</h2>
-          <button data-hint="กดเพิ่มรายรับ-รายจ่ายของคุณเองที่นี่" onClick={onAdd} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl btn-primary text-white text-xs font-semibold">
-            <Ic n="plus" s={13}/> เพิ่มรายการ
-          </button>
-        </div>
-      )}
+        sub={`${txs.length} รายการ · รายรับ รายจ่าย โยกเงิน และปันผล`}
+        right={onAdd
+          ? <button data-hint="กดเพิ่มรายรับ-รายจ่ายของคุณเองที่นี่" onClick={onAdd}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-orange-400 hover:bg-orange-300 text-orange-950 text-xs font-semibold transition-colors">
+              <Ic n="plus" s={13}/> เพิ่มรายการ
+            </button>
+          : null}/>
       <div className={`rounded-2xl p-4 space-y-3 ${dk?'card-solid':'glass-light shadow-sm'}`}>
         {/* Row 1: Search */}
         <div className="relative">
@@ -9736,7 +9738,7 @@ const App = () => {
     <div className="min-h-screen transition-colors duration-300" style={bgStyle} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
 
       {/* ── DESKTOP: Top Navbar (lg+) ── */}
-      <nav className={`hidden lg:block sticky top-0 z-40 border-b no-print ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-white/85 border-gold-100 backdrop-blur-xl'}`}>
+      <nav className={`hidden lg:block sticky top-0 z-40 border-b no-print ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-[#fbf9f4]/88 border-gold-100 backdrop-blur-xl'}`}>
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
           <div className="flex items-center gap-2.5 flex-shrink-0">
             <LogoSvg size={34}/>
@@ -9866,7 +9868,7 @@ const App = () => {
 
       {/* Mobile top bar */}
       <header className={`lg:hidden sticky top-0 z-30 h-14 flex items-center justify-between px-4 border-b no-print
-        ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-white/85 border-gold-100 backdrop-blur-xl'}`}>
+        ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-[#fbf9f4]/88 border-gold-100 backdrop-blur-xl'}`}>
         <div className="flex items-center gap-2">
           <button onClick={()=>setSidebarOpen(true)} aria-label="เปิดเมนู" className={`p-2.5 rounded-xl ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-700'}`}>
             <Ic n="menu" s={18}/>
@@ -9977,7 +9979,7 @@ const App = () => {
 
       {/* ── Bottom Navigation Bar (Mobile Only) ── */}
       <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 no-print border-t
-        ${dk?'bg-[#101012]/98 border-gold-500/15 backdrop-blur-2xl':'bg-white/95 border-slate-200 backdrop-blur-xl'}`}
+        ${dk?'bg-[#101012]/98 border-gold-500/15 backdrop-blur-2xl':'bg-[#fbf9f4]/95 border-slate-200 backdrop-blur-xl'}`}
         style={{paddingBottom:'env(safe-area-inset-bottom)'}}>
         <div className="flex items-center justify-around px-1 pt-2 pb-2">
           {[
