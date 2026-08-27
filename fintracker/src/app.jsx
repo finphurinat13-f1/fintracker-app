@@ -2555,13 +2555,13 @@ const brandOf = (rawTicker, name='') => {
 };
 
 const AssetIcon = ({a, ti, size='md'}) => {
-  const dim = size==='sm' ? 'w-7 h-7' : 'w-9 h-9';
+  const dim = size==='sm' ? 'w-8 h-8' : 'w-11 h-11';
   if (a.type === 'stock') {
     const ticker = (a.ticker || a.name).replace(/[^A-Za-z0-9]/g,'').toUpperCase() || a.name.substring(0,4).toUpperCase();
     const CUSTOM_ICONS = { 'SOFI': SoFiIcon };
     if (CUSTOM_ICONS[ticker]) {
       const CustomIcon = CUSTOM_ICONS[ticker];
-      const px = size==='sm' ? 28 : 32;
+      const px = size==='sm' ? 32 : 44;
       return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><CustomIcon s={px}/></div>;
     }
     // The company's own colour when it is known, otherwise one hashed from the
@@ -2580,13 +2580,13 @@ const AssetIcon = ({a, ti, size='md'}) => {
         <div className={`${dim} rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center`}
           style={{background:`linear-gradient(135deg, ${c}, ${c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)',
                   color:inkOn(c), border: needsRing(c) ? '1px solid rgba(255,255,255,0.22)' : undefined}}>
-          <span className="text-xs font-bold">{ticker.substring(0,2)}</span>
+          <span className="text-sm font-bold">{ticker.substring(0,2)}</span>
         </div>
       );
     }
     const initials = a.name.replace(/[^A-Za-z]/g,'').substring(0,2).toUpperCase() || a.name.substring(0,2).toUpperCase();
     return (
-      <div className={`${dim} rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0`} style={{background:`linear-gradient(135deg, ${ti.c}, ${ti.c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)', color:inkOn(ti.c)}}>
+      <div className={`${dim} rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0`} style={{background:`linear-gradient(135deg, ${ti.c}, ${ti.c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)', color:inkOn(ti.c)}}>
         {initials}
       </div>
     );
@@ -2599,13 +2599,13 @@ const AssetIcon = ({a, ti, size='md'}) => {
     const sym = (a.ticker || a.name).trim().split(/\s+/)[0]
       .replace(/-(USD|USDT|THB|EUR|GBP|JPY|BTC)$/i,'')
       .replace(/[^A-Za-z]/g,'').toUpperCase();
-    const px = size==='sm' ? 28 : 32;
+    const px = size==='sm' ? 32 : 44;
     if (sym==='BTC'||sym==='BITCOIN'||sym==='XBT') return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><BtcIcon s={px}/></div>;
     if (sym==='ETH'||sym==='ETHEREUM') return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><EthIcon s={px}/></div>;
     if (sym==='USDT'||sym==='TETHER') return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><UsdtIcon s={px}/></div>;
     if (sym==='TRX'||sym==='TRON'||sym==='TRC') return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><TronIcon s={px}/></div>;
     return (
-      <div className={`${dim} rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0`} style={{background:`linear-gradient(135deg, ${ti.c}, ${ti.c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)', color:inkOn(ti.c)}}>
+      <div className={`${dim} rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0`} style={{background:`linear-gradient(135deg, ${ti.c}, ${ti.c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)', color:inkOn(ti.c)}}>
         {sym.substring(0,2)||'C'}
       </div>
     );
@@ -2621,8 +2621,8 @@ const AssetIcon = ({a, ti, size='md'}) => {
     <div className={`${dim} rounded-full flex items-center justify-center flex-shrink-0`}
       style={{background:`linear-gradient(135deg, ${ti.c}, ${ti.c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)', color:inkOn(ti.c)}}>
       {a.type==='cash'
-        ? <span className="text-sm font-bold leading-none">฿</span>
-        : <span className="text-base leading-none">{ti.icon}</span>}
+        ? <span className="text-base font-bold leading-none">฿</span>
+        : <span className="text-lg leading-none">{ti.icon}</span>}
     </div>
   );
 };
@@ -2663,11 +2663,11 @@ const AddressChip = ({address, dk}) => {
 // They stay in ramp order, so the five types keep their relative position:
 // lightest for stocks through to the deepest for the residual bucket.
 const ASSET_TYPES = [
-  {v:'stock', l:'📈 หุ้น',    c:'#f8e3d5', icon:<TypeIc n="stock" s={18}/>},
+  {v:'stock', l:'📈 หุ้น',    c:'#f8e3d5', icon:<TypeIc n="stock" s={22}/>},
   {v:'crypto',l:'🟠 Crypto', c:'#f0cbb2', icon:<BtcIcon/>},
   {v:'gold',  l:'🪙 ทองคำ',  c:'#e6b18e', icon:<GoldIcon/>},
-  {v:'cash',  l:'💵 เงินสด', c:'#d99669', icon:<TypeIc n="cash" s={18}/>},
-  {v:'other', l:'📦 อื่นๆ',   c:'#c97e4d', icon:<TypeIc n="box" s={18}/>},
+  {v:'cash',  l:'💵 เงินสด', c:'#d99669', icon:<TypeIc n="cash" s={22}/>},
+  {v:'other', l:'📦 อื่นๆ',   c:'#c97e4d', icon:<TypeIc n="box" s={22}/>},
 ];
 const BUDGET_DEFAULTS = {'อาหาร':7000,'การเดินทาง':2000,'Home & Utilities':8000,'ช้อปปิ้ง':1500,'อินเตอร์เน็ต/โทรศัพท์':500,'สุขภาพ':1000,'Subscription':500,'การศึกษา':1000,'บันเทิง':1500,'ลงทุน/ปันผล':2000,'อื่นๆ':1000};
 // Empty on purpose. This list used to ship the author's real standing
