@@ -2495,7 +2495,7 @@ const AssetIcon = ({a, ti, size='md'}) => {
     }
     const initials = a.name.replace(/[^A-Za-z]/g,'').substring(0,2).toUpperCase() || a.name.substring(0,2).toUpperCase();
     return (
-      <div className={`${dim} rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0`} style={{background:ti.c+'4d',color:ti.c}}>
+      <div className={`${dim} rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0`} style={{background:ti.c+'4d',color:'#fff'}}>
         {initials}
       </div>
     );
@@ -2514,13 +2514,17 @@ const AssetIcon = ({a, ti, size='md'}) => {
     if (sym==='USDT'||sym==='TETHER') return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><UsdtIcon s={px}/></div>;
     if (sym==='TRX'||sym==='TRON'||sym==='TRC') return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><TronIcon s={px}/></div>;
     return (
-      <div className={`${dim} rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0`} style={{background:ti.c+'4d',color:ti.c}}>
+      <div className={`${dim} rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0`} style={{background:ti.c+'4d',color:'#fff'}}>
         {sym.substring(0,2)||'C'}
       </div>
     );
   }
+  // White here too. ti.icon is a TypeIc drawn in currentColor, so without a
+  // colour set it inherited whatever the surrounding row happened to be —
+  // usually a muted grey, which is how the drawn icons ended up darker than the
+  // brand marks beside them.
   return (
-    <div className={`${dim} rounded-xl flex items-center justify-center text-base flex-shrink-0`} style={{background:ti.c+'4d'}}>
+    <div className={`${dim} rounded-xl flex items-center justify-center text-base flex-shrink-0`} style={{background:ti.c+'4d', color:'#fff'}}>
       {ti.icon}
     </div>
   );
@@ -4127,7 +4131,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                               being read as part of the category. */}
                           <div className={`text-xs flex items-center gap-1.5 flex-wrap ${sub}`}>
                             <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap"
-                              style={{background:ti.c+'4d', color:ti.c}}>{ti.l.substring(3)}</span>
+                              style={{background:ti.c+'4d', color:'#fff'}}>{ti.l.substring(3)}</span>
                             {a.note?<span>{a.note}</span>:null}{(()=>{const w=wallets.find(x=>x.id===a.walletId);return w?<span data-hint="สินทรัพย์นี้เชื่อมกับกระเป๋าเงิน — ไปโผล่ในหน้ากระเป๋าด้วย" className={`ml-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${dk?'bg-gold-500/20 text-gold-300':'bg-gold-50 text-gold-500'}`}>👛 {w.name}</span>:null;})()}{a.address&&<AddressChip address={a.address} dk={dk}/>}</div>
                           {a.type==='crypto'&&<div className={`text-[11px] mt-0.5 tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{fmtQty(a.qty)} {(a.ticker||a.name).trim().split(/\s+/)[0].toUpperCase()} <span className="opacity-70">≈ {fmt(a.valTHB)}</span></div>}
                         </div>
