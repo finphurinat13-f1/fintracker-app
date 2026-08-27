@@ -389,19 +389,24 @@ const DateRangePicker = ({from, to, onPick, dk, years=[]}) => {
 //
 // Kept to five shapes with no strokes under 6px, because the tab favicon draws
 // this at 16 and anything finer collapses into a smudge there.
+// One letter, very heavy, filling the tile almost to its edges — the thing that
+// makes a mark survive a 16px browser tab.
+//
+// The bar-chart version that briefly stood here failed exactly that test: seven
+// shapes and two gaps, which at tab size resolved into a smudge. And the F
+// before it, while clean, stood only 52 units tall in a 100-unit square, so a
+// 16px favicon was drawing an 8px letter surrounded by margin.
+//
+// This one runs 84 of 100 and its strokes are 20 wide, so even at 16px the stem
+// and both arms are over 3px each — above the width at which a shape stops
+// being a line and becomes a grey suggestion.
 const LogoSvg = ({size=32}) => (
   <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <rect width="100" height="100" fill="#05080f" rx="10"/>
-    {/* Stem — the F's spine and the chart's axis */}
-    <rect x="24" y="22" width="11" height="56" rx="2" fill="#d4af45"/>
-    {/* Baseline the bars stand on */}
-    <rect x="24" y="70" width="52" height="8" rx="2" fill="#d4af45"/>
-    {/* Arms doubling as bars: top arm long and low, middle arm shorter, then two
-        free-standing bars climbing to the right */}
-    <rect x="38" y="22" width="38" height="11" rx="2" fill="#d4af45"/>
-    <rect x="38" y="42" width="25" height="11" rx="2" fill="#c9873f"/>
-    <rect x="53" y="52" width="11" height="18" rx="2" fill="#e8763a"/>
-    <rect x="68" y="38" width="11" height="32" rx="2" fill="#e8763a"/>
+    <rect width="100" height="100" fill="#05080f" rx="12"/>
+    {/* Stem, top arm, middle arm — three rectangles and nothing else */}
+    <rect x="24" y="8"  width="20" height="84" fill="#d4af45"/>
+    <rect x="44" y="8"  width="40" height="20" fill="#d4af45"/>
+    <rect x="44" y="42" width="30" height="20" fill="#e8763a"/>
   </svg>
 );
 
