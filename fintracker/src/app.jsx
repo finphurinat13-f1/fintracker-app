@@ -1483,9 +1483,19 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
     // same frame. The children carry the animation now.
     <div className="space-y-5 stagger">
 
-      {/* ── Hero + Quote (merged) ── */}
+      {/* ── Hero + Quote (merged) ──
+          No inline background in dark mode. This band carried a hardcoded navy
+          gradient that overrode card-solid — which is why the very first strip
+          of the app announced a blue nothing else uses, on a page whose palette
+          was argued down to gold and orange. It was also the last blue left
+          after twenty-nine others were removed.
+
+          The card class already gives it a lifted surface, a warm corner light
+          and the curve every other panel has, so the fix is to stop overriding
+          it rather than to pick a different colour. Light mode keeps its own
+          wash: there the pale blue reads as paper, not as a competing accent. */}
       <div className={`rounded-2xl px-5 py-3.5 fade-up ${dk?'card-solid':'glass-light shadow-sm'}`}
-        style={{background:dk?'linear-gradient(135deg,rgba(13,27,46,0.95) 0%,rgba(30,41,59,0.85) 100%)':'linear-gradient(135deg,#f8fafc 0%,#eff6ff 100%)',border:dk?'1px solid rgba(255,255,255,0.07)':'1px solid rgba(199,210,254,0.5)'}}>
+        style={dk?undefined:{background:'linear-gradient(135deg,#f8fafc 0%,#eff6ff 100%)',border:'1px solid rgba(199,210,254,0.5)'}}>
         <div className="flex items-center gap-3">
 
           {/* Left: Logo + Name */}
@@ -9720,7 +9730,7 @@ const App = () => {
     <div className="min-h-screen transition-colors duration-300" style={bgStyle} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
 
       {/* ── DESKTOP: Top Navbar (lg+) ── */}
-      <nav className={`hidden lg:block sticky top-0 z-40 border-b no-print ${dk?'bg-[#080f1e]/97 border-gold-500/18 backdrop-blur-2xl':'bg-white/85 border-gold-100 backdrop-blur-xl'}`}>
+      <nav className={`hidden lg:block sticky top-0 z-40 border-b no-print ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-white/85 border-gold-100 backdrop-blur-xl'}`}>
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
           <div className="flex items-center gap-2.5 flex-shrink-0">
             <LogoSvg size={34}/>
@@ -9850,7 +9860,7 @@ const App = () => {
 
       {/* Mobile top bar */}
       <header className={`lg:hidden sticky top-0 z-30 h-14 flex items-center justify-between px-4 border-b no-print
-        ${dk?'bg-[#080f1e]/97 border-gold-500/18 backdrop-blur-2xl':'bg-white/85 border-gold-100 backdrop-blur-xl'}`}>
+        ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-white/85 border-gold-100 backdrop-blur-xl'}`}>
         <div className="flex items-center gap-2">
           <button onClick={()=>setSidebarOpen(true)} aria-label="เปิดเมนู" className={`p-2.5 rounded-xl ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-700'}`}>
             <Ic n="menu" s={18}/>
@@ -9961,7 +9971,7 @@ const App = () => {
 
       {/* ── Bottom Navigation Bar (Mobile Only) ── */}
       <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 no-print border-t
-        ${dk?'bg-[#080f1e]/98 border-gold-500/15 backdrop-blur-2xl':'bg-white/95 border-slate-200 backdrop-blur-xl'}`}
+        ${dk?'bg-[#101012]/98 border-gold-500/15 backdrop-blur-2xl':'bg-white/95 border-slate-200 backdrop-blur-xl'}`}
         style={{paddingBottom:'env(safe-area-inset-bottom)'}}>
         <div className="flex items-center justify-around px-1 pt-2 pb-2">
           {[
