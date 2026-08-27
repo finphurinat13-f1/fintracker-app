@@ -404,13 +404,32 @@ const DateRangePicker = ({from, to, onPick, dk, years=[]}) => {
 // stroke weight does.
 const LogoSvg = ({size=32}) => (
   <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    {/* Gold as metal rather than as a yellow. A flat fill can only ever read as
+        a colour; what makes leaf look like leaf is two specular bands — a dark
+        edge, a bright flash across the face, a second dip, a second flash.
+        Six stops on a diagonal is the fewest that gives both.
+
+        The stops are chosen so their average is still a good gold: at a 16px
+        favicon the gradient collapses to roughly its mean, and a ramp that
+        looks rich at 96px but averages to mud is worse than the flat colour it
+        replaced. */}
+    <defs>
+      <linearGradient id="ftgold" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%"   stopColor="#8f6518"/>
+        <stop offset="22%"  stopColor="#e6c368"/>
+        <stop offset="40%"  stopColor="#fbf0c4"/>
+        <stop offset="58%"  stopColor="#c9992f"/>
+        <stop offset="78%"  stopColor="#f2dc98"/>
+        <stop offset="100%" stopColor="#9c7020"/>
+      </linearGradient>
+    </defs>
     <rect width="100" height="100" fill="#05080f" rx="12"/>
     {/* One polygon: stem, then both arms ending in a downward chamfer. The cut
         ends were what the original mark was recognisable for — square arms read
         as any bold F, while the diagonal gives it an edge that belongs to this
         one. Drawn as a single shape so the letter cannot come apart at small
         sizes the way separate rectangles can. */}
-    <polygon points="26,8 86,8 71,23 41,23 41,40 74,40 59,55 41,55 41,92 26,92" fill="#d4af45"/>
+    <polygon points="26,8 86,8 71,23 41,23 41,40 74,40 59,55 41,55 41,92 26,92" fill="url(#ftgold)"/>
   </svg>
 );
 
