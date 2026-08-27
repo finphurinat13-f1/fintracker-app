@@ -1,5 +1,5 @@
 import {
-  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, GOLD_RAMP, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, encryptBackup, decryptBackup, isEncryptedBackup
+  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, GOLD_RAMP, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, annualisedReturn, encryptBackup, decryptBackup, isEncryptedBackup
 } from "./lib.js";
 
 
@@ -1632,10 +1632,22 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           against the largest, which is a different chart and a decision for
           another day. The treemap takes the full width in the meantime, which
           is what the small holdings needed anyway. */}
-      <div className={card + ' p-5'}>
-        <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>แผนผังพอร์ต</h3>
-        <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>ขนาด = มูลค่า · สี = กำไร/ขาดทุน · ชี้เพื่อดูรายละเอียด</p>
-        <PortfolioTreemap assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy}/>
+      {/* Two views of the same holdings that answer different questions: the
+          treemap says what is big and whether it is up, the ranking says what
+          is earning fastest for the time it has been held. A position can be
+          the largest tile and the worst performer at once, which is exactly the
+          pairing worth seeing side by side. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className={card + ' p-5 lg:col-span-2'}>
+          <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>แผนผังพอร์ต</h3>
+          <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>ขนาด = มูลค่า · สี = กำไร/ขาดทุน · ชี้เพื่อดูรายละเอียด</p>
+          <PortfolioTreemap assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy}/>
+        </div>
+        <div className={card + ' p-5'}>
+          <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>ผลตอบแทนต่อปี</h3>
+          <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>คิดแบบทบต้น เทียบกันได้ข้ามระยะเวลาถือ</p>
+          <ReturnRanking assets={assets} txs={txs} usdRate={usdRate} theme={theme}/>
+        </div>
       </div>
 
       {/* The last-10 transactions list used to sit here, collapsed, above the
@@ -6382,6 +6394,81 @@ const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
         );
       })()}
     </div>
+    </div>
+  );
+};
+
+// ── ANNUALISED RETURN RANKING ──────────────────────────────
+// The dashboard's answer to "which of these is actually working". Not a column
+// of thirty-four figures — that is the assets table in miniature — but the
+// conclusion: the three earning most per year and the two earning least.
+//
+// Per year is the whole point. +39% and +18% side by side say the first did
+// better; if the first took fifteen months and the second three, it did not.
+// Total return cannot be compared between holdings bought at different times,
+// and cannot be compared to a savings rate or an index at all.
+const ReturnRanking = ({ assets, txs, usdRate, theme }) => {
+  const dk = theme==='dark';
+  const { top, bottom, tooNew } = useMemo(()=>{
+    const rows = []; let skipped = 0;
+    assets.filter(a=>a.type!=='cash').forEach(a=>{
+      const mult = a.currency==='USD' ? usdRate : 1;
+      const {taggedIn, taggedOut} = assetTagged(txs, a.id);
+      const value = (a.qty*a.currentPrice + taggedIn - taggedOut) * mult;
+      const cost  = (a.qty*a.avgCost) * mult;
+      const days  = a.purchaseDate ? Math.floor((Date.now()-new Date(a.purchaseDate))/86400000) : null;
+      const cagr  = annualisedReturn({ value, cost, days });
+      // Counted, not silently dropped: a holding missing from a ranking with no
+      // explanation reads as a bug in the ranking.
+      if(cagr === null){ if(cost > 0) skipped++; return; }
+      rows.push({ id:a.id, name:a.name||a.ticker, cagr, days });
+    });
+    rows.sort((x,y)=>y.cagr-x.cagr);
+    // The two lists only split once there are enough holdings that they cannot
+    // overlap; below that the same row would appear in both.
+    return {
+      top:    rows.slice(0, rows.length>5 ? 3 : rows.length),
+      bottom: rows.length>5 ? rows.slice(-2).reverse() : [],
+      tooNew: skipped,
+    };
+  },[assets,txs,usdRate]);
+
+  const hold = d => d>=365 ? `${Math.floor(d/365)} ปี ${Math.round((d%365)/30)} ด.` : d>=30 ? `${Math.round(d/30)} เดือน` : `${d} วัน`;
+  const Row = ({ r }) => (
+    <div className="flex items-baseline justify-between gap-3 text-xs py-1">
+      <span className={`truncate ${dk?'text-slate-300':'text-slate-600'}`}>{r.name}</span>
+      <span className="flex items-baseline gap-2 flex-shrink-0">
+        <span className={`text-[10px] ${dk?'text-slate-500':'text-slate-400'}`}>{hold(r.days)}</span>
+        <span className={`font-semibold tabular-nums ${r.cagr>=0?'text-emerald-400':'text-rose-400'}`}>
+          {r.cagr>=0?'+':''}{r.cagr.toFixed(1)}%<span className="font-normal opacity-70">/ปี</span>
+        </span>
+      </span>
+    </div>
+  );
+
+  if(!top.length) return (
+    <div className={`text-xs py-8 text-center ${dk?'text-slate-500':'text-slate-400'}`}>
+      ยังไม่มีสินทรัพย์ที่ถือครบ 3 เดือน<br/>
+      <span className="opacity-70">ถือสั้นเกินไปจะคำนวณต่อปีได้ไม่น่าเชื่อถือค่ะ</span>
+    </div>
+  );
+
+  return (
+    <div>
+      {bottom.length>0 && <div className={`text-[10px] uppercase mb-1 ${dk?'text-slate-500':'text-slate-400'}`}>ทำได้ดีที่สุด</div>}
+      {top.map(r=><Row key={r.id} r={r}/>)}
+      {bottom.length>0 && (
+        <>
+          <div className={`text-[10px] uppercase mt-3 mb-1 ${dk?'text-slate-500':'text-slate-400'}`}>ตามหลัง</div>
+          {bottom.map(r=><Row key={r.id} r={r}/>)}
+        </>
+      )}
+      {tooNew>0 && (
+        <div className={`text-[10px] mt-3 pt-2 border-t ${dk?'border-white/5 text-slate-500':'border-slate-100 text-slate-400'}`}
+          title="ถือ 2 สัปดาห์แล้วได้ +5% ถ้าคิดเป็นต่อปีจะกลายเป็น +260% ซึ่งไม่ได้บอกอะไรจริง">
+          ถือไม่ถึง 3 เดือน {tooNew} รายการ · ยังไม่คำนวณต่อปี ⓘ
+        </div>
+      )}
     </div>
   );
 };

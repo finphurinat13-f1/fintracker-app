@@ -796,6 +796,30 @@ export const assetCashFlow = ({ kind = 'buy', qty = 0, rate = 0, amount = 0, cur
   return qty < 0 ? money : -money;
 };
 
+// ── Annualised return ────────────────────────────────────────────────────────
+// What a holding has earned per year, not in total. +39% and +18% side by side
+// say the first did better; if the first took fifteen months and the second
+// three, the truth is the other way round — and comparing to a savings rate or
+// an index is impossible until the figure is per year.
+//
+// Compound, not simple: money left in place earns on its own gains, so a
+// straight "total ÷ years" overstates a long hold and understates a short one.
+//
+// Returns null rather than a number for anything held less than minDays. Two
+// weeks at +5% annualises to +260%, which is arithmetically correct and
+// completely useless — it says what would happen if a fortnight's luck repeated
+// twenty-six times. A blank that can be explained beats a figure that cannot be
+// trusted.
+export const annualisedReturn = ({ value, cost, days, minDays = 90 }) => {
+  if (!(cost > 0) || !(days > 0) || days < minDays) return null;
+  const years = days / 365.25;
+  // A holding worth nothing has lost everything, whatever the maths would do
+  // with a zero or negative base.
+  if (value <= 0) return -100;
+  const r = (Math.pow(value / cost, 1 / years) - 1) * 100;
+  return isFinite(r) ? parseFloat(r.toFixed(2)) : null;
+};
+
 export const realizedByYear = (assets = [], txs = [], usdRate = 35) => {
   const years = {};
   const yearOf = d => String(d || '').slice(0, 4);

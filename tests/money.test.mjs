@@ -19,7 +19,7 @@ const {
   walletCash, assetVal, walletDelta, runningBalances, mergeArrById, systemCashByDay, txSign, txAmtCls, revertMove,
   isUntouchedBudgets, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, realizedByYear,
   encryptBackup, decryptBackup, isEncryptedBackup, assetCashFlow, whoAmI,
-  impliedTicker, catOptions, renameCatInStores, priceAge,
+  impliedTicker, catOptions, renameCatInStores, priceAge, annualisedReturn,
 } = await import('../fintracker/src/lib.js');
 
 // ── walletDelta ──────────────────────────────────────────────────────────────
@@ -899,3 +899,48 @@ test('no usable name gives a greeting with no name in it', () => {
   assert.equal(whoAmI({ email:'' }), '');
 });
 
+
+// ── Annualised return ────────────────────────────────────────────────────────
+// The figure that makes two holdings comparable. Every case here is one the
+// panel on the dashboard can actually be handed.
+test('annualisedReturn: one full year is the plain gain', () => {
+  assert.equal(annualisedReturn({ value: 130, cost: 100, days: 365.25 }), 30);
+});
+
+test('annualisedReturn: compounds rather than dividing by years', () => {
+  // Doubling over two years is ~41.4%/yr compounded, not 50% straight-line.
+  assert.equal(annualisedReturn({ value: 200, cost: 100, days: 730.5 }), 41.42);
+});
+
+test('annualisedReturn: a short hold scales up, and a long one down', () => {
+  // Same +18%: over 6 months that is a much better annual rate than over 3 yrs.
+  const half = annualisedReturn({ value: 118, cost: 100, days: 183 });
+  const long = annualisedReturn({ value: 118, cost: 100, days: 1096 });
+  assert.ok(half > 38 && half < 40, `six-month: ${half}`);
+  assert.ok(long > 5 && long < 6,   `three-year: ${long}`);
+});
+
+test('annualisedReturn: losses stay negative and never below -100', () => {
+  assert.ok(annualisedReturn({ value: 80, cost: 100, days: 365.25 }) === -20);
+  assert.equal(annualisedReturn({ value: 0, cost: 100, days: 400 }), -100);
+  assert.equal(annualisedReturn({ value: -5, cost: 100, days: 400 }), -100);
+});
+
+test('annualisedReturn: refuses anything held under the minimum', () => {
+  // Two weeks at +5% annualises to about +260% — correct, and meaningless.
+  assert.equal(annualisedReturn({ value: 105, cost: 100, days: 14 }), null);
+  assert.equal(annualisedReturn({ value: 105, cost: 100, days: 89 }), null);
+  assert.ok(annualisedReturn({ value: 105, cost: 100, days: 90 }) !== null);
+});
+
+test('annualisedReturn: no cost basis and no holding period give null', () => {
+  assert.equal(annualisedReturn({ value: 100, cost: 0, days: 400 }), null);
+  assert.equal(annualisedReturn({ value: 100, cost: -1, days: 400 }), null);
+  assert.equal(annualisedReturn({ value: 100, cost: 100, days: 0 }), null);
+  assert.equal(annualisedReturn({ value: 100, cost: 100, days: null }), null);
+});
+
+test('annualisedReturn: rounds, so no 30.000000000000004 reaches the screen', () => {
+  const r = annualisedReturn({ value: 130, cost: 100, days: 365.25 });
+  assert.equal(String(r).length <= 6, true, `got ${r}`);
+});
