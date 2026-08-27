@@ -1154,7 +1154,12 @@ const SegmentedProgress = ({ segments, total, theme }) => {
   // ASSET_TYPES and CAT_CLR while describing the same five asset types those
   // already colour. Same ramp as everywhere else now, and unknown types fall
   // through it rather than into a set of pastels nothing else uses.
-  const SEG_COLOR_MAP = {stock:'#f8e3d5',crypto:'#d99669',gold:'#b76736',cash:'#8a4622',other:'#6b6154',bond:'#73381a'};
+  // Matches ASSET_TYPES step for step, so a type is the same colour in the
+  // allocation bar, its legend swatch and its row badge. These are filled
+  // segments rather than glyphs, so the dark end would have been legible here —
+  // but a type changing shade between two panels on one screen is worse than
+  // either shade on its own.
+  const SEG_COLOR_MAP = {stock:'#f8e3d5',crypto:'#f0cbb2',gold:'#e6b18e',cash:'#d99669',other:'#c97e4d',bond:'#a1552b'};
   const getColor = (type,i) => SEG_COLOR_MAP[type] || GOLD_RAMP[(i*2+1) % GOLD_RAMP.length];
   return (
     <div className="mt-3">
@@ -2547,12 +2552,21 @@ const AddressChip = ({address, dk}) => {
 // colour in the allocation bar, the P/L table and its own row badge. 'other'
 // must stay at index 4 — typeInfo falls back to ASSET_TYPES[4] for an unknown
 // type, and reordering this list silently repaints every one of them.
+// Taken from the top half of the ramp, because these are glyph colours before
+// they are anything else. The dark end reads fine as a filled bar on a light
+// track and not at all as a 16px icon drawn on a chip tinted with the same
+// hue — measured against that chip, เงินสด came out at 2.53 and อื่นๆ at 1.60,
+// against the 3.0 an icon needs to be identifiable rather than merely present.
+// Every step here clears 5.
+//
+// They stay in ramp order, so the five types keep their relative position:
+// lightest for stocks through to the deepest for the residual bucket.
 const ASSET_TYPES = [
-  {v:'stock', l:'📈 หุ้น',    c:'#f0cbb2', icon:<TypeIc n="stock" s={18}/>},
-  {v:'crypto',l:'🟠 Crypto', c:'#d99669', icon:<BtcIcon/>},
-  {v:'gold',  l:'🪙 ทองคำ',  c:'#b76736', icon:<GoldIcon/>},
-  {v:'cash',  l:'💵 เงินสด', c:'#8a4622', icon:<TypeIc n="cash" s={18}/>},
-  {v:'other', l:'📦 อื่นๆ',   c:'#5c2b12', icon:<TypeIc n="box" s={18}/>},
+  {v:'stock', l:'📈 หุ้น',    c:'#f8e3d5', icon:<TypeIc n="stock" s={18}/>},
+  {v:'crypto',l:'🟠 Crypto', c:'#f0cbb2', icon:<BtcIcon/>},
+  {v:'gold',  l:'🪙 ทองคำ',  c:'#e6b18e', icon:<GoldIcon/>},
+  {v:'cash',  l:'💵 เงินสด', c:'#d99669', icon:<TypeIc n="cash" s={18}/>},
+  {v:'other', l:'📦 อื่นๆ',   c:'#c97e4d', icon:<TypeIc n="box" s={18}/>},
 ];
 const BUDGET_DEFAULTS = {'อาหาร':7000,'การเดินทาง':2000,'Home & Utilities':8000,'ช้อปปิ้ง':1500,'อินเตอร์เน็ต/โทรศัพท์':500,'สุขภาพ':1000,'Subscription':500,'การศึกษา':1000,'บันเทิง':1500,'ลงทุน/ปันผล':2000,'อื่นๆ':1000};
 // Empty on purpose. This list used to ship the author's real standing
