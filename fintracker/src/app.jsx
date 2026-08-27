@@ -374,15 +374,34 @@ const DateRangePicker = ({from, to, onPick, dk, years=[]}) => {
 };
 
 // ── LOGO ───────────────────────────────────────────────────
+// The F is still an F — a logo people already recognise is not worth
+// rebuilding from nothing — but its arms are now bars of a chart, ascending
+// left to right, so the mark says what the app is for as well as what it is
+// called.
+//
+// The letter is read from its stem and its two arms, and those are exactly the
+// three shapes a small bar chart needs, which is why the two ideas can occupy
+// one figure without either being a pun stretched over the other.
+//
+// Gold into orange across the bars, in the order the ramp runs: the same two
+// accents the interface uses, doing the same job here — the tallest and most
+// recent bar is the one in the action colour.
+//
+// Kept to five shapes with no strokes under 6px, because the tab favicon draws
+// this at 16 and anything finer collapses into a smudge there.
 const LogoSvg = ({size=32}) => (
   <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    {/* The mark used to be white on #0d1b2e — a navy that appears nowhere else
-        in the app, which made the logo the one thing outside its own palette.
-        Gold on near-black is the identity everything else already uses, and it
-        is far more distinctive on a phone home screen than white on blue. */}
     <rect width="100" height="100" fill="#05080f" rx="10"/>
-    {/* Geometric F: top bar → gap → middle bar → vertical stroke */}
-    <polygon points="34,24 73,24 65,35 38,35 38,41 63,41 55,52 38,52 38,76 30,76 30,29" fill="#c9a94b"/>
+    {/* Stem — the F's spine and the chart's axis */}
+    <rect x="24" y="22" width="11" height="56" rx="2" fill="#d4af45"/>
+    {/* Baseline the bars stand on */}
+    <rect x="24" y="70" width="52" height="8" rx="2" fill="#d4af45"/>
+    {/* Arms doubling as bars: top arm long and low, middle arm shorter, then two
+        free-standing bars climbing to the right */}
+    <rect x="38" y="22" width="38" height="11" rx="2" fill="#d4af45"/>
+    <rect x="38" y="42" width="25" height="11" rx="2" fill="#c9873f"/>
+    <rect x="53" y="52" width="11" height="18" rx="2" fill="#e8763a"/>
+    <rect x="68" y="38" width="11" height="32" rx="2" fill="#e8763a"/>
   </svg>
 );
 

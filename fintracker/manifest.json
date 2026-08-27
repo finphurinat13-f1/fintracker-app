@@ -9,13 +9,13 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%2305080f' rx='20'/><polygon points='65,46 140,46 125,67 73,67 73,79 121,79 106,100 73,100 73,146 58,146 58,56' fill='%23d4a017'/></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%2305080f' rx='10'/><rect x='24' y='22' width='11' height='56' rx='2' fill='%23d4af45'/><rect x='24' y='70' width='52' height='8' rx='2' fill='%23d4af45'/><rect x='38' y='22' width='38' height='11' rx='2' fill='%23d4af45'/><rect x='38' y='42' width='25' height='11' rx='2' fill='%23c9873f'/><rect x='53' y='52' width='11' height='18' rx='2' fill='%23e8763a'/><rect x='68' y='38' width='11' height='32' rx='2' fill='%23e8763a'/></svg>",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%2305080f' rx='48'/><polygon points='172,122 374,122 333,179 195,179 195,210 322,210 282,266 195,266 195,390 155,390 155,148' fill='%23d4a017'/></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%2305080f' rx='10'/><rect x='24' y='22' width='11' height='56' rx='2' fill='%23d4af45'/><rect x='24' y='70' width='52' height='8' rx='2' fill='%23d4af45'/><rect x='38' y='22' width='38' height='11' rx='2' fill='%23d4af45'/><rect x='38' y='42' width='25' height='11' rx='2' fill='%23c9873f'/><rect x='53' y='52' width='11' height='18' rx='2' fill='%23e8763a'/><rect x='68' y='38' width='11' height='32' rx='2' fill='%23e8763a'/></svg>",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
