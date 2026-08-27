@@ -1683,7 +1683,7 @@ const MonthGroup = ({ month, txs, dk, defaultOpen=false, sel, toggleSel, onEdit,
           which is the single thing here worth pointing at. */}
       <div onClick={()=>setOpen(o=>!o)}
         className={`relative flex items-center gap-3 px-4 py-4 cursor-pointer select-none transition-colors ${dk?'border-t border-white/10':(open?'bg-slate-100 border-t border-slate-200':'border-t border-slate-200 hover:bg-slate-50')}`}
-        style={dk?{background:open?'rgba(226,214,186,0.09)':'rgba(226,214,186,0.055)'}:undefined}>
+        style={dk?{background:open?'rgba(232,216,186,0.15)':'rgba(232,216,186,0.10)'}:undefined}>
         {open&&<span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{background:'#e8763a'}}/>}
         <div className={`flex-shrink-0 transition-transform duration-200 ${open?'text-orange-400':(dk?'text-slate-400':'text-slate-500')}`}
           style={{transform:open?'rotate(90deg)':'rotate(0deg)'}}>
@@ -1702,9 +1702,13 @@ const MonthGroup = ({ month, txs, dk, defaultOpen=false, sel, toggleSel, onEdit,
             column to its left lands 24px off the figures it heads */}
         <div className="w-20 flex-shrink-0"/>
       </div>
-      {/* Child rows — card-list style */}
+      {/* Child rows — card-list style. Pushed further down as the header came
+          up: separation is the gap between two surfaces, not the brightness of
+          one, and lifting the header alone had it climbing towards the cards
+          around it instead of away from the list it heads. Measured against the
+          card colour, the two are 1.42 apart now where they were 1.18. */}
       {open&&(
-        <div className={dk?'bg-black/10':'bg-slate-50/60'}>
+        <div className={dk?'bg-black/30':'bg-slate-50/60'}>
           {txs.map((t,i)=>{
            // Rows run newest first, so a day closes at the top of its block —
            // the same place a bank statement puts the closing balance.
