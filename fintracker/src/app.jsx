@@ -1642,8 +1642,10 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           another day. The treemap takes the full width in the meantime, which
           is what the small holdings needed anyway. */}
       <div className={card + ' p-5'}>
-        <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>แผนผังพอร์ต</h3>
-        <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>ขนาด = มูลค่า · สี = กำไร/ขาดทุน · ชี้เพื่อดูรายละเอียด</p>
+        <div className="flex items-baseline gap-2.5 flex-wrap mb-4">
+          <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>แผนผังพอร์ต</h3>
+          <p className={`text-xs ${subTx}`}>ขนาด = มูลค่า · สี = กำไร/ขาดทุน · ชี้เพื่อดูรายละเอียด</p>
+        </div>
         <PortfolioTreemap assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy}/>
       </div>
 
@@ -1664,6 +1666,10 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           <UnrealizedPL assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy} nwHistory={nwHistory} cashTotal={walletCashTotal}/>
         </div>
         <div className={card + ' p-5'}>
+          {/* This card is a third of the row, so its two lines stay stacked —
+              on one baseline the gloss would push the heading off on its own
+              line and read worse than it does above it. Same rule everywhere:
+              one line where there is room for one. */}
           <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>ผลตอบแทนต่อปี</h3>
           <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>คิดแบบทบต้น เทียบกันได้ข้ามระยะเวลาถือ</p>
           <ReturnRanking assets={assets} txs={txs} usdRate={usdRate} theme={theme}/>
@@ -6574,11 +6580,15 @@ const PageHeader = ({ lead, accent, sub, theme, right=null }) => {
         </>
       )}
       <div className="relative flex items-end justify-between gap-4 flex-wrap">
-        <div className="min-w-0">
+        {/* Heading and gloss on one baseline. Stacked, the supporting line read
+            as a second heading rather than as the explanation of the first —
+            the same thing that was wrong on the P/L card, and the app should
+            not do it one way here and another way there. */}
+        <div className="min-w-0 flex items-baseline gap-2.5 flex-wrap">
           <h1 className={`text-xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`} style={{textWrap:'balance'}}>
             {lead} <span className="text-orange-400">{accent}</span>
           </h1>
-          {sub && <p className={`text-xs mt-1 ${dk?'text-slate-400':'text-slate-500'}`}>{sub}</p>}
+          {sub && <p className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{sub}</p>}
         </div>
         {right && <div className="flex items-center gap-2 flex-wrap">{right}</div>}
       </div>
