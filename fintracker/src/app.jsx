@@ -2498,6 +2498,42 @@ const inkOn = bg => {
   return contrast('#ffffff', bg) >= contrast('#241304', bg) ? '#ffffff' : '#241304';
 };
 
+// Brand colours, and drawn marks only where the mark is simple enough to
+// reproduce faithfully. A logo drawn from memory is worse than no logo — it
+// reads as a company that does not quite exist — so the rule here is: draw it
+// only if it can be drawn correctly, otherwise use the company's real colour
+// behind its initials.
+//
+// The colour alone does most of the work. NVIDIA green and TSMC red are as
+// recognisable to anyone holding them as the wordmarks are, and unlike the
+// previous hashed palette they mean something: two holdings can no longer swap
+// colours because a hash landed differently.
+//
+// Everything not listed keeps the hashed colour, which is the right default —
+// distinct per holding, stable across renames, and never wrong because it never
+// claimed to be anything.
+const BRAND = {
+  NVDA:'#76b900', AMD:'#ed1c24',  TSM:'#e4002b',  ASML:'#0b5ed7',
+  GOOG:'#4285f4', GOOGL:'#4285f4',AAPL:'#a2aaad', MSFT:'#00a4ef',
+  AMZN:'#ff9900', META:'#0866ff', TSLA:'#cc0000', NFLX:'#e50914',
+  RKLB:'#1a1a1a', ASTS:'#0a2540', MP:'#1c3f6e',   CRWV:'#00b3a4',
+  AVGO:'#cc092f', ARM:'#0091bd',  SOFI:'#1b0032', PLTR:'#101113',
+  SMCI:'#0f6cbd', MU:'#0072ce',   INTC:'#0068b5', QCOM:'#3253dc',
+};
+
+// True when a fill sits so close to the card that the badge would have no
+// visible edge. Compared against the dark card, which is where the problem
+// arises; on the light theme every one of these has plenty of edge already.
+const needsRing = bg => {
+  const rel = h => {
+    const c = [1,3,5].map(i => parseInt(h.slice(i,i+2),16) / 255)
+      .map(v => v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4));
+    return 0.2126*c[0] + 0.7152*c[1] + 0.0722*c[2];
+  };
+  const [x,y] = [rel(bg), rel('#0c0c0d')].sort((p,q) => q-p);
+  return (x+0.05)/(y+0.05) < 1.6;
+};
+
 const AssetIcon = ({a, ti, size='md'}) => {
   const dim = size==='sm' ? 'w-7 h-7' : 'w-9 h-9';
   if (a.type === 'stock') {
@@ -2508,14 +2544,22 @@ const AssetIcon = ({a, ti, size='md'}) => {
       const px = size==='sm' ? 28 : 32;
       return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><CustomIcon s={px}/></div>;
     }
-    // Initials on a colour hashed from the ticker. They were all the
-    // same gold, so twenty holdings read as one shape repeated and every row had
-    // to be spelled out before it could be told from the one above it.
+    // The company's own colour when it is known, otherwise one hashed from the
+    // ticker. The hash was already better than the single gold every holding
+    // used to share — twenty rows reading as one shape repeated — but a hashed
+    // colour is arbitrary, and NVDA in NVIDIA green is recognised before the
+    // letters are read.
     if (ticker) {
-      const c = tickerClr(ticker);
+      const c = BRAND[ticker] || tickerClr(ticker);
       return (
+        // A ring only when the fill is too near the card to have an edge of its
+        // own. Four of the brand colours are essentially black — Rocket Lab,
+        // Palantir, SoFi, AST — so their initials read fine while the disc
+        // holding them disappeared into the page. Keeping the true colour and
+        // drawing the edge is better than lightening a brand to suit a theme.
         <div className={`${dim} rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center`}
-          style={{background:`linear-gradient(135deg, ${c}, ${c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)', color:inkOn(c)}}>
+          style={{background:`linear-gradient(135deg, ${c}, ${c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)',
+                  color:inkOn(c), border: needsRing(c) ? '1px solid rgba(255,255,255,0.22)' : undefined}}>
           <span className="text-xs font-bold">{ticker.substring(0,2)}</span>
         </div>
       );
