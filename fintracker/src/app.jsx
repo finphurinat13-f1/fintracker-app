@@ -498,16 +498,25 @@ const DonutChart = ({ data, theme, centerValue, hideAmt=false }) => {
     const val = data.values[i];
     const pct = total>0?(val/total*100).toFixed(1):'0.0';
     return (
-      <div key={i} style={{display:'flex',alignItems:'center',gap:'7px',minWidth:0}}>
-        <span style={{display:'inline-block',width:'14px',height:'2.5px',borderRadius:'2px',background:data.colors[i],flexShrink:0}}/>
-        <span style={{fontSize:'11px',fontFamily:"'Noto Sans Thai',sans-serif",color:dk?'#94a3b8':'#64748b',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-          {narrow
-            ? <>{label} <span style={{color:dk?'#c9a94b':'#d1b768'}}>{pct}%</span></>
-            : hideAmt
-              ? `${label}  ******`
-              : <>{label}  {fmt(val)}  <span style={{color:dk?'#c9a94b':'#d1b768'}}>({pct}%)</span></>
-          }
+      // Name left, figures right, filling the row. All three used to sit in one
+      // string that stopped where the words did, so the legend hugged the donut
+      // and left a column of empty card to its right. Pushed apart, the amounts
+      // land in a column of their own and can be read down instead of hunted
+      // for at the end of each line — which is the whole reason to right-align
+      // money in the first place.
+      <div key={i} style={{display:'flex',alignItems:'baseline',gap:'8px',minWidth:0}}>
+        <span style={{display:'inline-block',width:'14px',height:'2.5px',borderRadius:'2px',background:data.colors[i],flexShrink:0,alignSelf:'center'}}/>
+        <span style={{fontSize:'11px',fontFamily:"'Noto Sans Thai',sans-serif",color:dk?'#94a3b8':'#64748b',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,minWidth:0}}>
+          {label}
         </span>
+        {narrow ? (
+          <span style={{fontSize:'11px',fontVariantNumeric:'tabular-nums',color:dk?'#c9a94b':'#d1b768',flexShrink:0}}>{pct}%</span>
+        ) : (
+          <span style={{fontSize:'11px',fontFamily:"'Noto Sans Thai',sans-serif",whiteSpace:'nowrap',flexShrink:0,fontVariantNumeric:'tabular-nums'}}>
+            <span style={{color:dk?'#cbd5e1':'#475569'}}>{hideAmt ? '฿ •••••' : fmt(val)}</span>
+            <span style={{color:dk?'#c9a94b':'#d1b768',marginLeft:'6px'}}>{pct}%</span>
+          </span>
+        )}
       </div>
     );
   });
@@ -7020,67 +7029,13 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
       )}
       <CustodialModal open={custModal.open} onClose={()=>setCustModal({open:false,editData:null})} onSave={saveCust} editData={custModal.editData} theme={theme} wallets={wallets}/>
 
-      {/* One bar for the month, split by wallet. The previous version gave every
-          row its own track, which meant five bars that could only be compared by
-          eye, names clipped to 96px so two accounts at the same bank read as the
-          same string, and no total or share anywhere. One stacked bar answers
-          "where did it go" at a glance; the legend carries names at full width. */}
-      {(()=>{
-        const rows = [...walletData].filter(w=>w.mExp>0).sort((a,b)=>b.mExp-a.mExp);
-        const total = rows.reduce((s,w)=>s+w.mExp,0);
-        if (!total) return null;
-
-        // A sliver under 5% is too thin to see on the bar and still costs a legend
-        // row. Fold those together — but only from two up: collapsing a single
-        // wallet into "อื่นๆ 1 กระเป๋า" hides its name and saves nothing.
-        const small = rows.filter(w => w.mExp / total * 100 < 5);
-        const fold  = small.length >= 2;
-        const segs  = (fold ? rows.filter(w => w.mExp / total * 100 >= 5) : rows)
-          .map((w, i) => ({ key: w.id, name: w.name, amt: w.mExp, clr: CAT_PALETTE[i % CAT_PALETTE.length] }));
-        if (fold) segs.push({
-          key: '_rest', name: `อื่นๆ ${small.length} กระเป๋า`,
-          amt: small.reduce((s, w) => s + w.mExp, 0), clr: dk ? '#5b636e' : '#aab2bd',
-        });
-
-        return (
-          <div className={`${card} px-3 py-2.5 mb-3`}>
-            <div className="flex items-baseline justify-between gap-2 mb-2">
-              <span className={`text-[11px] font-semibold ${dk?'text-white':'text-slate-700'}`}>รายจ่ายตามกระเป๋า · เดือนนี้</span>
-              <span className={`text-xs font-bold tabular-nums ${dk?'text-white':'text-slate-800'}`}>{fmt(total)}</span>
-            </div>
-
-            {/* One bar per row, on equal tracks — the same shape the P/L card
-                uses, so the two panels read the same way.
-
-                The stacked bar that used to sit above this list is gone. It
-                encoded the split, and then the list encoded it again as
-                percentages, which is one fact drawn twice; and stretched across
-                the full card a 4% wallet became a sliver two pixels wide,
-                impossible to see and impossible to compare against anything.
-                Equal tracks give the small wallet somewhere to stand, and give
-                the eye a straight edge to read every row against.
-
-                The total at the top right is what says these are parts of a
-                whole, which is the one thing the stacked bar was better at. */}
-            <div className="space-y-1.5">
-              {segs.map(s=>{
-                const pct = s.amt/total*100;
-                return (
-                  <div key={s.key} className="flex items-center gap-2 text-[11px]">
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{background:s.clr}}/>
-                    <span className={`truncate flex-shrink-0 ${dk?'text-slate-300':'text-slate-600'}`} style={{width:'34%'}}>{s.name}</span>
-                    <span className={`flex-1 h-1.5 rounded-full overflow-hidden min-w-0 ${dk?'bg-white/8':'bg-slate-100'}`}>
-                      <span className="block h-full rounded-full transition-all duration-500" style={{width:`${pct}%`, background:s.clr}}/>
-                    </span>
-                    <span className={`font-semibold tabular-nums whitespace-nowrap ${dk?'text-white':'text-slate-700'}`}>{fmt(s.amt)}</span>
-                    <span className={`w-9 text-right tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{Math.round(pct)}%</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
+      {/* The "รายจ่ายตามกระเป๋า" bar was here. Every wallet card below already
+          prints its own "เดือนนี้ +x -y" line, so the amounts were the same
+          figures a screen apart. What the panel added on top was the share —
+          58% through this account, 20% through that — and which card you
+          happened to reach for is mostly not a decision. A split by category
+          answers "what did I spend on"; a split by wallet answers "which
+          plastic did I pull out", and only one of those is worth a panel. */}
 
       {wallets.length===0 ? (
         <div className={`${card} p-10 text-center`}>
