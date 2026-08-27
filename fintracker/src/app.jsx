@@ -6171,11 +6171,39 @@ const UnifiedTransferModal = ({open, onClose, onSave, wallets=[], assets=[], txs
         const tx={id:txId, title:title||'DCA', amount:amt, category:'ลงทุน/ปันผล', type:'expense', date:d, notes:'[invest]', walletId:fromObj.id, targetAssetId:destId};
         onSave({txs:[tx], assetUpdates, newAssets});
       } else {
-        // From asset → reduce source directly (matches old TransferModal math)
+        // From asset → the source is being sold to fund the purchase, so it is
+        // a disposal and has to be recorded as one.
+        //
+        // It was not. This branch reduced qty and nothing else: no movement
+        // written, no realised profit. Selling ฿3.4M of bitcoin bought for
+        // ฿2.4M through this route put the million nowhere — the same hole the
+        // quantity field was just locked to close, reached through another
+        // door. A route that is harder to find and loses data is worse than one
+        // that is easy to find and loses it, because nothing prompts you to
+        // check afterwards.
         const src=fromAsset;
+        const soldQty = src.qty===1 ? 0 : amt/src.currentPrice;
+        // Realised on a sale is (what it fetched − what it cost) × units. The
+        // rate here is the source's own current price, since that is the figure
+        // the transfer amount was converted at.
+        const realized = soldQty>0 ? parseFloat(((src.currentPrice - src.avgCost) * soldQty).toFixed(2)) : 0;
         const srcPatch = src.qty===1
           ? {currentPrice:src.currentPrice-amt, avgCost:Math.max(0, src.avgCost-amt)}
-          : {qty:src.qty - amt/src.currentPrice};
+          : {qty:src.qty - soldQty};
+        // Average cost is untouched on a partial sale, which is correct: selling
+        // some units does not change what the remaining ones cost.
+        if(soldQty>0){
+          const newQty = src.qty - soldQty;
+          srcPatch.moves = [...(src.moves||[]), {
+            id: uid(), date: d,
+            note: `ขายเพื่อซื้อ ${toIsNew ? na.name.trim() : (toAsset?.name||'สินทรัพย์อื่น')}`,
+            qty: parseFloat((-soldQty).toFixed(8)),
+            rate: src.currentPrice,
+            newQty: parseFloat(newQty.toFixed(8)),
+            newAvg: parseFloat((src.avgCost||0).toFixed(6)),
+            realized,
+          }];
+        }
         assetUpdates.push({id:src.id, patch:srcPatch});
         onSave({txs:[], assetUpdates, newAssets});
       }
