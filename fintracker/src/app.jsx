@@ -397,9 +397,11 @@ const DateRangePicker = ({from, to, onPick, dk, years=[]}) => {
 // before it, while clean, stood only 52 units tall in a 100-unit square, so a
 // 16px favicon was drawing an 8px letter surrounded by margin.
 //
-// This one runs 84 of 100 and its strokes are 20 wide, so even at 16px the stem
-// and both arms are over 3px each — above the width at which a shape stops
-// being a line and becomes a grey suggestion.
+// This one runs 84 of 100 with 15-wide strokes. Twenty was heavy enough to read
+// as a slab rather than a letter; fifteen still measures 2.4px at a 16px
+// favicon, which browsers antialias into a clean line, and the letter keeps its
+// full height — which is what carries a mark at small sizes far more than
+// stroke weight does.
 const LogoSvg = ({size=32}) => (
   <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <rect width="100" height="100" fill="#05080f" rx="12"/>
@@ -408,7 +410,7 @@ const LogoSvg = ({size=32}) => (
         as any bold F, while the diagonal gives it an edge that belongs to this
         one. Drawn as a single shape so the letter cannot come apart at small
         sizes the way separate rectangles can. */}
-    <polygon points="24,8 88,8 68,28 44,28 44,42 76,42 56,62 44,62 44,92 24,92" fill="#d4af45"/>
+    <polygon points="26,8 86,8 71,23 41,23 41,40 74,40 59,55 41,55 41,92 26,92" fill="#d4af45"/>
   </svg>
 );
 
@@ -1638,7 +1640,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="ยอดคงเหลือ"  val={mask(fmt(balance))}     sub={balance>=0?'✓ เป็นบวก':'⚠ ติดลบ'}  icon={<Ic n="wallet" s={15} cls="text-gold-300"/>} accent="bg-gold-500/15" extra="" valCls={dk?'tg-white':'text-slate-800'}/>
+        <StatCard label="ยอดคงเหลือ"  val={mask(fmt(balance))}     sub={balance>=0?null:'⚠ ติดลบ'}  icon={<Ic n="wallet" s={15} cls="text-gold-300"/>} accent="bg-gold-500/15" extra="" valCls={dk?'tg-white':'text-slate-800'}/>
         {/* No tinted border or glow. Income vs expense was being encoded five
             times over on one card — figure colour, icon colour, icon backing,
             border tint and an outer halo — for a single bit the number states
