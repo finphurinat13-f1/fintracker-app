@@ -5751,9 +5751,17 @@ const WalletModal = ({ open, onClose, onSave, editData, theme }) => {
           <div><label className={lbl}>ยอดเริ่มต้น (฿)</label>
             <input type="number" className={inp} placeholder="0" value={f.initialBalance} onChange={e=>setF(p=>({...p,initialBalance:e.target.value}))}/>
           </div>
-          <div><label className={lbl}>Emoji / ไอคอน</label>
-            <input className={inp} placeholder="🏦" value={f.icon} onChange={e=>setF(p=>({...p,icon:e.target.value}))} maxLength={4}/>
-          </div>
+          {/* The emoji field is gone. Wallets now store a drawn-icon key rather
+              than an emoji, so this input was showing the reader "fixed" or
+              "ewallet" — an internal identifier leaking onto a form. It could
+              have been made to render the icon instead, but the field had
+              already lost its job: picking a type sets the icon, and the drawn
+              set is the one that matches the palette.
+
+              `icon` itself is untouched. Wallets created before this keep
+              whatever emoji they were given, and CatGlyph still falls through
+              to rendering a raw string — so nothing already on screen changes.
+              Choosing a type again is how a wallet gets a different icon. */}
           <button type="button" onClick={()=>setF(p=>({...p,dividend:!p.dividend}))}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-sm transition-all ${f.dividend?(dk?'border-teal-500/50 bg-teal-500/10 text-teal-300':'border-teal-400 bg-teal-50 text-teal-700'):(dk?'border-white/10 bg-white/5 text-slate-400':'border-slate-200 bg-white text-slate-500')}`}>
             <span>💰 รับเงินปันผล</span>
