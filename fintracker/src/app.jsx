@@ -4152,7 +4152,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                     <div className={`border-t ${dk?'border-white/5':'border-slate-100'}`}>
                       <button onClick={()=>toggleRel(a.id)} className={`w-full flex items-center gap-2 px-5 py-2.5 text-left hover:bg-black/5 transition-colors`}>
                         <span className={`text-xs ${sub}`}>{expandedRelMap[a.id]?'▲':'▼'}</span>
-                        <span className={`text-xs font-medium ${dk?'text-slate-400':'text-slate-500'}`}>รายการที่เกี่ยวข้อง ({investTxs.length+(a.items||[]).length})</span>
+                        <span className={`text-xs font-medium ${dk?'text-slate-400':'text-slate-500'}`}>รายการที่เกี่ยวข้อง ({investTxs.length+(a.items||[]).length+(a.moves||[]).length})</span>
                       </button>
                       {expandedRelMap[a.id]&&(
                         <div className={`px-3 pb-3 border-t ${dk?'border-white/5':'border-slate-100'}`}>
@@ -4380,7 +4380,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                         {/* Header row — always visible */}
                         <button onClick={()=>toggleRel(a.id)} className={`flex items-center gap-2 py-2 text-left`}>
                           <span className={`text-xs ${dk?'text-slate-500':'text-slate-400'}`}>{expandedRelMap[a.id]?'▲':'▼'}</span>
-                          <span className={`text-xs font-semibold ${dk?'text-slate-400':'text-slate-500'}`}>📋 รายการที่เกี่ยวข้อง ({investTxs.length+(a.items||[]).length})</span>
+                          <span className={`text-xs font-semibold ${dk?'text-slate-400':'text-slate-500'}`}>📋 รายการที่เกี่ยวข้อง ({investTxs.length+(a.items||[]).length+(a.moves||[]).length})</span>
                         </button>
                         {/* Expandable list */}
                         {expandedRelMap[a.id]&&(
