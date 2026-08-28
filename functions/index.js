@@ -168,9 +168,12 @@ const rank = (x, QU) => {
   return s;
 };
 
-// Email allowed to use the endpoints without a registry entry. The app gates
-// sign-ups behind an approval step; this is the account that does the approving.
-const ADMIN_EMAIL = 'finphurinat18@gmail.com';
+// The account that does the approving. Kept in the deploy environment rather
+// than in source: the repository is public, and an address written here names
+// the admin account to anyone reading it — a phishing target and a spam magnet
+// that scrubbing the file later cannot take back. Set in functions/.env, which
+// is gitignored. Absent, only the custom claim below grants admin.
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
 
 // A valid token only proves somebody signed up, and signing up is open to
 // anyone who finds the page. Approval is what the registry exists for, so it
@@ -178,7 +181,9 @@ const ADMIN_EMAIL = 'finphurinat18@gmail.com';
 // front door is decoration, and any new account can spend the project's quota
 // on outbound requests before an admin has seen the request at all.
 const isApproved = async (decoded) => {
-  if (decoded.email === ADMIN_EMAIL) return true;
+  // The claim is the real answer; the address is only the bootstrap that sets it.
+  if (decoded.admin === true) return true;
+  if (ADMIN_EMAIL && decoded.email === ADMIN_EMAIL) return true;
   try {
     const snap = await admin.firestore().collection('registry').doc(decoded.uid).get();
     return snap.exists && snap.data().status === 'approved';
@@ -195,6 +200,81 @@ const requireAuth = async (req, res) => {
     return true;
   } catch { res.status(401).json({ error: 'unauthorized' }); return false; }
 };
+
+// ── admin claim ──────────────────────────────────────────────────────────
+// Turns "is this the admin address" into a durable fact on the account, so
+// nothing downstream has to know the address. The client calls this once after
+// signing in; the rules and the endpoints then read the claim.
+//
+// Safe to call by anyone: it grants nothing unless the caller has already
+// proved, with a signed token issued by Firebase, that they are signed in as
+// the configured address — which takes that account's password. The address is
+// not asked to be a verified one, deliberately: the admin account predates the
+// verification step, and requiring it here would lock the only account that can
+// approve anybody out of its own project.
+// A second way in. The admin's own access to their records runs entirely
+// through the custom claim, and the admin account is the one account that was
+// never in the registry — it never had to be. That leaves one thread holding
+// up the money data: lose the claim and there is nothing else to fall back on.
+// Writing the ordinary approved entry every admin sign-in gives the rules a
+// second, independent reason to say yes.
+//
+// createdAt matters more than it looks: the admin screen orders by it, and
+// Firestore drops documents missing the ordering field from the result — an
+// entry without it would exist and still be invisible.
+const ensureRegistered = async (uid) => {
+  try {
+    const user = await admin.auth().getUser(uid);
+    const ref = admin.firestore().collection('registry').doc(uid);
+    const snap = await ref.get();
+    const d = snap.exists ? snap.data() : null;
+    if (d && d.status === 'approved' && d.role === 'admin') return;
+    await ref.set({
+      email: user.email || '',
+      status: 'approved',
+      // Written here rather than worked out on screen: the account list is the
+      // one place where every row looks alike, and which of them can approve
+      // the others is the single thing about a row worth knowing at a glance.
+      role: 'admin',
+      ...(d && d.createdAt ? {} : { createdAt: new Date() }),
+    }, { merge: true });
+    // The registry path in the rules also insists the address is verified, so
+    // an unverified admin gets an entry that still cannot let them in. Say so
+    // here rather than leaving a fallback that quietly is not one.
+    console.log(`claimadmin: registry entry ensured for ${uid}` +
+      (user.emailVerified ? ' (email verified)' : ' (EMAIL NOT VERIFIED — fallback inactive)'));
+  } catch (e) {
+    // Never fail the sign-in over the backup path.
+    console.error('claimadmin: registry ensure failed', e && e.message);
+  }
+};
+
+exports.claimadmin = onRequest(
+  { region: 'us-central1', maxInstances: 2, memory: '256MiB', timeoutSeconds: 20 },
+  async (req, res) => {
+    const header = req.get('Authorization') || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    if (!token) return res.status(401).json({ error: 'unauthorized' });
+    try {
+      const decoded = await admin.auth().verifyIdToken(token);
+      if (decoded.admin === true) {
+        await ensureRegistered(decoded.uid);
+        return res.json({ admin: true, changed: false });
+      }
+      if (!ADMIN_EMAIL || decoded.email !== ADMIN_EMAIL) {
+        // Not an error the caller can act on, and saying which half failed would
+        // confirm the address to somebody guessing. Every non-admin gets this.
+        return res.json({ admin: false, changed: false });
+      }
+      await admin.auth().setCustomUserClaims(decoded.uid, { admin: true });
+      console.log(`claimadmin: granted to ${decoded.uid}`);
+      await ensureRegistered(decoded.uid);
+      // changed:true is the client's signal to force a token refresh — the claim
+      // is not in the token it is holding, only in the one it asks for next.
+      return res.json({ admin: true, changed: true });
+    } catch { return res.status(401).json({ error: 'unauthorized' }); }
+  }
+);
 
 exports.search = onRequest(
   { region: 'us-central1', maxInstances: 5, memory: '256MiB', timeoutSeconds: 20 },

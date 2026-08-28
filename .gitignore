@@ -25,3 +25,8 @@ invest/CSV/
 # Personal financial backups (real data — never commit)
 fintracker-backup-*.json
 *-backup-*.json
+
+# Secrets — never commit (public repo)
+functions/.env
+functions/.env.*
+.env

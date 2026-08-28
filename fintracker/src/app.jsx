@@ -8809,8 +8809,22 @@ const AdminPage = ({ theme }) => {
   const [confirmEl, ask] = useConfirm(dk);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  // The admin's own address skips the verification screen, so it can sit
+  // unverified for as long as the account exists — which is fine until the
+  // rules' fallback path starts depending on it. Asked once, on the one page
+  // only the admin sees, and gone for good once the link is followed.
+  const [unverified, setUnverified] = useState(false);
+  const [sent, setSent] = useState(false);
   const card = `rounded-2xl ${dk?'card-solid':'bg-white shadow-sm border border-slate-100'}`;
   const sub = dk?'text-slate-400':'text-slate-500';
+
+  useEffect(()=>{ setUnverified(!!(auth.currentUser && !auth.currentUser.emailVerified)); },[]);
+  const sendVerify = async () => {
+    try {
+      await auth.currentUser.sendEmailVerification({ url: window.location.origin });
+      setSent(true);
+    } catch { setSent(false); }
+  };
 
   useEffect(()=>{
     const unsub = db.collection('registry').orderBy('createdAt','desc').onSnapshot(snap=>{
@@ -8861,6 +8875,21 @@ const AdminPage = ({ theme }) => {
             <p className={`text-xs mt-0.5 ${sub}`}>{users.length} บัญชีทั้งหมด · {users.filter(u=>u.status==='pending').length} รอการอนุมัติ</p>
           </div>
         </div>
+        {unverified && (
+          <div className={`mb-3 px-3 py-2.5 rounded-xl flex items-center justify-between gap-3 ${dk?'bg-amber-500/10 border border-amber-500/25':'bg-amber-50 border border-amber-200'}`}>
+            <p className={`text-xs ${dk?'text-amber-200':'text-amber-800'}`}>
+              {sent
+                ? 'ส่งลิงก์ยืนยันไปที่อีเมลของคุณแล้ว — กดลิงก์แล้วโหลดหน้านี้ใหม่ค่ะ'
+                : 'อีเมลของคุณยังไม่ได้ยืนยัน ทางเข้าข้อมูลสำรองจึงยังใช้ไม่ได้'}
+            </p>
+            {!sent && (
+              <button type="button" onClick={sendVerify}
+                className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-semibold ${dk?'bg-amber-500/20 text-amber-200 hover:bg-amber-500/30':'bg-amber-500 text-white hover:bg-amber-600'}`}>
+                ส่งลิงก์ยืนยัน
+              </button>
+            )}
+          </div>
+        )}
         {loading && <p className={`text-sm text-center py-8 ${sub}`}>กำลังโหลด...</p>}
         {!loading && users.length===0 && <p className={`text-sm text-center py-8 ${sub}`}>ยังไม่มีผู้ใช้งานค่ะ</p>}
         {!loading && users.length>0 && (
@@ -8877,8 +8906,15 @@ const AdminPage = ({ theme }) => {
               return (
                 <div key={u.id} className={`grid px-3 py-3 rounded-xl items-center gap-2 ${dk?(i%2===0?'bg-white/[0.01]':'bg-black/[0.06]'):(i%2===0?'bg-white':'bg-slate-50/50')}`}
                   style={{gridTemplateColumns:'1fr 120px 160px'}}>
-                  <div>
-                    <div className={`text-xs font-medium ${dk?'text-white':'text-slate-700'}`}>{u.email}</div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className={`text-xs font-medium truncate ${dk?'text-white':'text-slate-700'}`}>{u.email}</span>
+                      {u.role==='admin' && (
+                        <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide ${dk?'bg-gold-500/20 text-gold-300':'bg-gold-100 text-gold-700'}`}>
+                          Admin
+                        </span>
+                      )}
+                    </div>
                     {u.createdAt && <div className={`text-[10px] mt-0.5 ${sub}`}>{new Date(u.createdAt.seconds*1000).toLocaleDateString('th-TH')}</div>}
                   </div>
                   <div className="flex justify-center">
@@ -8917,11 +8953,56 @@ const AdminPage = ({ theme }) => {
   );
 };
 
+// Reads the admin custom claim, and asks the server to set it the first time.
+// The claim lives on the account rather than in this file, so the bundle no
+// longer says which address administers the project.
+//
+// Two token reads, not one: a claim minted just now is not in the token the
+// browser is already holding, and only a forced refresh goes and fetches one
+// that has it. Skipping that left the admin looking like a pending user until
+// the token happened to expire an hour later.
+const resolveAdmin = async (u) => {
+  try {
+    const first = await u.getIdTokenResult();
+    const call = () => fetch('/api/claimadmin', {
+      method: 'POST',
+      // Explicitly empty rather than absent: Google's front end rejects a POST
+      // with no Content-Length before it ever reaches the function (411).
+      body: '',
+      headers: { Authorization: 'Bearer ' + first.token },
+    });
+    // Holding the claim is the answer, but it is not a reason to stop calling:
+    // the server also keeps the registry fallback in repair, and returning here
+    // without asking meant the fallback was never written for the one account
+    // already holding a claim — the account that needs it most. Nothing on
+    // screen waits for it.
+    if (first.claims && first.claims.admin === true) { call().catch(()=>{}); return true; }
+    const r = await call();
+    if (!r.ok) return false;
+    const d = await r.json();
+    if (!d.admin) return false;
+    if (d.changed) await u.getIdToken(true);
+    return true;
+  } catch {
+    // Offline, or the endpoint is down. Say no rather than guess: the rules
+    // decide what may actually be read, so a wrong yes here only shows an admin
+    // button that would fail, and a wrong no hides one that can be had by
+    // reloading once there is a connection again.
+    return false;
+  }
+};
+
 const App = () => {
   // ── Auth state ──
   const [user,setUser]           = useState(null);
   const [userStatus,setUserStatus] = useState(null); // null|'pending'|'approved'|'rejected'
-  const ADMIN_EMAIL = 'finphurinat18@gmail.com';
+  // Who the admin is used to be written here as an address. The source is
+  // public, so that named the account to approve-everything to anyone reading
+  // the repo — and it shipped in the bundle too, where scrubbing the file
+  // afterwards would not have taken it back. It is a custom claim on the
+  // account now: set once by /api/claimadmin, which holds the address in the
+  // deploy environment, and read from the ID token everywhere else.
+  const [isAdmin, setIsAdmin] = useState(false);
   const [authLoading,setAuthL]   = useState(true);
   const [dataLoading,setDataL]   = useState(true); // waiting for Firebase data
   const [syncStatus,setSyncSt]   = useState('idle');
@@ -9145,7 +9226,9 @@ const App = () => {
       setUser(u); setAuthL(false);
       if (!u) { setDataL(false); setUserStatus(null); clearInterval(sessionTimer.current); if(regUnsub.current){ regUnsub.current(); regUnsub.current=null; } }
       else {
-        if (u.email === ADMIN_EMAIL) {
+        const admin = await resolveAdmin(u);
+        setIsAdmin(admin);
+        if (admin) {
           setUserStatus('approved');
         } else {
           // Watched rather than read once. Approval happens on somebody else's
@@ -10038,7 +10121,7 @@ const App = () => {
 
   // Verification gates the app as well as the rules, so an unverified account
   // gets an explanation rather than a permission error it cannot act on.
-  if (user && !user.emailVerified && user.email !== ADMIN_EMAIL)
+  if (user && !user.emailVerified && !isAdmin)
     return <VerifyEmail user={user} dk={dk} addToast={addToast}/>;
 
   if (user && userStatus === 'pending') return (
@@ -10079,7 +10162,6 @@ const App = () => {
   );
 
   const signOut = () => auth.signOut();
-  const isAdmin = user.email === ADMIN_EMAIL;
 
   const nav=[
     {k:'dashboard',   l:'Dashboard', i:'home'},

@@ -9,7 +9,8 @@
     ],
     "rewrites": [
       { "source": "/api/prices", "function": "prices", "region": "us-central1" },
-      { "source": "/api/search", "function": "search", "region": "us-central1" }
+      { "source": "/api/search", "function": "search", "region": "us-central1" },
+      { "source": "/api/claimadmin", "function": "claimadmin", "region": "us-central1" }
     ],
     "headers": [
       { "source": "/sw.js",      "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },

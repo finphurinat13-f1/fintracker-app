@@ -13,9 +13,14 @@ service cloud.firestore {
     // belongs to a reachable person rather than a typo or a throwaway, and
     // checking it here rather than only on screen means it cannot be skipped by
     // talking to the API directly.
+    // The admin used to be named here by address. These rules ship in a public
+    // repository, so that told anyone reading which account approves everybody
+    // — and the same address was in the bundle the browser downloads. It is a
+    // custom claim now, minted by /api/claimadmin from an address held in the
+    // functions deploy environment, so nothing readable names the account.
     function approved() {
       return request.auth != null && (
-        request.auth.token.email == 'finphurinat18@gmail.com' ||
+        request.auth.token.admin == true ||
         (request.auth.token.email_verified == true &&
          exists(/databases/$(database)/documents/registry/$(request.auth.uid)) &&
          get(/databases/$(database)/documents/registry/$(request.auth.uid)).data.status == 'approved')
@@ -46,7 +51,7 @@ service cloud.firestore {
                     && request.auth.uid == userId
                     && request.resource.data.status == 'pending';
       allow read, write: if request.auth != null
-                         && request.auth.token.email == 'finphurinat18@gmail.com';
+                         && request.auth.token.admin == true;
     }
   }
 }
