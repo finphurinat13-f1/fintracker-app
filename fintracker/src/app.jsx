@@ -2555,13 +2555,13 @@ const brandOf = (rawTicker, name='') => {
 };
 
 const AssetIcon = ({a, ti, size='md'}) => {
-  const dim = size==='sm' ? 'w-8 h-8' : 'w-11 h-11';
+  const dim = size==='sm' ? 'w-8 h-8' : 'w-10 h-10';
   if (a.type === 'stock') {
     const ticker = (a.ticker || a.name).replace(/[^A-Za-z0-9]/g,'').toUpperCase() || a.name.substring(0,4).toUpperCase();
     const CUSTOM_ICONS = { 'SOFI': SoFiIcon };
     if (CUSTOM_ICONS[ticker]) {
       const CustomIcon = CUSTOM_ICONS[ticker];
-      const px = size==='sm' ? 32 : 44;
+      const px = size==='sm' ? 30 : 40;
       return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><CustomIcon s={px}/></div>;
     }
     // The company's own colour when it is known, otherwise one hashed from the
@@ -2599,7 +2599,7 @@ const AssetIcon = ({a, ti, size='md'}) => {
     const sym = (a.ticker || a.name).trim().split(/\s+/)[0]
       .replace(/-(USD|USDT|THB|EUR|GBP|JPY|BTC)$/i,'')
       .replace(/[^A-Za-z]/g,'').toUpperCase();
-    const px = size==='sm' ? 32 : 44;
+    const px = size==='sm' ? 30 : 40;
     if (sym==='BTC'||sym==='BITCOIN'||sym==='XBT') return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><BtcIcon s={px}/></div>;
     if (sym==='ETH'||sym==='ETHEREUM') return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><EthIcon s={px}/></div>;
     if (sym==='USDT'||sym==='TETHER') return <div className={`${dim} rounded-full overflow-hidden flex-shrink-0`}><UsdtIcon s={px}/></div>;
@@ -2621,8 +2621,8 @@ const AssetIcon = ({a, ti, size='md'}) => {
     <div className={`${dim} rounded-full flex items-center justify-center flex-shrink-0`}
       style={{background:`linear-gradient(135deg, ${ti.c}, ${ti.c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)', color:inkOn(ti.c)}}>
       {a.type==='cash'
-        ? <span className="text-base font-bold leading-none">฿</span>
-        : <span className="text-lg leading-none">{ti.icon}</span>}
+        ? <span className="text-sm font-bold leading-none">฿</span>
+        : <span className="text-base leading-none">{ti.icon}</span>}
     </div>
   );
 };
@@ -2663,11 +2663,11 @@ const AddressChip = ({address, dk}) => {
 // They stay in ramp order, so the five types keep their relative position:
 // lightest for stocks through to the deepest for the residual bucket.
 const ASSET_TYPES = [
-  {v:'stock', l:'📈 หุ้น',    c:'#f8e3d5', icon:<TypeIc n="stock" s={22}/>},
+  {v:'stock', l:'📈 หุ้น',    c:'#f8e3d5', icon:<TypeIc n="stock" s={20}/>},
   {v:'crypto',l:'🟠 Crypto', c:'#f0cbb2', icon:<BtcIcon/>},
   {v:'gold',  l:'🪙 ทองคำ',  c:'#e6b18e', icon:<GoldIcon/>},
-  {v:'cash',  l:'💵 เงินสด', c:'#d99669', icon:<TypeIc n="cash" s={22}/>},
-  {v:'other', l:'📦 อื่นๆ',   c:'#c97e4d', icon:<TypeIc n="box" s={22}/>},
+  {v:'cash',  l:'💵 เงินสด', c:'#d99669', icon:<TypeIc n="cash" s={20}/>},
+  {v:'other', l:'📦 อื่นๆ',   c:'#c97e4d', icon:<TypeIc n="box" s={20}/>},
 ];
 const BUDGET_DEFAULTS = {'อาหาร':7000,'การเดินทาง':2000,'Home & Utilities':8000,'ช้อปปิ้ง':1500,'อินเตอร์เน็ต/โทรศัพท์':500,'สุขภาพ':1000,'Subscription':500,'การศึกษา':1000,'บันเทิง':1500,'ลงทุน/ปันผล':2000,'อื่นๆ':1000};
 // Empty on purpose. This list used to ship the author's real standing
@@ -7174,13 +7174,13 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
   // originals instead of a fresh hue.
   const TYPE_META = {
     bank:    { label:'บัญชีธนาคาร',  color:'#e8cf90', icon:<TypeIc n="bank" s={22}/> },
-    stock:   { label:'พอร์ตหุ้น',     color:'#c9a94b', icon:<TypeIc n="stock" s={22}/> },
+    stock:   { label:'พอร์ตหุ้น',     color:'#c9a94b', icon:<TypeIc n="stock" s={20}/> },
     crypto:  { label:'Crypto Wallet', color:'#a8894a', icon:<TypeIc n="crypto" s={22}/> },
     // Bright enough to be a glyph colour. #7d6a3f was a step from the old gold
     // ramp — dark by design, which works for a bar on a light track and not at
     // all for an icon on a dark chip, where it came out as a shape you could
     // tell was there but not what it was.
-    cash:    { label:'เงินสด',        color:'#f0cbb2', icon:<TypeIc n="cash" s={22}/> },
+    cash:    { label:'เงินสด',        color:'#f0cbb2', icon:<TypeIc n="cash" s={20}/> },
     // #584b31 measured 2.19 against the chip it is drawn on — below the 3.0 an
     // icon needs to be identifiable rather than merely present. It was the only
     // one under the line; the rest of the set clears it.
