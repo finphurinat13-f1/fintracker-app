@@ -34,22 +34,24 @@ service cloud.firestore {
                          && approved();
     }
 
-    // Sessions — only accessible by the owner, and only once approved
-    match /sessions/{userId} {
-      allow read, write: if request.auth != null
-                         && request.auth.uid == userId
-                         && approved();
-    }
-
     // Registry — a user may read + create ONLY their own entry, and only as
     // 'pending'. Changing status (approve/reject) is restricted to the admin,
     // so nobody can self-approve by writing straight to Firestore.
     match /registry/{userId} {
       allow read: if request.auth != null
                   && request.auth.uid == userId;
+      // Only these three fields, and the address has to be the one the token
+      // was issued for. Checking the status alone let a signed-in stranger
+      // write their entry with any shape they liked — an address belonging to
+      // somebody else, and a role saying admin. Neither grants anything: the
+      // rules read the claim, not the document. But both are read straight off
+      // the account list, which is where approvals get decided, and a row that
+      // reads "ceo@bank.com  ADMIN" is asking to be waved through.
       allow create: if request.auth != null
                     && request.auth.uid == userId
-                    && request.resource.data.status == 'pending';
+                    && request.resource.data.keys().hasOnly(['email', 'status', 'createdAt'])
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.email == request.auth.token.email;
       allow read, write: if request.auth != null
                          && request.auth.token.admin == true;
     }

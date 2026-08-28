@@ -8493,8 +8493,14 @@ const LoginPage = ({ theme }) => {
       // the trip does not dead-end on a stock English page with nowhere to go.
       try { await cred.user.sendEmailVerification({ url: window.location.origin }); }
       catch { /* account exists; the wait screen offers a resend */ }
+      // cred.user.email, not the box: Firebase lowercases and trims the address
+      // it puts in the token, and the rule that guards this write compares the
+      // two. Storing what was typed meant one capital letter at sign-up wrote a
+      // row the rules refused — leaving an account that exists with no registry
+      // entry, which no screen in the app can create a second time.
       await db.collection('registry').doc(cred.user.uid).set({
-        email, status: 'pending', createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        email: cred.user.email, status: 'pending',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
     } catch (e) {
       const msgs = {
