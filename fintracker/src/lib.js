@@ -830,6 +830,53 @@ export const annualisedReturn = ({ value, cost, days, minDays = 90 }) => {
   return isFinite(r) ? parseFloat(r.toFixed(2)) : null;
 };
 
+// ── Total return on one holding ──────────────────────────────────────────────
+// What a holding has made since it was bought, counting everything: the paper
+// gain on what is still held, the profit banked on what has been sold, and the
+// dividends it has paid.
+//
+// The app could show all three, in three places. A position sold down at a
+// profit and now under water reads as a loss in the assets table, as a gain on
+// the summary page, and as neither on the dividend card — with nothing anywhere
+// adding them up. For a portfolio that takes profit in pieces, that is the
+// question, and it was the one thing the app could not answer.
+//
+// Currency follows realizedByYear: `realized` is stored in the asset's own
+// currency and converted here, while dividends are transactions and already in
+// baht.
+export const assetTotalReturn = (asset, txs = [], usdRate = 35) => {
+  if (!asset) return null;
+  const mult = asset.currency === 'USD' ? usdRate : 1;
+  const { taggedIn, taggedOut } = assetTagged(txs, asset.id);
+
+  const value = (asset.qty * asset.currentPrice + taggedIn - taggedOut) * mult;
+  const heldCost = (asset.qty * asset.avgCost) * mult;
+  const unrealised = asset.type === 'cash' ? 0 : value - heldCost;
+
+  const sells = (asset.moves || []).filter(m => (Number(m.qty) || 0) < 0);
+  const realised = sells.reduce((s, m) => s + (Number(m.realized) || 0), 0) * mult;
+
+  // What the sold units originally cost, recovered from what they fetched minus
+  // what that sale made. Stored nowhere directly, but every sale records both
+  // halves, so the third follows — and without it the denominator would be the
+  // cost of what is left rather than of everything ever put in.
+  const soldCost = sells.reduce((s, m) => {
+    const proceeds = (Number(m.rate) || 0) * Math.abs(Number(m.qty) || 0);
+    return s + (proceeds - (Number(m.realized) || 0));
+  }, 0) * mult;
+
+  const dividends = (txs || [])
+    .filter(t => t && t.type === 'dividend' && t.targetAssetId === asset.id)
+    .reduce((s, t) => s + Math.abs(Number(t.amount) || 0), 0);
+
+  const invested = heldCost + soldCost;
+  const total = unrealised + realised + dividends;
+  return {
+    unrealised, realised, dividends, total, invested,
+    pct: invested > 0 ? parseFloat((total / invested * 100).toFixed(2)) : null,
+  };
+};
+
 export const realizedByYear = (assets = [], txs = [], usdRate = 35) => {
   const years = {};
   const yearOf = d => String(d || '').slice(0, 4);

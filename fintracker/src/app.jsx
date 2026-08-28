@@ -1,5 +1,5 @@
 import {
-  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, GOLD_RAMP, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, annualisedReturn, encryptBackup, decryptBackup, isEncryptedBackup
+  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, GOLD_RAMP, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, annualisedReturn, assetTotalReturn, encryptBackup, decryptBackup, isEncryptedBackup
 } from "./lib.js";
 
 
@@ -3457,8 +3457,51 @@ const AssetRelBody = ({a, investTxs, dk, onAddTx, onDeleteTx, onTopUp, wallets=[
   // so every figure in this panel is in the asset's own currency — but fmt()
   // hardcodes ฿, which printed a USD holding's $1,817.95 as ฿1,817.95.
   const fmtCur = n => fmt(n).replace('฿', a.currency==='USD' ? '$' : '฿');
+  // Everything this holding has made, in one line. Cash is skipped: it has no
+  // cost basis, so every part of this would be zero and the strip would say
+  // nothing four times.
+  // investTxs is already every transaction tagged to this holding, and both
+  // assetTagged and the dividend filter select by that same id — so passing the
+  // narrowed list gives the same answer as the full ledger, for less work.
+  const tr = a.type==='cash' ? null : assetTotalReturn(a, investTxs, usdRate);
+  const trParts = tr ? [
+    { l:'ยังถืออยู่',  v: tr.unrealised },
+    { l:'ขายไปแล้ว', v: tr.realised },
+    { l:'ปันผล',     v: tr.dividends },
+  ] : [];
+
   return (
     <div className="px-2 pt-1 pb-2">
+      {/* The one figure the app could not previously produce. Unrealised sits in
+          the assets table, realised on the summary page and dividends on their
+          own card, so a position sold down at a profit and now under water read
+          as a loss here, a gain there, and was never added up anywhere.
+
+          Only drawn once something has actually happened beyond holding it —
+          otherwise it repeats the P/L column two rows above with extra words. */}
+      {tr && (tr.realised!==0 || tr.dividends!==0) && (
+        <div className={`mb-2 px-2.5 py-2 rounded-xl ${dk?'bg-white/[0.04]':'bg-slate-50'}`}>
+          <div className="flex items-baseline justify-between gap-2 flex-wrap">
+            <span className={`text-[11px] font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>กำไรรวมตั้งแต่ซื้อ</span>
+            <span className="flex items-baseline gap-2">
+              <span className={`text-sm font-bold tabular-nums ${tr.total>=0?'text-emerald-400':'text-rose-400'}`}>
+                {tr.total>=0?'+':''}{fmtSigned(tr.total)}
+              </span>
+              {tr.pct!=null && (
+                <span className={`text-[11px] font-semibold tabular-nums ${tr.total>=0?'text-emerald-400':'text-rose-400'}`}>
+                  {tr.pct>=0?'+':''}{tr.pct.toFixed(1)}%
+                </span>
+              )}
+            </span>
+          </div>
+          <div className={`flex items-baseline gap-x-3 gap-y-0.5 flex-wrap mt-1 text-[11px] ${sub}`}>
+            {trParts.map(({l,v})=>(
+              <span key={l}>{l} <span className={`tabular-nums font-medium ${v>0?'text-emerald-400':v<0?'text-rose-400':(dk?'text-slate-500':'text-slate-400')}`}>{v>=0?'+':''}{fmtSigned(v)}</span></span>
+            ))}
+            <span className="opacity-70">· ลงทุนไป {fmt(tr.invested)}</span>
+          </div>
+        </div>
+      )}
       {/* A collection's pieces go where the opening balance would: they *are*
           that balance. Showing both put two lists and two totals against one
           holding, and reading it, you could not tell which number was the

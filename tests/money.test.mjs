@@ -19,7 +19,7 @@ const {
   walletCash, assetVal, walletDelta, runningBalances, mergeArrById, systemCashByDay, txSign, txAmtCls, revertMove,
   isUntouchedBudgets, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, realizedByYear,
   encryptBackup, decryptBackup, isEncryptedBackup, assetCashFlow, whoAmI,
-  impliedTicker, catOptions, renameCatInStores, priceAge, annualisedReturn,
+  impliedTicker, catOptions, renameCatInStores, priceAge, annualisedReturn, assetTotalReturn,
 } = await import('../fintracker/src/lib.js');
 
 // ── walletDelta ──────────────────────────────────────────────────────────────
@@ -943,4 +943,72 @@ test('annualisedReturn: no cost basis and no holding period give null', () => {
 test('annualisedReturn: rounds, so no 30.000000000000004 reaches the screen', () => {
   const r = annualisedReturn({ value: 130, cost: 100, days: 365.25 });
   assert.equal(String(r).length <= 6, true, `got ${r}`);
+});
+
+// ── assetTotalReturn ─────────────────────────────────────────────────────────
+// The figure the app could not produce: everything one holding has made, with
+// the pieces that were sold counted alongside the piece still held.
+test('assetTotalReturn: a position sold at a profit and now under water', () => {
+  // Bought 1.0 at 2,000,000. Sold 0.5 at 4,000,000 (+1,000,000 realised).
+  // The remaining 0.5 has fallen to 1,600,000 — a paper loss of 200,000.
+  const a = {
+    id: 1, type: 'crypto', currency: 'THB', qty: 0.5, avgCost: 2000000, currentPrice: 1600000,
+    moves: [{ id: 'm1', qty: -0.5, rate: 4000000, realized: 1000000 }],
+  };
+  const r = assetTotalReturn(a, [], 1);
+  assert.equal(r.unrealised, -200000, 'the half still held is down');
+  assert.equal(r.realised, 1000000, 'the half sold banked a million');
+  assert.equal(r.invested, 2000000, 'both halves cost 2,000,000 in total');
+  assert.equal(r.total, 800000, 'so the holding is up overall');
+  assert.equal(r.pct, 40);
+});
+
+test('assetTotalReturn: dividends count, and only this holding s own', () => {
+  const a = { id: 7, type: 'stock', currency: 'THB', qty: 10, avgCost: 100, currentPrice: 100, moves: [] };
+  const txs = [
+    { id: 1, type: 'dividend', targetAssetId: 7, amount: 300, date: '2026-01-05' },
+    { id: 2, type: 'dividend', targetAssetId: 9, amount: 999, date: '2026-01-05' }, // another holding
+  ];
+  const r = assetTotalReturn(a, txs, 1);
+  assert.equal(r.dividends, 300, 'another holding s dividend must not be counted here');
+  assert.equal(r.total, 300, 'flat price, so the dividend is the whole return');
+  assert.equal(r.pct, 30);
+});
+
+// Money tagged to an asset raises what that asset is worth — the mechanism
+// cash-type holdings are built on. It flows through assetVal into the paper
+// gain, so it must not also be counted as a return in its own right, and a
+// dividend must not be double-counted by arriving through both doors.
+test('assetTotalReturn: tagged income lifts the value, and is not a return twice', () => {
+  const a = { id: 8, type: 'stock', currency: 'THB', qty: 10, avgCost: 100, currentPrice: 100, moves: [] };
+  const txs = [{ id: 1, type: 'income', targetAssetId: 8, amount: 500, date: '2026-01-05' }];
+  const r = assetTotalReturn(a, txs, 1);
+  assert.equal(r.unrealised, 500, 'the tagged money is part of what the holding is worth');
+  assert.equal(r.dividends, 0, 'income is not a dividend');
+  assert.equal(r.total, 500, 'counted once, through the value');
+});
+
+test('assetTotalReturn: a USD holding converts realised but not dividends', () => {
+  // realized is stored in the asset's currency; dividend rows are already baht.
+  const a = {
+    id: 2, type: 'stock', currency: 'USD', qty: 1, avgCost: 100, currentPrice: 120,
+    moves: [{ id: 'm', qty: -1, rate: 150, realized: 50 }],
+  };
+  const txs = [{ id: 1, type: 'dividend', targetAssetId: 2, amount: 350, date: '2026-02-01' }];
+  const r = assetTotalReturn(a, txs, 30);
+  assert.equal(r.unrealised, 600, '(120-100) x 1 x 30');
+  assert.equal(r.realised, 1500, '50 x 30');
+  assert.equal(r.dividends, 350, 'already baht, not multiplied again');
+  assert.equal(r.total, 2450);
+});
+
+test('assetTotalReturn: never divides by a cost basis of zero', () => {
+  const a = { id: 3, type: 'other', currency: 'THB', qty: 0, avgCost: 0, currentPrice: 0, moves: [] };
+  assert.equal(assetTotalReturn(a, [], 1).pct, null);
+  assert.equal(assetTotalReturn(null, [], 1), null);
+});
+
+test('assetTotalReturn: cash has no paper gain to report', () => {
+  const a = { id: 4, type: 'cash', currency: 'THB', qty: 1, avgCost: 0, currentPrice: 50000, moves: [] };
+  assert.equal(assetTotalReturn(a, [], 1).unrealised, 0);
 });
