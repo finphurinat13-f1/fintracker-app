@@ -8,6 +8,7 @@
 // Reached as /api/prices via the Hosting rewrite, so the browser calls it
 // same-origin and no CORS headers are involved.
 const { onRequest } = require('firebase-functions/v2/https');
+const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 
 admin.initializeApp();
@@ -196,12 +197,17 @@ const rank = (x, QU) => {
   return s;
 };
 
-// The account that does the approving. Kept in the deploy environment rather
-// than in source: the repository is public, and an address written here names
-// the admin account to anyone reading it — a phishing target and a spam magnet
-// that scrubbing the file later cannot take back. Set in functions/.env, which
-// is gitignored. Absent, only the custom claim below grants admin.
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
+// The account that does the approving. Not in source: the repository is public,
+// and an address written here names the admin account to anyone reading it — a
+// phishing target and a spam magnet that scrubbing the file later cannot take
+// back. It lived in functions/.env for a while, which solved the repository and
+// created a worse problem: the file existed on one laptop, so deploying from
+// the other would have dropped the variable with nothing said. Secret Manager
+// holds it where every deploy can reach it and no checkout can.
+//
+// Read inside the handler, never at module load — the value is not injected
+// until the function that declares it actually runs.
+const ADMIN_EMAIL = defineSecret('ADMIN_EMAIL');
 
 // A valid token only proves somebody signed up, and signing up is open to
 // anyone who finds the page. Approval is what the registry exists for, so it
@@ -209,9 +215,12 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
 // front door is decoration, and any new account can spend the project's quota
 // on outbound requests before an admin has seen the request at all.
 const isApproved = async (decoded) => {
-  // The claim is the real answer; the address is only the bootstrap that sets it.
+  // Only the claim and the registry. The address used to be a third answer here,
+  // which meant every paid endpoint had to be handed the secret to check a case
+  // that cannot arise any more: the admin holds the claim, and holds a registry
+  // entry besides. Dropping it keeps the secret inside the one function whose
+  // job is to mint the claim.
   if (decoded.admin === true) return true;
-  if (ADMIN_EMAIL && decoded.email === ADMIN_EMAIL) return true;
   try {
     const snap = await admin.firestore().collection('registry').doc(decoded.uid).get();
     return snap.exists && snap.data().status === 'approved';
@@ -289,7 +298,8 @@ const ensureRegistered = async (uid) => {
 };
 
 exports.claimadmin = onRequest(
-  { region: 'us-central1', maxInstances: 2, memory: '256MiB', timeoutSeconds: 20 },
+  { region: 'us-central1', maxInstances: 2, memory: '256MiB', timeoutSeconds: 20,
+    secrets: [ADMIN_EMAIL] },
   async (req, res) => {
     const header = req.get('Authorization') || '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : null;
@@ -306,7 +316,8 @@ exports.claimadmin = onRequest(
         await ensureRegistered(decoded.uid);
         return res.json({ admin: true, changed: false });
       }
-      if (!ADMIN_EMAIL || decoded.email !== ADMIN_EMAIL) {
+      const adminEmail = ADMIN_EMAIL.value();
+      if (!adminEmail || decoded.email !== adminEmail) {
         // Not an error the caller can act on, and saying which half failed would
         // confirm the address to somebody guessing. Every non-admin gets this.
         return res.json({ admin: false, changed: false });

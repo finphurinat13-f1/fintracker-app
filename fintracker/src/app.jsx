@@ -8501,7 +8501,10 @@ const LoginPage = ({ theme }) => {
 
   const signup = async () => {
     if (!email || !pw || !confirmPw) { setErr('กรุณากรอกข้อมูลให้ครบ'); return; }
-    if (pw.length < 6) { setErr('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'); return; }
+    // Eight, not the six Firebase will accept. This is the front door to a
+    // record of somebody's money, and six characters is the floor of a service
+    // that knows nothing about what it is guarding.
+    if (pw.length < 8) { setErr('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'); return; }
     if (pw !== confirmPw) { setErr('รหัสผ่านไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง'); return; }
     setLoading(true); setErr('');
     try {
@@ -8527,7 +8530,7 @@ const LoginPage = ({ theme }) => {
       const msgs = {
         'auth/email-already-in-use': 'Email นี้มีบัญชีอยู่แล้ว',
         'auth/invalid-email':        'รูปแบบ Email ไม่ถูกต้อง',
-        'auth/weak-password':        'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
+        'auth/weak-password':        'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร',
       };
       setErr(msgs[e.code] || `สมัครไม่สำเร็จ (${e.code})`);
       setLoading(false);
