@@ -3726,6 +3726,11 @@ const AssetRelBody = ({a, investTxs, dk, onAddTx, onDeleteTx, onTopUp, wallets=[
   );
 };
 
+// Seconds the server last asked us to wait, and when it asked. Module level
+// rather than state: nothing renders from it, and it has to survive the
+// component remounting while the same limit is still in force.
+let _priceWait = 0, _priceWaitAt = 0;
+
 const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, onQuickPrice, onDCA, onAddAssetTx, onDeleteAssetTx, onTopUpAsset, onDeleteMove, onRenameMove, onAddItem, onDelItem, theme, wallets=[], txs=[]}) => {
   const dk = theme==='dark';
   const [usdRate,      setUsdRate]    = useState(()=>parseFloat(localStorage.getItem('ft-usdrate')||'35'));
@@ -3787,6 +3792,16 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
       if (stockTickers.length) qs.set('stocks', stockTickers.join(','));
       if (cryptoIds.length)    qs.set('crypto', cryptoIds.join(','));
       const r = await fetchWithTimeout(`/api/prices?${qs.toString()}`, 45000, {Authorization:`Bearer ${token}`});
+      // A refusal for asking too often is not the failure the fallback below is
+      // for. Falling through would send the holdings list to the public proxies
+      // this endpoint exists to avoid — and would ask the user to retry now,
+      // which is the one thing that cannot work.
+      if (r.status === 429) {
+        const d = await r.json().catch(()=>({}));
+        _priceWait = Number(d.retryAfter) || 60;
+        _priceWaitAt = Date.now();
+        return null;
+      }
       if (!r.ok) return null;
       const d = await r.json();
       // "responded but priced nothing" counts as a failure — but only when
@@ -3846,6 +3861,12 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
       if (srv.usdthb) { if (srv.usdthb !== usdRate) setUsdRate(srv.usdthb); markRateFetched(); }
       onPriceUpdate(updates, rate, stockAssets.length + cryptoAssets.length, srv.missing || [], srv.currencies || {}, silent);
       setPriceUpdAt(new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}));
+      setPriceLoad(false);
+      return;
+    }
+    if (_priceWaitAt && Date.now() - _priceWaitAt < _priceWait * 1000) {
+      const left = Math.ceil((_priceWait * 1000 - (Date.now() - _priceWaitAt)) / 1000);
+      onPriceUpdate({}, usdRate, 0, [], {}, silent, false, left);
       setPriceLoad(false);
       return;
     }
@@ -9717,7 +9738,11 @@ const App = () => {
   const purgeTrash = useCallback(ids=>{ const s=new Set(ids); setTrash(tr=>tr.filter(t=>!s.has(t.id))); },[]);
   const clearTrash = useCallback(()=>setTrash([]),[]);
   const assignAssetToWallet = useCallback((assetIds, walletId)=>setAssets(as=>as.map(a=>assetIds.includes(a.id)?{...a,walletId}:a)),[]);
-  const updatePrices = useCallback((priceMap, usdRate, attempted=0, missing=[], currencies={}, silent=false, noAuth=false)=>{
+  const updatePrices = useCallback((priceMap, usdRate, attempted=0, missing=[], currencies={}, silent=false, noAuth=false, waitSec=0)=>{
+    // Asked too often. Distinguished from a plain failure for the same reason
+    // the expired session below is: the generic message tells people to try
+    // again now, which is precisely what will not work.
+    if (waitSec) { if(!silent) addToast(`⏳ ขอราคาถี่เกินไป — รออีก ${waitSec} วินาทีค่ะ`,'warn'); return; }
     // The session expired between opening the page and pressing the button.
     // The endpoint would answer 401 and the refresh would look broken for no
     // stated reason, so say which of the two it is.

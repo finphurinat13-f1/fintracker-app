@@ -27,6 +27,34 @@ const cached = async (key, ttlMs, produce) => {
   return value;
 };
 
+// ── per-caller rate limit ────────────────────────────────────────────────
+// The cache above already spares the upstream a repeated question. It does
+// nothing about a caller who asks a different question every time — a distinct
+// ticker or search term misses the cache by construction, and every miss is an
+// outbound request the project pays for. It also does nothing about the cost of
+// simply being called: a cache hit still wakes a function.
+//
+// Held in memory, so each instance counts on its own and the ceiling is really
+// the limit times however many instances are up. That is the honest shape of
+// it, and it is still worth having: what actually happens here is a retry loop
+// left running or a finger on refresh, not somebody pacing an attack around the
+// instance count.
+const BUCKET = new Map();
+const allow = (uid, max, windowMs) => {
+  const now = Date.now();
+  const b = BUCKET.get(uid);
+  if (b && now <= b.reset) {
+    if (b.n >= max) return { ok: false, retryAfter: Math.ceil((b.reset - now) / 1000) };
+    b.n++;
+    return { ok: true };
+  }
+  // Sweep on the way past rather than on a timer: entries are only ever read
+  // again by the same caller, so an abandoned one would otherwise sit forever.
+  if (BUCKET.size > 5000) for (const [k, v] of BUCKET) if (now > v.reset) BUCKET.delete(k);
+  BUCKET.set(uid, { n: 1, reset: now + windowMs });
+  return { ok: true };
+};
+
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
 const get = async (url, ms = 8000) => {
   const ctrl = new AbortController();
@@ -190,13 +218,24 @@ const isApproved = async (decoded) => {
   } catch { return false; }
 };
 
-const requireAuth = async (req, res) => {
+// limit is { max, windowMs } and is counted per account, after approval — a
+// caller who cannot get in has nothing to meter.
+const requireAuth = async (req, res, limit) => {
   const header = req.get('Authorization') || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) { res.status(401).json({ error: 'unauthorized' }); return false; }
   try {
     const decoded = await admin.auth().verifyIdToken(token);
     if (!await isApproved(decoded)) { res.status(403).json({ error: 'not approved' }); return false; }
+    if (limit) {
+      const gate = allow(decoded.uid, limit.max, limit.windowMs);
+      if (!gate.ok) {
+        // Retry-After so the caller is told when, not just no.
+        res.set('Retry-After', String(gate.retryAfter));
+        res.status(429).json({ error: 'rate limited', retryAfter: gate.retryAfter });
+        return false;
+      }
+    }
     return true;
   } catch { res.status(401).json({ error: 'unauthorized' }); return false; }
 };
@@ -257,6 +296,12 @@ exports.claimadmin = onRequest(
     if (!token) return res.status(401).json({ error: 'unauthorized' });
     try {
       const decoded = await admin.auth().verifyIdToken(token);
+      // Called once per sign-in in normal use. Anything above this is a loop.
+      const gate = allow('claim:' + decoded.uid, 10, 60_000);
+      if (!gate.ok) {
+        res.set('Retry-After', String(gate.retryAfter));
+        return res.status(429).json({ error: 'rate limited', retryAfter: gate.retryAfter });
+      }
       if (decoded.admin === true) {
         await ensureRegistered(decoded.uid);
         return res.json({ admin: true, changed: false });
@@ -279,7 +324,9 @@ exports.claimadmin = onRequest(
 exports.search = onRequest(
   { region: 'us-central1', maxInstances: 5, memory: '256MiB', timeoutSeconds: 20 },
   async (req, res) => {
-    if (!await requireAuth(req, res)) return;
+    // Typing into the search box sends one request per pause, so the ceiling has
+    // to clear a fast typist looking things up, and nothing beyond that.
+    if (!await requireAuth(req, res, { max: 20, windowMs: 60_000 })) return;
 
     const q = String(req.query.q || '').trim().slice(0, 60);
     if (q.length < 2) return res.json({ results: [] });
@@ -322,8 +369,10 @@ exports.prices = onRequest(
   { region: 'us-central1', maxInstances: 10, memory: '256MiB', timeoutSeconds: 60 },
   async (req, res) => {
     // Signed-in callers only — this endpoint spends money on outbound requests,
-    // so it must not be usable by anyone who finds the URL.
-    if (!await requireAuth(req, res)) return;
+    // so it must not be usable by anyone who finds the URL. The ceiling is well
+    // clear of ordinary use: the app asks on open and on refresh, in one batched
+    // request covering every holding, not one per ticker.
+    if (!await requireAuth(req, res, { max: 30, windowMs: 60_000 })) return;
 
     const stocks = list(req.query.stocks, 60).map(s => s.toUpperCase());
     const crypto = list(req.query.crypto, 60).map(s => s.toLowerCase());
