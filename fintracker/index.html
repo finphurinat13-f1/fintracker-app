@@ -117,15 +117,22 @@ const db   = firebase.firestore();
      heading it would stop being a material and become a decoration, which is
      the failure mode of gradient text everywhere it goes wrong.
 
-     Every stop clears 3:1 against the card, the darkest at 3.23, so the ramp
-     stays legible at its own bottom edge rather than only on average. The plain
+     Lifted twice. Every stop clears 3:1 against the card, the darkest now at
+     5.03 where it started at 3.23, so the ramp is legible at its own bottom
+     edge rather than only on average.
+
+     The light-to-dark span pays for it: 5.5x, then 4.2x, now 3.5x. That span
+     is where the specular reading lives — past about 3x the ramp stops looking
+     like metal and starts looking like a yellow with a gradient on it — so 3.5
+     is close to the floor and the next lift is the one that costs the effect
+     rather than a bit of depth. The plain
      colour comes first so a browser without background-clip shows gold rather
      than nothing at all. */
   .metal-gold { color: #e6c85c; }
   @supports ((-webkit-background-clip: text) or (background-clip: text)) {
     .metal-gold {
       background-image: linear-gradient(177deg,
-        #f7e7a8 0%, #e6c85c 26%, #d9af2b 50%, #b8860b 78%, #8a6410 100%);
+        #fcf4d4 0%, #f2e09e 26%, #e8cb6b 50%, #d4a737 78%, #af8323 100%);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;

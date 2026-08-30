@@ -63,6 +63,16 @@ const fmtNW = n => (_privacy||_hideAmt) ? '฿ •••••' : '฿' + Math.a
 // fmt() strips the sign (amounts pair with a separate +/- prefix). For real
 // balances that can legitimately go negative, fmtSigned keeps the minus sign.
 const fmtSigned = n => (n<0?'-':'') + fmt(n);
+// Thirty-one labels across one strip leaves about forty pixels each, which is
+// four characters at 8px. "38,481.00" needs nine. One decimal below ten
+// thousand and none above keeps every label inside its column while staying
+// precise enough to compare two days at a glance.
+const fmtTiny = n => {
+  if (_privacy || _hideAmt) return '•';
+  if (n >= 10000) return Math.round(n/1000) + 'K';
+  if (n >= 1000)  return (n/1000).toFixed(1) + 'K';
+  return String(Math.round(n));
+};
 // Stamped in by the build. The typeof guard keeps the source runnable outside
 // the bundler; a "+" on the hash means that build had uncommitted changes.
 const APP_BUILD = typeof __BUILD_DATE__ !== 'undefined' ? `${__BUILD_DATE__} · ${__GIT_HASH__}` : 'dev build';
@@ -1184,19 +1194,29 @@ const DailySpendBars = ({ days, todayStr, dk }) => {
           {show ? fmt(show.amt) : ''}
         </span>
       </div>
-      <div className="flex items-end gap-[2px] h-24" onMouseLeave={()=>setHov(null)}>
+      {/* Bars top out at 82% so every label has room above its own bar rather
+          than only the short ones. Reading a figure off a chart should not
+          require putting a pointer on it: the hover readout above stays for the
+          exact amount, and these carry enough to compare two days without it. */}
+      <div className="flex items-end gap-[2px] h-28" onMouseLeave={()=>setHov(null)}>
         {days.map((d,i)=>{
           const day = Number(d.date.slice(8,10));
           const isToday = d.date===todayStr;
           const on = hov===i;
+          const pct = d.amt>0 ? Math.max(d.amt/max*82, 3) : 0;
           return (
             <div key={d.date} onMouseEnter={()=>setHov(i)} title={`วันที่ ${day} · ${fmt(d.amt)}`}
-              className="flex-1 h-full flex items-end cursor-default">
+              className="relative flex-1 h-full flex items-end cursor-default">
+              {d.amt>0&&(
+                <span className={`absolute left-0 right-0 text-center text-[8px] tabular-nums leading-none pointer-events-none ${
+                  on||isToday ? (dk?'text-gold-200':'text-gold-700') : (dk?'text-slate-400':'text-slate-500')}`}
+                  style={{bottom:`calc(${pct}% + 3px)`}}>{fmtTiny(d.amt)}</span>
+              )}
               <div className="w-full rounded-t-[2px] transition-all duration-150"
                 style={{
                   // 2px floor so a day with nothing spent still reads as a day
                   // rather than as a gap in the month.
-                  height: d.amt>0 ? `max(3px, ${d.amt/max*100}%)` : '2px',
+                  height: d.amt>0 ? `${pct}%` : '2px',
                   background: d.amt>0
                     ? (on ? '#e6c85c' : isToday ? '#d9af2b' : (dk?'rgba(217,175,43,0.42)':'rgba(154,120,16,0.38)'))
                     : (dk?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.07)'),
