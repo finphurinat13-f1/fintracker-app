@@ -172,6 +172,74 @@ const db   = firebase.firestore();
      work in the reference is that only the big panels carry it while rows and
      chips inside stay tight, so the curve marks the panel edge instead of
      repeating at four scales. Set here rather than at ~200 call sites. */
+  /* ── Card actions ────────────────────────────────────────────────────────
+     Controls that belong to a card but are not why anyone opened the page.
+     Faded back until the pointer arrives, and always present on touch, where
+     there is no hover and a hidden control is simply a missing one. */
+  .card-actions {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .group:hover .card-actions,
+  *:hover > .card-actions,
+  .card-actions:focus-within { opacity: 1; }
+  @media (hover: none) {
+    .card-actions { opacity: 1; }
+  }
+
+  /* ── Ruled figure column ─────────────────────────────────────────────────
+     What the dashboard's four stat cards became, made reusable so the other
+     pages stop each having their own answer. A box is for separating things
+     that are unrelated; a row of summary figures is one measurement taken
+     several ways, and boxing each one says the opposite. The rule above them
+     groups instead of divides, and takes a border, a background and a corner
+     radius off the screen per figure.
+
+     Used INSTEAD of the card class, never alongside it — card-solid owns its
+     own ::before, and two of them would fight. */
+  .stat-rule {
+    position: relative;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0.9rem 1rem 0 0 !important;
+  }
+  .stat-rule::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 1rem; height: 2px;
+    background: linear-gradient(90deg,
+      rgba(217,175,43,0.70) 0%, rgba(217,175,43,0.16) 72%, transparent 100%);
+  }
+  html:not(.dark) .stat-rule::before {
+    background: linear-gradient(90deg,
+      rgba(154,120,16,0.60) 0%, rgba(154,120,16,0.12) 72%, transparent 100%);
+  }
+
+  .stat-label { letter-spacing: 0.16em; }
+
+  /* ── Figures ─────────────────────────────────────────────────────────────
+     Every large number in the app was font-bold, which at 24px and above stops
+     reading as weight and starts reading as pressure: a page of bold figures
+     has no hierarchy because all of it is shouting. Semibold with the tracking
+     pulled in is the setting a financial figure wants — dense, even, and quiet
+     enough that the one number a page is actually about can be the loud one.
+
+     Scoped to the sizes where it matters. Smaller bold text (labels, buttons,
+     table headers) is doing a different job and keeps its weight. */
+  .text-2xl.font-bold, .text-3xl.font-bold, .text-4xl.font-bold {
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  /* ── Small labels ────────────────────────────────────────────────────────
+     The uppercase label above a figure is the one place letterspacing earns
+     its keep: at 10-11px, caps set solid read as a solid block rather than as
+     words. Opening them up is most of what separates a considered panel from
+     a default one, and it costs nothing. */
+  .uppercase.tracking-wide, .uppercase.tracking-wider, .uppercase.tracking-widest {
+    letter-spacing: 0.16em;
+  }
+
   /* 14px and 9px. 18px was soft enough to read as app chrome; 6px went the
      other way and made the panels look like untouched boxes. The middle keeps
      the corner visible as a deliberate curve without it becoming the loudest

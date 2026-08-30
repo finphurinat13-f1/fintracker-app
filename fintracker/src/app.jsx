@@ -1100,6 +1100,76 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[], c
 // user-renamed category, which a literal map here never could.
 
 // ── BUDGET METRIC CARD (Stats11 style) ──────────────────────
+// ── CARD MENU ──────────────────────────────────────────────────────────────
+// One control where three used to sit. Rename and delete are monthly at most
+// and reading the page is daily, so the buttons were charging rent every day
+// for a job they do once — thirty-six glyphs across twelve cards, none of them
+// the reason the page is open.
+//
+// Fixed coordinates, painted through a portal. Two separate walls to get past
+// and only the portal clears both: the card clips its own overflow so the
+// drill-down can slide, which eats an absolutely positioned menu at the card
+// edge — and position:fixed does not solve it either, because the cards sit
+// inside a fade-up animation and a transformed ancestor becomes the containing
+// block for fixed children. The menu was landing an entire card to the right
+// and a hundred pixels down, offset by exactly the ancestor's own position.
+// Rendering into document.body leaves every transform behind.
+const CardMenu = ({ dk, items }) => {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btn = useRef(null);
+  const toggle = (e) => {
+    e.stopPropagation();
+    const r = btn.current.getBoundingClientRect();
+    // Right-aligned to the button, clamped so it never leaves the viewport on a
+    // card sitting against the right edge of the grid.
+    setPos({ top: r.bottom + 6, left: Math.min(Math.max(8, r.right - 172), window.innerWidth - 180) });
+    setOpen(o => !o);
+  };
+  useEffect(() => {
+    if (!open) return;
+    const shut = () => setOpen(false);
+    // Capture on scroll: the menu is painted at fixed coordinates, so anything
+    // that moves the button underneath it has to close it rather than leave it
+    // pointing at empty space.
+    window.addEventListener('scroll', shut, true);
+    window.addEventListener('resize', shut);
+    document.addEventListener('mousedown', shut);
+    const esc = (e) => { if (e.key === 'Escape') shut(); };
+    document.addEventListener('keydown', esc);
+    return () => {
+      window.removeEventListener('scroll', shut, true);
+      window.removeEventListener('resize', shut);
+      document.removeEventListener('mousedown', shut);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [open]);
+  return (
+    <>
+      <button ref={btn} onClick={toggle} title="จัดการหมวด" aria-haspopup="menu" aria-expanded={open}
+        className={`w-6 h-6 flex items-center justify-center rounded-md text-sm leading-none transition-colors ${dk?'text-slate-500 hover:text-slate-200 hover:bg-white/10':'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>
+        ⋯
+      </button>
+      {open && ReactDOM.createPortal(
+        <div role="menu" onMouseDown={e=>e.stopPropagation()} onClick={e=>e.stopPropagation()}
+          style={{ position:'fixed', top:pos.top, left:pos.left, width:172, zIndex:60 }}
+          className={`rounded-lg border shadow-2xl overflow-hidden ${dk?'bg-[#1a1a19] border-white/12':'bg-white border-slate-200'}`}>
+          {items.map(it => (
+            <button key={it.label} role="menuitem" onClick={()=>{ setOpen(false); it.run(); }}
+              className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${
+                it.danger
+                  ? (dk?'text-rose-300 hover:bg-rose-500/12':'text-rose-600 hover:bg-rose-50')
+                  : (dk?'text-slate-300 hover:bg-white/8':'text-slate-600 hover:bg-slate-50')}`}>
+              <span className="w-4 text-center">{it.icon}</span>{it.label}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+};
+
 const BudgetMetricCard = ({ cat, spent, budget, dk, onEdit }) => {
   const rawPct = budget > 0 ? (spent / budget) * 100 : 0;
   const pct = Math.min(rawPct, 100);
@@ -1159,7 +1229,26 @@ const SegmentedProgress = ({ segments, total, theme }) => {
   // segments rather than glyphs, so the dark end would have been legible here —
   // but a type changing shade between two panels on one screen is worse than
   // either shade on its own.
-  const SEG_COLOR_MAP = {stock:'#f8e3d5',crypto:'#f0cbb2',gold:'#e6b18e',cash:'#d99669',other:'#c97e4d',bond:'#a1552b'};
+  // Widened, and one of them is not gold.
+  //
+  // The five steps used to come from the top half of the ramp — champagne down
+  // to a light honey, a span of 203 in RGB — which is a narrow band asked to
+  // carry the one chart on the page whose entire job is telling five things
+  // apart. They take every other step now, top to bottom, for a span of 253.
+  //
+  // The green is pulled back from chroma 64 to 45 — present enough to say cash
+  // is a different kind of line, quiet enough that the metal stays the subject.
+  //
+  // Cash gets the green. It is the one line here that is not an invested
+  // position, and a chart that colours it like the others is saying it is the
+  // same kind of thing. Deep enough to read as a jewel against the metal rather
+  // than as a second accent competing with it, and far from the sage that means
+  // "gain" elsewhere — no figure is being coloured here, only an area.
+  //
+  // Every pair is at least 70 apart and every segment clears 3.6 against the
+  // page. The dark end stops at ramp 3 rather than ramp 1: going deeper widened
+  // the span on paper and lost the segment on the screen.
+  const SEG_COLOR_MAP = {stock:'#f4ecc6',crypto:'#dcc35e',gold:'#b7941a',cash:'#43705d',other:'#84660f',bond:'#544009'};
   const getColor = (type,i) => SEG_COLOR_MAP[type] || GOLD_RAMP[(i*2+1) % GOLD_RAMP.length];
   return (
     <div className="mt-3">
@@ -1172,7 +1261,14 @@ const SegmentedProgress = ({ segments, total, theme }) => {
           // crypto ends and stocks begin — the bar's whole job. Running it
           // down the bar instead crosses no boundary: every segment keeps a
           // hard edge and a flat swatch turns into something with a surface.
-          return <div key={seg.type} className="h-full transition-all duration-700" style={{width:`${pct}%`,backgroundColor:getColor(seg.type,i),backgroundImage:'linear-gradient(180deg,rgba(255,255,255,0.20) 0%,rgba(255,255,255,0.05) 42%,rgba(0,0,0,0.10) 68%,rgba(0,0,0,0.20) 100%)'}}/>;
+          // A hairline of the page colour down the left of every segment but the
+          // first. Five steps of one metal are separable on their own — the
+          // closest adjacent pair is 40 apart in RGB — but two filled areas that
+          // touch read as one shape regardless of how different they are, and
+          // the eye finds an edge far faster than it compares two shades. This
+          // is what a stacked bar needs instead of a second hue: the ramp keeps
+          // the theme, the gap does the separating.
+          return <div key={seg.type} className="h-full transition-all duration-700" style={{width:`${pct}%`,backgroundColor:getColor(seg.type,i),boxShadow: i===0 ? 'none' : `inset 1.5px 0 0 ${dk?'#0b0b0e':'#faf9f7'}`,backgroundImage:'linear-gradient(180deg,rgba(255,255,255,0.20) 0%,rgba(255,255,255,0.05) 42%,rgba(0,0,0,0.10) 68%,rgba(0,0,0,0.20) 100%)'}}/>;
         })}
       </div>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-2.5">
@@ -1537,10 +1633,10 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
   // square behind a coloured glyph stated the same thing twice.
   const StatCard = ({ icon, label, val, sub, extra='', valCls='' }) => (
     <div className={`relative pt-4 pr-4 ${extra}`}>
-      <span className="absolute top-0 left-0 right-4 h-px" aria-hidden="true"
-        style={{background: dk
-          ? 'linear-gradient(90deg, rgba(217,175,43,0.55) 0%, rgba(217,175,43,0.10) 70%, transparent 100%)'
-          : 'linear-gradient(90deg, rgba(154,120,16,0.45) 0%, rgba(154,120,16,0.08) 70%, transparent 100%)'}}/>
+      <span className="absolute top-0 left-0 right-4" aria-hidden="true"
+        style={{height:'2px', background: dk
+          ? 'linear-gradient(90deg, rgba(217,175,43,0.70) 0%, rgba(217,175,43,0.16) 72%, transparent 100%)'
+          : 'linear-gradient(90deg, rgba(154,120,16,0.60) 0%, rgba(154,120,16,0.12) 72%, transparent 100%)'}}/>
       <div className="flex items-center gap-1.5 mb-2.5">
         <span className="opacity-70">{icon}</span>
         <span className={`text-[10px] font-medium uppercase ${dk?'text-slate-400':'text-slate-500'}`}
@@ -1789,6 +1885,19 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
 const MonthGroup = ({ month, txs, dk, defaultOpen=false, sel, toggleSel, onEdit, onDelete, walletMap, assets=[], onAddRecurring, onQuickEdit, favKeys, balCol=null, sysDay=null }) => {
   const [open, setOpen] = useState(defaultOpen);
   const [editInline, setEditInline] = useState(null);
+  // Banding by day rather than by row. The list is already grouped by date —
+  // every day opens with its own closing balance — and striping every other row
+  // laid a second rhythm across that one, so the shading described nothing and
+  // cut the groups it ran through. Alternating on the date makes a day read as
+  // a block, which is the structure the data already has.
+  //
+  // Keyed by id rather than index because the rows carry their own key and an
+  // index would go stale the moment one is filtered out.
+  const dayBand = useMemo(() => {
+    const m = {}; let band = 0, prev = null;
+    for (const t of txs) { if (t.date !== prev) { band ^= 1; prev = t.date; } m[t.id] = band; }
+    return m;
+  }, [txs]);
   const startEdit = (t, field) => { if(!onQuickEdit) return; setEditInline({id:t.id, field, value: field==='title'?t.title:String(Math.abs(t.amount))}); };
   const commitEdit = (t) => {
     if(!editInline) return;
@@ -1864,7 +1973,7 @@ const MonthGroup = ({ month, txs, dk, defaultOpen=false, sel, toggleSel, onEdit,
               </div>
             )}
             <div
-              className={`flex items-center gap-3 px-4 py-4 border-t group transition-colors ${dk?(i%2===0?'border-white/[0.04] bg-white/[0.01] hover:bg-white/[0.05]':'border-white/[0.04] bg-black/[0.08] hover:bg-white/[0.04]'):(i%2===0?'border-slate-100 bg-white hover:bg-slate-50':'border-slate-100 bg-slate-50/50 hover:bg-slate-100/60')}`}>
+              className={`flex items-center gap-3 px-4 py-4 border-t group transition-colors ${dk?(dayBand[t.id]===0?'border-white/[0.04] bg-white/[0.01] hover:bg-white/[0.05]':'border-white/[0.04] bg-black/[0.08] hover:bg-white/[0.04]'):(dayBand[t.id]===0?'border-slate-100 bg-white hover:bg-slate-50':'border-slate-100 bg-slate-50/50 hover:bg-slate-100/60')}`}>
               <input type="checkbox" checked={sel.includes(t.id)} onChange={()=>toggleSel(t.id)} className="rounded w-3.5 h-3.5 flex-shrink-0 opacity-50 hover:opacity-100 transition-opacity"/>
               {/* Category color bar */}
               <div className="w-[3px] h-8 rounded-full flex-shrink-0 opacity-70" style={{background:txBarClr(t)}}/>
@@ -2178,17 +2287,17 @@ const TxPage = ({ txs, theme, onEdit, onAdd, onDelete, onBulkDelete, onExport, w
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <div className="flex flex-col gap-0.5">
               <span className={`text-[11px] ${dk?'text-slate-400':'text-slate-500'}`}>รายรับ</span>
-              <span className="text-sm font-semibold tabular-nums text-gold-400">+{fmt(filteredIncome)}</span>
+              <span className="text-base font-semibold tabular-nums text-gold-400">+{fmt(filteredIncome)}</span>
             </div>
             {filteredDividend>0&&(
               <div className="flex flex-col gap-0.5">
                 <span className={`text-[11px] ${dk?'text-slate-400':'text-slate-500'}`}>ปันผล</span>
-                <span className="text-sm font-semibold tabular-nums text-teal-400">+{fmt(filteredDividend)}</span>
+                <span className="text-base font-semibold tabular-nums text-teal-400">+{fmt(filteredDividend)}</span>
               </div>
             )}
             <div className="flex flex-col gap-0.5">
               <span className={`text-[11px] ${dk?'text-slate-400':'text-slate-500'}`}>รายจ่าย</span>
-              <span className="text-sm font-semibold tabular-nums text-rose-400">-{fmt(filteredExpense)}</span>
+              <span className="text-base font-semibold tabular-nums text-rose-400">-{fmt(filteredExpense)}</span>
             </div>
           </div>
         </div>
@@ -2354,9 +2463,9 @@ const Analytics = ({ txs, theme }) => {
     <div className="space-y-4 fade-up">
       <div className="grid grid-cols-2 gap-4">
         {[{label:'รายรับ MoM',val:curInc,mom:momInc,good:true},{label:'รายจ่าย MoM',val:curExp,mom:momExp,good:false}].map(({label,val,mom,good})=>(
-          <div key={label} className={card}>
-            <div className={sub+' mb-2'}>{label}</div>
-            <div className={`text-xl font-bold mb-1 ${dk?'text-white':'text-slate-800'}`}>{fmt(val)}</div>
+          <div key={label} className="stat-rule">
+            <div className={`text-[10px] font-medium mb-2 uppercase stat-label ${dk?'text-slate-400':'text-slate-500'}`}>{label}</div>
+            <div className={`text-xl font-semibold mb-1 tabular-nums ${dk?'text-slate-100':'text-slate-800'}`}>{fmt(val)}</div>
             <div className={`text-xs font-medium flex items-center gap-1 ${mom===0?(dk?'text-slate-500':'text-slate-400'):(mom>0)===good?'text-emerald-400':'text-rose-400'}`}>
               <Ic n={mom>=0?'up':'down'} s={11}/>{Math.abs(mom).toFixed(1)}% vs เดือนที่แล้ว
             </div>
@@ -2494,7 +2603,7 @@ const detectBankIcon = (name, s=22) => {
 // is the more distinct silhouette against rows of rectangular cells — which is
 // why every dashboard that does this well uses one.
 // Ink that survives whatever it is printed on. The badges fill with a colour
-// picked from the ramp — sometimes #f8e3d5, sometimes #73381a — and white on
+// picked from the ramp — sometimes #f4ecc6, sometimes #544009 — and white on
 // the pale end measures 1.24, which is a letter you can tell is there and not
 // read. The ticker badges have had this since they were written; a holding
 // whose hash landed on a light step simply had no visible initials.
@@ -2502,11 +2611,11 @@ const detectBankIcon = (name, s=22) => {
 // Measures both candidates and takes the better one, rather than splitting on a
 // luminance threshold. A fixed cut-off has to be placed somewhere, and whatever
 // value it lands on the colours nearest it get the marginally worse of the two
-// inks — #c97e4d fell just on the light side of 0.34 and came out at 3.19.
+// inks — #b7941a fell just on the light side of 0.34 and came out at 3.19.
 // Comparing the actual contrasts has no such edge, and needs no tuning when a
 // colour is added.
 //
-// Worst case across the whole ramp is 4.28, on #b76736. These glyphs are bold
+// Worst case across the whole ramp is 4.28, on #9d7c13. These glyphs are bold
 // at 14–16px, where the applicable bar is 3.0 rather than the 4.5 that governs
 // normal-size text — so the floor clears by a wide margin, and the ramp did not
 // have to be bent to reach a threshold that does not apply.
@@ -2685,11 +2794,11 @@ const AddressChip = ({address, dk}) => {
 // They stay in ramp order, so the five types keep their relative position:
 // lightest for stocks through to the deepest for the residual bucket.
 const ASSET_TYPES = [
-  {v:'stock', l:'📈 หุ้น',    c:'#f8e3d5', icon:<TypeIc n="stock" s={20}/>},
-  {v:'crypto',l:'🟠 Crypto', c:'#f0cbb2', icon:<BtcIcon/>},
-  {v:'gold',  l:'🪙 ทองคำ',  c:'#e6b18e', icon:<GoldIcon/>},
-  {v:'cash',  l:'💵 เงินสด', c:'#d99669', icon:<TypeIc n="cash" s={20}/>},
-  {v:'other', l:'📦 อื่นๆ',   c:'#c97e4d', icon:<TypeIc n="box" s={20}/>},
+  {v:'stock', l:'📈 หุ้น',    c:'#f4ecc6', icon:<TypeIc n="stock" s={20}/>},
+  {v:'crypto',l:'🟠 Crypto', c:'#e9d892', icon:<BtcIcon/>},
+  {v:'gold',  l:'🪙 ทองคำ',  c:'#dcc35e', icon:<GoldIcon/>},
+  {v:'cash',  l:'💵 เงินสด', c:'#cbac33', icon:<TypeIc n="cash" s={20}/>},
+  {v:'other', l:'📦 อื่นๆ',   c:'#b7941a', icon:<TypeIc n="box" s={20}/>},
 ];
 const BUDGET_DEFAULTS = {'อาหาร':7000,'การเดินทาง':2000,'Home & Utilities':8000,'ช้อปปิ้ง':1500,'อินเตอร์เน็ต/โทรศัพท์':500,'สุขภาพ':1000,'Subscription':500,'การศึกษา':1000,'บันเทิง':1500,'ลงทุน/ปันผล':2000,'อื่นๆ':1000};
 // Empty on purpose. This list used to ship the author's real standing
@@ -5413,28 +5522,28 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
           {l:'ใช้ไปแล้ว',v:fmt(totSpent),c:totSpent>totBudget?'text-rose-400':'text-emerald-400',
            note: nonSpendTotal>0 ? `ไม่รวมลงทุน ${fmt(nonSpendTotal)}` : null},
           {l:'คงเหลือ',v:fmt(Math.max(totBudget-totSpent,0)),c:'text-gold-400'}].map(({l,v,c,note})=>(
-          <div key={l} className={`${card} p-5`}>
-            <div className={`text-xs font-medium mb-2 uppercase tracking-wide ${dk?'text-slate-400':'text-slate-500'}`}>{l}</div>
-            <div className={`text-lg sm:text-xl font-bold leading-tight break-words ${c}`}>{v}</div>
+          <div key={l} className="stat-rule">
+            <div className={`text-[10px] font-medium mb-2 uppercase ${dk?'text-slate-400':'text-slate-500'}`} style={{letterSpacing:'0.16em'}}>{l}</div>
+            <div className={`text-lg sm:text-xl font-semibold leading-tight break-words tabular-nums ${c}`}>{v}</div>
             {note&&<div className={`text-[10px] mt-1 ${dk?'text-slate-500':'text-slate-400'}`}>{note}</div>}
           </div>))}
       </div>
       {/* Insight row — today-relative, only meaningful for the current month */}
       {isCurM&&(
       <div className="grid grid-cols-3 gap-4">
-        <div className={`${card} p-5`}>
-          <div className={`text-xs font-medium mb-2 uppercase tracking-wide ${dk?'text-slate-400':'text-slate-500'}`}>ใช้ได้อีก/วัน</div>
-          <div className={`text-lg sm:text-xl font-bold leading-tight break-words ${dailyAllowance>=0?'text-emerald-400':'text-rose-400'}`}>{fmt(Math.max(dailyAllowance,0))}</div>
+        <div className="stat-rule">
+          <div className={`text-[10px] font-medium mb-2 uppercase stat-label ${dk?'text-slate-400':'text-slate-500'}`}>ใช้ได้อีก/วัน</div>
+          <div className={`text-lg sm:text-xl font-semibold leading-tight break-words tabular-nums ${dailyAllowance>=0?'text-emerald-400':'text-rose-400'}`}>{fmt(Math.max(dailyAllowance,0))}</div>
           <div className={`text-xs mt-1 ${sub}`}>เหลืออีก {daysLeft} วัน (จาก {daysInMonth} วัน)</div>
         </div>
-        <div className={`${card} p-5`}>
-          <div className={`text-xs font-medium mb-2 uppercase tracking-wide ${dk?'text-slate-400':'text-slate-500'}`}>📦 รวมรายจ่ายไม่ประจำ</div>
-          <div className={`text-lg sm:text-xl font-bold leading-tight break-words ${dk?'text-white':'text-slate-800'}`}>{fmt(irregularSpentTotal)}</div>
+        <div className="stat-rule">
+          <div className={`text-[10px] font-medium mb-2 uppercase stat-label ${dk?'text-slate-400':'text-slate-500'}`}>📦 รวมรายจ่ายไม่ประจำ</div>
+          <div className={`text-lg sm:text-xl font-semibold leading-tight break-words tabular-nums ${dk?'text-white':'text-slate-800'}`}>{fmt(irregularSpentTotal)}</div>
           <div className={`text-xs mt-1 ${sub}`}>เดือนนี้</div>
         </div>
-        <div className={`${card} p-5`}>
-          <div className={`text-xs font-medium mb-2 uppercase tracking-wide ${dk?'text-slate-400':'text-slate-500'}`}>ใช้จ่ายวันนี้</div>
-          <div className={`text-lg sm:text-xl font-bold leading-tight break-words text-rose-400`}>{fmt(todaySpent)}</div>
+        <div className="stat-rule">
+          <div className={`text-[10px] font-medium mb-2 uppercase stat-label ${dk?'text-slate-400':'text-slate-500'}`}>ใช้จ่ายวันนี้</div>
+          <div className={`text-lg sm:text-xl font-semibold leading-tight break-words tabular-nums text-rose-400`}>{fmt(todaySpent)}</div>
           <div className={`text-xs mt-1 ${sub}`}>{todayTxs.length>0?`${todayTxs.length} รายการ`:'ยังไม่มีรายจ่ายวันนี้'}</div>
         </div>
       </div>
@@ -5544,11 +5653,24 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
             // Border and tint follow the same three colours, so a card that is
             // over reads as over from its edge as well as its bar rather than
             // from a fourth shade that agreed with neither.
-            const borderClr=over?(dk?'border-[#d4574a]/45':'border-[#e8a89e]/60'):warn?(dk?'border-[#d9af2b]/40':'border-[#f0c99a]/60'):'';
-            const bgTint=over?(dk?'bg-[#d4574a]/[0.07]':'bg-[#fdf0ee]'):warn?(dk?'bg-[#d9af2b]/[0.05]':'bg-[#fdf7ee]'):'';
+            // One signal, and only for the cards that actually broke the budget.
+            //
+            // This card used to say "over" four times — bar colour, the words
+            // "เกิน ฿8,598.50", a tinted border and a tinted panel — and the near
+            // ones were marked too, so most of the grid carried a coloured edge
+            // and nothing stood out by having one. Both are back to a single
+            // hairline, and "ใกล้เต็ม" gets none: a warning that marks half the
+            // page is a decoration, and it is the quiet majority that makes the
+            // marked ones visible at all.
+            //
+            // 35% composites to #4e2f2e, which reads 1.39x stronger than the
+            // ordinary white/8 edge — present when the eye passes over it,
+            // quiet enough that it is not the first thing seen on the page.
+            const borderClr=over?(dk?'border-[#c9726a]/35':'border-[#c9726a]/45'):'';
+            const bgTint='';
             const isExp=expandedCat===cat;
             return (
-              <div key={cat} className={`rounded-xl border transition-all overflow-hidden
+              <div key={cat} className={`group rounded-xl border transition-all overflow-hidden
                 ${isExp?(dk?'border-gold-500/40':'border-gold-300'):borderClr||(dk?'border-white/8':'border-slate-100')} ${bgTint}`}>
                 {/* Utility row — badge + irregular-toggle/rename/delete (not part of the expand toggle) */}
                 <div className="flex items-center justify-between px-3.5 pt-3 pb-1 min-h-[28px]">
@@ -5559,19 +5681,22 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                       how much. Their pale pink and cream backgrounds were also
                       the last two colours on the page from no palette. */}
                   <div className="min-w-0"/>
+                  {/* Held back until the pointer is on the card. Three controls on
+                      twelve cards is thirty-six glyphs competing with the figures
+                      they sit above, and none of them is why the page is open.
+                      card-actions keeps them visible on touch, where there is no
+                      hover to reveal anything. */}
                   {isCurM&&(
-                  <div className="flex items-center gap-0.5 flex-shrink-0">
-                    <button onClick={()=>toggleIrregular(cat)}
-                      title={isIrregular(cat)?'เปลี่ยนเป็นประจำ':'เปลี่ยนเป็นไม่ประจำ'}
-                      className={`text-xs w-6 h-6 flex items-center justify-center rounded-lg transition-colors ${isIrregular(cat)?(dk?'text-amber-400 hover:bg-amber-500/10':'text-amber-600 hover:bg-amber-50'):(dk?'text-slate-500 hover:text-slate-200 hover:bg-white/10':'text-slate-400 hover:text-slate-700 hover:bg-slate-100')}`}>
-                      {isIrregular(cat)?'📦':'🔁'}
-                    </button>
-                    <button onClick={()=>{setRenamingCat(cat);setRenameVal(cat);}}
-                      title="แก้ชื่อหมวด"
-                      className={`text-xs w-6 h-6 flex items-center justify-center rounded-lg transition-colors ${dk?'text-slate-500 hover:text-slate-200 hover:bg-white/10':'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>🏷️</button>
-                    <button onClick={()=>deleteCat(cat)}
-                      title="ลบหมวด"
-                      className={`text-sm w-6 h-6 flex items-center justify-center rounded-lg transition-colors ${dk?'text-slate-500 hover:text-rose-400 hover:bg-rose-500/10':'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}`}>×</button>
+                  <div className="flex items-center flex-shrink-0 card-actions">
+                    <CardMenu dk={dk} items={[
+                      { icon: isIrregular(cat)?'📦':'🔁',
+                        label: isIrregular(cat)?'เปลี่ยนเป็นประจำ':'เปลี่ยนเป็นไม่ประจำ',
+                        run: ()=>toggleIrregular(cat) },
+                      { icon: '✏', label: 'แก้ชื่อหมวด',
+                        run: ()=>{ setRenamingCat(cat); setRenameVal(cat); } },
+                      { icon: '🗑', label: 'ลบหมวด', danger: true,
+                        run: ()=>deleteCat(cat) },
+                    ]}/>
                   </div>
                   )}
                 </div>
@@ -5589,8 +5714,9 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                         and the proportion moved to a bar under the figure where
                         every card's track is the same length and the eye can
                         run straight down the column. */}
-                    <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center"
-                      style={{background:clr+'40', border:`1px solid ${clr}5c`}}>
+                    {/* A tinted plate behind a tinted glyph states the category twice.
+                        The glyph alone carries it, and the row gets its width back. */}
+                    <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center" style={{color:clr}}>
                       <CatGlyph v={catIconSmart(cat)} s={19} color={clr}/>
                     </div>
                     <div className="min-w-0 flex-1">
@@ -5623,7 +5749,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                           opened to answer, and it had been the smallest and
                           dimmest thing on the card. */}
                       <div className="flex items-baseline justify-between gap-2 mb-1.5">
-                        <span className={`text-base font-bold tabular-nums leading-none ${over?'text-rose-400':dk?'text-white':'text-slate-800'}`}>{fmt(s)}</span>
+                        <span className={`text-[17px] font-semibold tabular-nums leading-none ${over?'text-rose-400':dk?'text-slate-100':'text-slate-800'}`}>{fmt(s)}</span>
                         {bgt>0&&editing!==cat&&(
                           <span className="text-xs font-semibold tabular-nums whitespace-nowrap" style={{color:clr}}>
                             {over?`เกิน ${fmt(s-bgt)}`:`เหลือ ${fmt(bgt-s)}`}
@@ -5949,9 +6075,9 @@ const DebtPage = ({ theme, debts, setDebts }) => {
           {[{l:'หนี้คงเหลือ',v:fmt(totals.remaining),c:dk?'tg-red':'text-rose-500'},
             {l:'จ่ายไปแล้ว',v:fmt(totals.paid),c:dk?'tg-emerald':'text-emerald-600'},
             {l:'ดอกเบี้ยรวม',v:fmt(totals.interest),c:dk?'tg-gold':'text-amber-500'}].map(({l,v,c})=>(
-            <div key={l} className={`${card} p-5`}>
-              <div className={`text-xs font-medium mb-2 uppercase tracking-wide ${dk?'text-slate-400':'text-slate-500'}`}>{l}</div>
-              <div className={`text-xl font-bold ${c}`}>{v}</div>
+            <div key={l} className="stat-rule">
+              <div className={`text-[10px] font-medium mb-2 uppercase ${dk?'text-slate-400':'text-slate-500'}`} style={{letterSpacing:'0.16em'}}>{l}</div>
+              <div className={`text-xl font-semibold tabular-nums ${c}`}>{v}</div>
             </div>))}
         </div>
       )}
@@ -7021,8 +7147,18 @@ const PageHeader = ({ lead, accent, sub, theme, right=null }) => {
             the same thing that was wrong on the P/L card, and the app should
             not do it one way here and another way there. */}
         <div className="min-w-0 flex items-baseline gap-2.5 flex-wrap">
-          <h1 className={`text-xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`} style={{textWrap:'balance'}}>
-            {lead} <span className="text-orange-400">{accent}</span>
+          {/* The accent word was orange, which is the colour this app uses for
+              things you press. A heading is not pressable, and spending the
+              action colour on it is what made every page open by pointing at
+              something inert. Gold is the material the page is made of, which
+              is what a heading is.
+
+              Weight drops from bold to semibold and the tracking opens up:
+              at this size bold reads as emphasis competing with the figures
+              below it, where the heading only needs to be first. */}
+          <h1 className={`text-xl font-semibold ${dk?'text-slate-100':'text-slate-800'}`}
+            style={{textWrap:'balance', letterSpacing:'0.01em'}}>
+            {lead} <span className={dk?'text-gold-300':'text-gold-700'}>{accent}</span>
           </h1>
           {sub && <p className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{sub}</p>}
         </div>
@@ -7272,7 +7408,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
     // ramp — dark by design, which works for a bar on a light track and not at
     // all for an icon on a dark chip, where it came out as a shape you could
     // tell was there but not what it was.
-    cash:    { label:'เงินสด',        color:'#f0cbb2', icon:<TypeIc n="cash" s={20}/> },
+    cash:    { label:'เงินสด',        color:'#e9d892', icon:<TypeIc n="cash" s={20}/> },
     // #584b31 measured 2.19 against the chip it is drawn on — below the 3.0 an
     // icon needs to be identifiable rather than merely present. It was the only
     // one under the line; the rest of the set clears it.
@@ -7364,10 +7500,10 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                 // olive, a raspberry, a cyan and a brown — four hues invented here and
                 // used nowhere else, so "หุ้น" was one colour on this page and another
                 // on the assets page. One concept, one colour.
-                {key:'cash',   icon:'💵', label:'เงินสด', val:cashTotal,   color:'#d99669', show:true},
-                {key:'crypto', icon:'🔐', label:'Crypto', val:cryptoTotal, color:'#f0cbb2', show:hasCrypto},
-                {key:'stock',  icon:'📈', label:'หุ้น',   val:stockTotal,  color:'#f8e3d5', show:hasStocks},
-                {key:'other',  icon:'👛', label:'อื่นๆ',  val:otherTotal,  color:'#c97e4d', show:hasOtherWallets},
+                {key:'cash',   icon:'💵', label:'เงินสด', val:cashTotal,   color:'#cbac33', show:true},
+                {key:'crypto', icon:'🔐', label:'Crypto', val:cryptoTotal, color:'#e9d892', show:hasCrypto},
+                {key:'stock',  icon:'📈', label:'หุ้น',   val:stockTotal,  color:'#f4ecc6', show:hasStocks},
+                {key:'other',  icon:'👛', label:'อื่นๆ',  val:otherTotal,  color:'#b7941a', show:hasOtherWallets},
               ].filter(c=>c.show).map(c=>{
                 // Must match the headline above, or the chips add up to a
                 // different number than the total they sit beside.
