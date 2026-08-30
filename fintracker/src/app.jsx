@@ -435,12 +435,63 @@ const LogoSvg = ({size=32}) => (
       </linearGradient>
     </defs>
     <rect width="100" height="100" fill="#05080f" rx="12"/>
-    {/* One polygon: stem, then both arms ending in a downward chamfer. The cut
-        ends were what the original mark was recognisable for — square arms read
-        as any bold F, while the diagonal gives it an edge that belongs to this
-        one. Drawn as a single shape so the letter cannot come apart at small
-        sizes the way separate rectangles can. */}
-    <polygon points="26,8 86,8 71,23 41,23 41,40 74,40 59,55 41,55 41,92 26,92" fill="url(#ftgold)"/>
+    {/* Two pieces with a diagonal channel between them, and a V bitten out of
+        the top edge. The single-polygon F it replaces was a bold F with its arm
+        ends cut on a slant — recognisable, but the slant was the only idea in
+        it. Splitting the letter turns the counter into a shape of its own, and
+        the notch gives the top bar a direction: the eye reads a downward point
+        before it reads a letter, which is what makes an angular mark feel like
+        a mark rather than a font.
+
+        Every edge is on 45° or vertical. Angular marks fall apart when the
+        angles are nearly-but-not-quite equal — the eye reads that as a mistake
+        rather than as a style, and there is no size at which it stops looking
+        wrong.
+
+        An inverted pyramid of two tiers, with a tail. Not an F drawn with cut
+        corners, which is what three earlier attempts were: the tiers narrow as
+        they descend — 82 wide, then 48, then the tail — and it is that taper
+        that carries the mark, not the letter underneath it.
+
+        The diagonals are 1:2, not 45°. Four attempts were drawn at 45 because
+        that is the angle that feels right for an angular mark, and every one of
+        them came out blunt: at 45 a cut end is a chamfer, and at 1:2 it is a
+        point. The whole character of the reference is in that difference, and
+        no adjustment to proportion or weight substitutes for it.
+
+        Both tiers are cut on the same pair of construction lines, so the left
+        ends lie on one continuous descending edge and the right ends on
+        another. That is what makes the taper read as one pyramid rather than as
+        two bars that happen to be different widths.
+
+        Traced from the reference by reading its pixels, not by looking at it.
+        Five versions were drawn by eye and every one of them was wrong about
+        something different — the angle, the taper, the aspect. Even the reading
+        that came from opening the file was wrong: measured off the screen the
+        mark looked 0.85 wide-to-tall, and thresholding the image and scanning
+        it row by row put it at 1.054. Eyes are not a measuring instrument, and
+        five rounds is what it costs to keep pretending they are.
+
+        The two left edges lean in opposite directions — the upper down-right,
+        the lower down-left — which the pixel scan showed and no amount of
+        looking had. That opposition is what gives the mark its motion; drawn
+        with both leaning the same way it goes inert, which is exactly what the
+        earlier attempts looked like.
+
+        The tail leaves the second tier to the LEFT and leans the opposite way.
+        That reversal is the point of a tail: a shape continuing the same lean
+        would read as a third tier that had been cut short.
+
+        Stroke weight is 18 in all three places and the mark is centred with
+        equal margins, which is what "the proportions are off" usually means:
+        not that a shape is wrong but that two of them disagree about how thick
+        the letter is.
+
+        Kept as two polygons rather than one path with a hole: at 16px the
+        channel closes up and the mark reads as a solid F, which is the correct
+        failure. A hole would fill in and leave a blob. */}
+    <polygon points="12,13 88,13 79,31 25,31 21,39 12,21" fill="url(#ftgold)"/>
+    <polygon points="30,40 72,40 63,58 39,58 25,86 16,68" fill="url(#ftgold)"/>
   </svg>
 );
 
@@ -1100,6 +1151,74 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[], c
 // user-renamed category, which a literal map here never could.
 
 // ── BUDGET METRIC CARD (Stats11 style) ──────────────────────
+// ── DAILY SPEND BARS ───────────────────────────────────────────────────────
+// One bar a day, read in a single sweep. This was a scrolling list showing a
+// third of the month, then a four-column grid that fit all of it and made the
+// eye stumble at every column break — a run of thirty-one numbers is scanned,
+// not hunted through, and a column break is a full stop in the middle of the
+// scan. Bars have no breaks, and the shape of the month arrives before a single
+// figure is read.
+//
+// The figures did not go away, they moved: the readout above the chart carries
+// whichever day the pointer is on, and rests on the busiest day when it is not
+// on any. That is the number this panel is opened for, and it used to be the
+// one you had to find by scrolling and comparing.
+const DailySpendBars = ({ days, todayStr, dk }) => {
+  const [hov, setHov] = useState(null);
+  const max = days.reduce((m,d)=>Math.max(m,d.amt),0) || 1;
+  // Rests on the peak rather than on nothing: an empty readout is a line of
+  // dead space, and the peak is the day worth naming by default.
+  const peak = days.reduce((a,b)=>b.amt>a.amt?b:a, days[0]);
+  const show = hov!=null ? days[hov] : peak;
+  const showDay = show ? Number(show.date.slice(8,10)) : null;
+  const last = days.length;
+  // Sparse labels: thirty-one numbers under a 300px strip is a grey smear.
+  const tick = d => d===1 || d===10 || d===20 || d===last;
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-2 min-h-[20px]">
+        <span className={`text-[11px] ${dk?'text-slate-400':'text-slate-500'}`}>
+          {hov!=null ? `วันที่ ${showDay}` : `ใช้มากสุด · วันที่ ${showDay}`}
+        </span>
+        <span className={`text-sm font-semibold tabular-nums ${dk?'text-gold-300':'text-gold-700'}`}>
+          {show ? fmt(show.amt) : ''}
+        </span>
+      </div>
+      <div className="flex items-end gap-[2px] h-24" onMouseLeave={()=>setHov(null)}>
+        {days.map((d,i)=>{
+          const day = Number(d.date.slice(8,10));
+          const isToday = d.date===todayStr;
+          const on = hov===i;
+          return (
+            <div key={d.date} onMouseEnter={()=>setHov(i)} title={`วันที่ ${day} · ${fmt(d.amt)}`}
+              className="flex-1 h-full flex items-end cursor-default">
+              <div className="w-full rounded-t-[2px] transition-all duration-150"
+                style={{
+                  // 2px floor so a day with nothing spent still reads as a day
+                  // rather than as a gap in the month.
+                  height: d.amt>0 ? `max(3px, ${d.amt/max*100}%)` : '2px',
+                  background: d.amt>0
+                    ? (on ? '#e6c85c' : isToday ? '#d9af2b' : (dk?'rgba(217,175,43,0.42)':'rgba(154,120,16,0.38)'))
+                    : (dk?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.07)'),
+                }}/>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex gap-[2px] mt-1.5">
+        {days.map(d=>{
+          const day = Number(d.date.slice(8,10));
+          return (
+            <span key={d.date} className={`flex-1 text-center text-[9px] tabular-nums ${dk?'text-slate-600':'text-slate-400'}`}>
+              {tick(day) ? day : ''}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ── CARD MENU ──────────────────────────────────────────────────────────────
 // One control where three used to sit. Rename and delete are monthly at most
 // and reading the page is daily, so the buttons were charging rent every day
@@ -5488,11 +5607,31 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
   const todayStr    = today();
   const todayTxs    = useMemo(()=>txs.filter(t=>t.type==='expense'&&t.date===todayStr&&isDailyRelevant(t)),[txs,todayStr]);
   const todaySpent  = todayTxs.reduce((s,t)=>s+t.amount,0);
+  // Every day of the month, not only the ones with a transaction, and running
+  // forwards. The old list skipped empty days and ran newest first, so it was
+  // impossible to see that the 27th was quiet — the 26th simply sat next to the
+  // 28th and nothing marked the gap. A spending pattern is as much about the
+  // days you did not spend, and those are exactly the rows a filtered list
+  // removes. Forwards because a grid is read left to right and top to bottom;
+  // a calendar that counts down is a puzzle.
+  //
+  // Stops at today for the current month: future days are not "฿0 spent", they
+  // are days that have not happened, and drawing them as empty rows says the
+  // month is going better than it is.
   const dailyBreakdown = useMemo(()=>{
     const m={};
     txs.filter(t=>t.type==='expense'&&t.date.startsWith(viewM)&&isDailyRelevant(t)).forEach(t=>{m[t.date]=(m[t.date]||0)+t.amount;});
-    return Object.entries(m).sort(([da],[db])=>db.localeCompare(da)).map(([date,amt])=>({date,amt}));
-  },[txs,viewM]);
+    const [y,mo] = viewM.split('-').map(Number);
+    const lastOfMonth = new Date(y, mo, 0).getDate();
+    const isCurrent = viewM === todayStr.slice(0,7);
+    const upto = isCurrent ? Number(todayStr.slice(8,10)) : lastOfMonth;
+    const out = [];
+    for (let d=1; d<=upto; d++) {
+      const date = `${viewM}-${String(d).padStart(2,'0')}`;
+      out.push({ date, amt: m[date] || 0 });
+    }
+    return out;
+  },[txs,viewM,todayStr]);
 
   const prevSpent = useMemo(()=>{
     const m={};
@@ -5521,7 +5660,14 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
           // and there is no way to tell which is wrong.
           {l:'ใช้ไปแล้ว',v:fmt(totSpent),c:totSpent>totBudget?'text-rose-400':'text-emerald-400',
            note: nonSpendTotal>0 ? `ไม่รวมลงทุน ${fmt(nonSpendTotal)}` : null},
-          {l:'คงเหลือ',v:fmt(Math.max(totBudget-totSpent,0)),c:'text-gold-400'}].map(({l,v,c,note})=>(
+          // Was clamped at zero, which turned the one figure that answers "how far
+          // past am I" into a flat ฿0.00 the moment the answer stopped being
+          // comfortable. Budget 145,000 against 149,336 spent read as nothing
+          // left rather than as 4,336 over, and the amount was nowhere on the
+          // row. fmtSigned rather than fmt because fmt takes an absolute value,
+          // so the minus has to be put back deliberately.
+          {l:'คงเหลือ',v:fmtSigned(totBudget-totSpent),
+           c:totBudget-totSpent<0?'text-rose-400':'text-gold-400'}].map(({l,v,c,note})=>(
           <div key={l} className="stat-rule">
             <div className={`text-[10px] font-medium mb-2 uppercase ${dk?'text-slate-400':'text-slate-500'}`} style={{letterSpacing:'0.16em'}}>{l}</div>
             <div className={`text-lg sm:text-xl font-semibold leading-tight break-words tabular-nums ${c}`}>{v}</div>
@@ -5561,17 +5707,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
           <div className={`mt-4 pt-4 border-t ${dk?'border-white/8':'border-slate-100'}`}>
             {dailyBreakdown.length===0
               ? <p className={`text-xs text-center py-4 ${sub}`}>ยังไม่มีรายจ่ายเดือนนี้ค่ะ</p>
-              : <div className="space-y-1 max-h-72 overflow-y-auto pr-1">
-                  {dailyBreakdown.map(({date,amt})=>{
-                    const d=new Date(date); const isToday=date===todayStr;
-                    return (
-                      <div key={date} className={`flex items-center justify-between px-2 py-1.5 rounded-lg ${isToday?(dk?'bg-gold-500/10':'bg-gold-50'):''}`}>
-                        <span className={`text-xs ${isToday?'font-semibold':''} ${dk?'text-slate-300':'text-slate-600'}`}>{d.getDate()} {MONTHS_TH[d.getMonth()]}{isToday?' · วันนี้':''}</span>
-                        <span className={`text-xs font-semibold tabular-nums ${dk?'text-white':'text-slate-700'}`}>{fmt(amt)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+              : <DailySpendBars days={dailyBreakdown} todayStr={todayStr} dk={dk}/>
             }
             <div className={`flex items-center justify-between mt-3 pt-3 border-t ${dk?'border-white/8':'border-slate-100'}`}>
               <span className={`text-xs font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>รวมเดือนนี้</span>
