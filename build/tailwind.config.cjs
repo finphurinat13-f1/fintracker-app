@@ -48,23 +48,28 @@ module.exports = {
         900: '#5e2b18',
         950: '#33140a',
       },
-      // Neutral, and warm rather than blue. Tailwind's slate is a blue-grey, so
-      // 565 pieces of secondary text were quietly tinted with gold's opposite —
-      // the same fight the page ground had before it went neutral, just spread
-      // thinner and everywhere. These greys carry a trace of the accent instead,
-      // which is what makes a neutral read as chosen rather than defaulted to.
+      // Neutral, with a trace of warmth and no more than that. Fixing the
+      // blue-grey overshot the first time: at chroma 12-14 these stopped being
+      // greys and became taupe, and a gold surrounded by warm brown has nothing
+      // left to be gold against. The whole interface read as brown, and the
+      // accent was blamed for it. Gold is a relationship, not a hex value.
+      //
+      // Chroma 3-6 keeps them on the warm side of neutral while leaving the
+      // accent the only saturated thing on screen, which is what makes metal
+      // look like metal: black-and-gold work has a neutral charcoal ground and
+      // spends every bit of its saturation on the gold.
       slate: {
-        50:  '#f7f6f4',
-        100: '#eceae6',
-        200: '#d8d5cf',
-        300: '#b8b4ac',
-        400: '#908b82',
-        500: '#736e66',
-        600: '#5c5851',
-        700: '#484540',
-        800: '#333029',
-        900: '#1f1d1a',
-        950: '#121110',
+        50:  '#f7f6f5',
+        100: '#eae9e7',
+        200: '#d5d3d0',
+        300: '#b3b1ad',
+        400: '#8b8985',
+        500: '#6f6d6a',
+        600: '#585654',
+        700: '#454341',
+        800: '#302f2d',
+        900: '#1d1c1b',
+        950: '#111110',
       },
       emerald: {
         50:  '#f0f5f2',
@@ -112,17 +117,17 @@ module.exports = {
         950: '#2a1513',
       },
       gold: {
-        50:  '#fbf8ee',
-        100: '#f5ecce',
-        200: '#eddaa0',
-        300: '#e1c46f',
-        400: '#d4af45',
-        500: '#c49e30',
-        600: '#8a6a1a',
-        700: '#6d5718',
-        800: '#5e4a19',
-        900: '#3c2f12',
-        950: '#241c0a',
+        50:  '#fdf9ec',
+        100: '#f8eec5',
+        200: '#f0dc93',
+        300: '#e6c85c',
+        400: '#d9af2b',
+        500: '#c39a17',
+        600: '#9a7810',
+        700: '#7a5f11',
+        800: '#644e14',
+        900: '#40320d',
+        950: '#251c06',
       },
     },
   } },

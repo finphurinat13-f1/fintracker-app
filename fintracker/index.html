@@ -52,7 +52,7 @@ const db   = firebase.firestore();
 
   /* ── Liquid Glass Background ── */
   .bg-app {
-    background: #060c18;
+    background: #090908;
   }
 
   /* ── Liquid Glass Surface ── */
@@ -107,17 +107,63 @@ const db   = firebase.firestore();
 
      The hairline went warm at the same time: a white border on a gold theme is
      the same mistake the blue ground was. */
+  /* ── Metallic gold ───────────────────────────────────────────────────────
+     Flat gold reads as mustard; the reason a gold logo looks like metal is that
+     it is never one colour. Light lands on the top of a raised surface and
+     falls away down the face, so the ramp runs pale at the top through the
+     brand gold to a bronze shadow at the bottom.
+
+     Reserved for the one figure a dashboard exists to show. Applied to every
+     heading it would stop being a material and become a decoration, which is
+     the failure mode of gradient text everywhere it goes wrong.
+
+     Every stop clears 3:1 against the card, the darkest at 3.23, so the ramp
+     stays legible at its own bottom edge rather than only on average. The plain
+     colour comes first so a browser without background-clip shows gold rather
+     than nothing at all. */
+  .metal-gold { color: #e6c85c; }
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    .metal-gold {
+      background-image: linear-gradient(177deg,
+        #f7e7a8 0%, #e6c85c 26%, #d9af2b 50%, #b8860b 78%, #8a6410 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+  }
+  /* The light theme cannot use the same ramp: pale gold on a near-white card is
+     the one place this treatment stops being legible. It runs deeper instead. */
+  html:not(.dark) .metal-gold { color: #8a6410; }
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    html:not(.dark) .metal-gold {
+      background-image: linear-gradient(177deg,
+        #a67c0d 0%, #8a6410 45%, #6b4d0e 100%);
+      color: transparent;
+    }
+  }
+
   .card-solid {
     background:
       linear-gradient(152deg, rgba(212,160,23,0.055) 0%, rgba(212,160,23,0.020) 36%, rgba(212,160,23,0.000) 64%),
-      var(--card-bg, #0b1220);
-    border: 1px solid rgba(212,160,23,0.11);
-    box-shadow: none;
-    transition: border-color 0.15s ease;
+      var(--card-bg, #1a1a1f);
+    /* The hairline was gold at 11%, which composites to #221c0c on this ground:
+       a ratio of 1.16 against the card, meaning it was gold in the stylesheet
+       and invisible on the screen. Every black-and-gold reference earns its look
+       from the edge, not from the fill, so the line has to actually be a line.
+       0.34 lands at 1.90 — clearly drawn, still a hairline. */
+    border: 1px solid rgba(212,160,23,0.34);
+    /* And the top edge brighter than the rest. A uniform outline reads as a
+       drawn rectangle; metal reads as metal because one edge catches the light
+       and the others fall away. One inset line does the whole job. */
+    box-shadow: inset 0 1px 0 rgba(230,200,92,0.22);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
   /* Hover marks the border, not the elevation — nothing moves, so a table of
      figures does not shift under the cursor. */
-  .card-solid:hover   { border-color: rgba(201,169,75,0.28); }
+  .card-solid:hover {
+    border-color: rgba(217,175,43,0.52);
+    box-shadow: inset 0 1px 0 rgba(230,200,92,0.38);
+  }
   .glass-light:hover  { border-color: rgba(201,169,75,0.35); }
 
   /* Corners opened up for the new look — 18px where cards were 12px. The
@@ -166,8 +212,12 @@ const db   = firebase.firestore();
     content: ""; position: absolute; inset: 0; pointer-events: none;
     border-radius: inherit;
     background:
-      radial-gradient(ellipse 62% 90% at 0% 0%, rgba(232,118,58,0.045) 0%, transparent 60%),
-      radial-gradient(ellipse 55% 80% at 100% 100%, rgba(212,175,69,0.03) 0%, transparent 58%);
+      /* Gold, not the action orange. Orange over a dark ground composites brown
+         at every opacity — green-to-red 0.52 against gold's 0.80 — so this
+         corner light was quietly tinting every card on the page the one colour
+         the theme is trying not to be. */
+      radial-gradient(ellipse 62% 90% at 0% 0%, rgba(230,200,92,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 55% 80% at 100% 100%, rgba(217,175,43,0.04) 0%, transparent 58%);
   }
   .card-solid::after {
     content: ""; position: absolute; inset: 0; pointer-events: none;
@@ -245,7 +295,7 @@ const db   = firebase.firestore();
      kept glowing after everything around them had calmed down. Same two values
      as the config now. .tg-green is the older duplicate of .tg-emerald and is
      pointed at the same colour rather than left as a third opinion. */
-  .tg-white   { color: #dde8f2; }
+  .tg-white   { color: #e8e5e0; }
   .tg-green   { color: #7aab8a; }
   .tg-red     { color: #c9726a; }
   .tg-indigo  { color: #c9a94b; }
@@ -270,12 +320,16 @@ const db   = firebase.firestore();
   .btn-primary:active { transform: translateY(0); }
   /* Solid gold fills read as classic navy-on-gold (complementary hue, near-black
      contrast): [class~=] matches only the solid utility token, never /opacity tints. */
-  [class~="bg-gold-500"], [class~="bg-gold-600"], [class~="bg-gold-700"] { color: #10173a; }
-  [class~="bg-gold-500"] svg, [class~="bg-gold-600"] svg, [class~="bg-gold-700"] svg { color: #10173a; }
+  [class~="bg-gold-500"], [class~="bg-gold-600"], [class~="bg-gold-700"] { color: #241304; }
+  [class~="bg-gold-500"] svg, [class~="bg-gold-600"] svg, [class~="bg-gold-700"] svg { color: #241304; }
 
   /* ── Badge ── */
-  .badge-pos { background: rgba(52,211,153,0.1) !important; border: 1px solid rgba(52,211,153,0.3) !important; }
-  .badge-neg { background: rgba(251,113,133,0.1) !important; border: 1px solid rgba(251,113,133,0.3) !important; }
+  /* The last two survivors of the bright pair. The Tailwind config redefined
+     emerald and rose at the source, but a literal rgba() is out of its reach —
+     so these two chips kept shouting in the old cool green and pink long after
+     every other gain and loss figure had come down to the sage and terracotta. */
+  .badge-pos { background: rgba(122,171,138,0.12) !important; border: 1px solid rgba(122,171,138,0.34) !important; }
+  .badge-neg { background: rgba(201,114,106,0.12) !important; border: 1px solid rgba(201,114,106,0.34) !important; }
 
   /* ── Nav & Logo ── */
   /* The active tab is a full capsule in the action colour, the way the
@@ -408,23 +462,26 @@ const db   = firebase.firestore();
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
   .modal-bg { background: rgba(10,10,10,0.75); backdrop-filter: blur(24px); }
-  .dark select { background-color: #0d1625 !important; color: #dde8f2 !important; }
-  .dark select option { background-color: #0d1625 !important; color: #dde8f2 !important; }
+  .dark select { background-color: #1a1a19 !important; color: #e8e5e0 !important; }
+  .dark select option { background-color: #1a1a19 !important; color: #e8e5e0 !important; }
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
   .dark input:focus, .dark select:focus { box-shadow: 0 0 0 3px rgba(96,165,250,0.22); outline: none; }
 
   /* ── Keyboard focus ring — visible for keyboard nav, invisible on mouse click ── */
   button:focus-visible, a:focus-visible, [role="button"]:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
-    outline: 2px solid #3f6fb0; outline-offset: 2px;
+    /* The focus ring was the last blue on the page, and focus is the one state
+       that must never be mistaken for decoration — so it stays the action colour
+       the rest of the interface already uses for 'this is live'. */
+    outline: 2px solid #e8763a; outline-offset: 2px;
   }
   .dark button:focus-visible, .dark a:focus-visible, .dark [role="button"]:focus-visible, .dark summary:focus-visible, .dark [tabindex]:focus-visible {
-    outline-color: #8fb4e0;
+    outline-color: #ee9d74;
   }
   :focus:not(:focus-visible) { outline: none; }
-  .dark select { background-color: #0d1625 !important; color: #dde8f2 !important; }
-  .dark select option { background-color: #0d1625 !important; color: #dde8f2 !important; }
-  @media print { nav,.no-print{display:none!important} .bg-app{background:white!important} body{background:white} .glass{background:rgba(248,250,252,0.95)!important;border-color:#e2e8f0!important;box-shadow:none!important;backdrop-filter:none!important;animation:none!important} .tg-brand,.tg-white,.tg-green,.tg-red,.tg-gold,.tg-emerald,.tg-indigo{color:#1e293b!important} }
+  .dark select { background-color: #1a1a19 !important; color: #e8e5e0 !important; }
+  .dark select option { background-color: #1a1a19 !important; color: #e8e5e0 !important; }
+  @media print { nav,.no-print{display:none!important} .bg-app{background:white!important} body{background:white} .glass{background:rgba(248,250,252,0.95)!important;border-color:#d5d3d0!important;box-shadow:none!important;backdrop-filter:none!important;animation:none!important} .tg-brand,.tg-white,.tg-green,.tg-red,.tg-gold,.tg-emerald,.tg-indigo{color:#302f2d!important} }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
@@ -470,7 +527,7 @@ const db   = firebase.firestore();
         'font-size:.75rem;white-space:pre-wrap;word-break:break-word;color:#c9726a">' +
         String(why).replace(/[<>&]/g,'') + '</pre>' +
         '<button onclick="location.reload()" style="padding:.5rem 1.1rem;border-radius:.5rem;border:0;' +
-        'background:#c49e30;color:#241c0a;font-weight:600;cursor:pointer">ลองใหม่</button>' +
+        'background:#c39a17;color:#251c06;font-weight:600;cursor:pointer">ลองใหม่</button>' +
         '</div>';
       document.documentElement.style.background = '#030304';
     }, 6000);

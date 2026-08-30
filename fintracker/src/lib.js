@@ -26,7 +26,28 @@ export const THEMES = [
   // two: cards now read as raised surfaces rather than as slightly different
   // black. The teal in the second glow went with it for the same reason.
   { id:'terminal', icon:'💹', label:'Terminal', note:'ทองบนดำ — ธีมหลัก',
-    dark:  'radial-gradient(ellipse 95% 65% at 6% 8%,rgba(232,118,58,.055) 0%,transparent 62%),radial-gradient(ellipse 75% 55% at 94% 92%,rgba(212,175,69,.045) 0%,transparent 58%),#000000',
+    // The two glows used to sit at 5.5% and 4.5%, which composite to a ratio of
+    // 1.06 against the ground: gold in the stylesheet, flat black on the screen.
+    // A background that is described as having depth and measures as having
+    // none is worse than a plain one, because nobody thinks to check it.
+    //
+    // 22% reads as 1.46, which is where a gradient stops being a rumour. The
+    // third layer is the diagonal sheen every black-and-gold reference has and
+    // this page did not: the corner glows alone light two spots, and it is the
+    // band across the middle that makes the ground look like a surface rather
+    // than an absence.
+    // Two things were wrong and only one of them was brightness. The lower glow
+    // was the action orange, and orange over black composites brown at every
+    // opacity there is: its green-to-red ratio is 0.52 where gold's is 0.80, so
+    // no amount of tuning the strength was ever going to make it read as gold.
+    // Both glows are gold now.
+    //
+    // The other was the middle. Two glows in opposite corners light two corners;
+    // between them the page fell back to #010102 and read as a hole with the
+    // content floating over it. The wide overhead wash covers the centre, and
+    // the base sits at #0b0b0e rather than near-black — still 1.13 below the
+    // cards, so they keep their step while the ground stops being an absence.
+    dark:  'radial-gradient(ellipse 140% 90% at 50% -25%,rgba(217,175,43,.13) 0%,transparent 62%),radial-gradient(ellipse 85% 65% at 4% 4%,rgba(230,200,92,.16) 0%,transparent 55%),radial-gradient(ellipse 80% 60% at 97% 100%,rgba(217,175,43,.11) 0%,transparent 55%),#0b0b0e',
     // Deeper than it was, and far closer to neutral. The page has to sit
     // visibly below the cards for them to read as raised, but the first attempt
     // at that used a cream base under an amber glow under a brown hairline —
@@ -38,7 +59,10 @@ export const THEMES = [
     // strength. Neutral does not mean cold — it means the ground stops having
     // an opinion so the gold can.
     light: 'radial-gradient(ellipse 60% 55% at 15% 10%,rgba(212,160,23,.03) 0%,transparent 65%),#e7e6e3',
-    card: '#0c0c0d',
+    // Lifted from #0c0c0b. Against the old pure-black page that was a ratio of
+    // 1.07 — the cards were a slightly different black, not a raised surface,
+    // and no amount of edge treatment fixes a step that is not there.
+    card: '#1a1a1f',
   },
 ];
 

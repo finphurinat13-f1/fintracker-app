@@ -334,7 +334,7 @@ const DateRangePicker = ({from, to, onPick, dk, years=[]}) => {
           off and behind the rows. A portal has no ancestors to inherit. */}
       {open&&ReactDOM.createPortal(
         <div ref={box} style={{position:'fixed', top:pos.top, left:pos.left, zIndex:60}}
-          className={`w-[278px] rounded-2xl shadow-2xl p-3 ${dk?'bg-[#0c1018] border border-white/10':'bg-white border border-slate-200'}`}>
+          className={`w-[278px] rounded-2xl shadow-2xl p-3 ${dk?'bg-[#1a1a19] border border-white/10':'bg-white border border-slate-200'}`}>
           <div className="flex items-center justify-between gap-1 mb-2">
             <button onClick={()=>step(-1)} className={navCls} title="เดือนก่อน">‹</button>
             <div className="flex gap-1.5">
@@ -364,7 +364,7 @@ const DateRangePicker = ({from, to, onPick, dk, years=[]}) => {
               return (
                 <button key={s} onClick={()=>clickDay(d)} onMouseEnter={()=>anchor&&setHover(s)}
                   className={`h-8 rounded-lg text-xs tabular-nums transition-colors ${
-                    isEnd ? 'bg-gold-500 text-[#241c0a] font-bold'
+                    isEnd ? 'bg-gold-500 text-[#251c06] font-bold'
                     : isIn ? (dk?'bg-gold-500/20 text-gold-200':'bg-gold-100 text-gold-700')
                     : isTd ? (dk?'text-gold-300 font-bold ring-1 ring-gold-500/40':'text-gold-600 font-bold ring-1 ring-gold-300')
                     : (dk?'text-slate-300 hover:bg-white/10':'text-slate-600 hover:bg-slate-100')}`}>
@@ -458,19 +458,19 @@ const BarChart = ({ data, theme, hide=false }) => {
         { label:'รายจ่าย', data:data.expense, backgroundColor:dk?'rgba(201,114,106,0.75)':'rgba(201,114,106,0.65)', borderRadius:8, borderSkipped:false, barPercentage:0.65 },
       ]}, options:{ responsive:true, maintainAspectRatio:false,
         plugins:{
-          legend:{ labels:{ color:dk?'#94a3b8':'#64748b', usePointStyle:true, pointStyle:'circle', padding:20, font:{size:11,family:"'Noto Sans Thai',sans-serif"} } },
+          legend:{ labels:{ color:dk?'#8b8985':'#6f6d6a', usePointStyle:true, pointStyle:'circle', padding:20, font:{size:11,family:"'Noto Sans Thai',sans-serif"} } },
           tooltip:{
             backgroundColor:dk?'rgba(13,27,46,0.95)':'rgba(255,255,255,0.97)',
-            titleColor:dk?'#e2e8f0':'#1e293b', bodyColor:dk?'#94a3b8':'#64748b',
+            titleColor:dk?'#d5d3d0':'#302f2d', bodyColor:dk?'#8b8985':'#6f6d6a',
             borderColor:dk?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)',
             borderWidth:1, padding:10, cornerRadius:10,
             callbacks:{ label:ctx=>` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` }
           }
         },
         scales:{
-          x:{ grid:{display:false}, border:{display:false}, ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Noto Sans Thai',sans-serif"}} },
+          x:{ grid:{display:false}, border:{display:false}, ticks:{color:dk?'#8b8985':'#6f6d6a', font:{size:11,family:"'Noto Sans Thai',sans-serif"}} },
           y:{ grid:{color:dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)'}, border:{display:false},
-              ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Noto Sans Thai',sans-serif"}, callback:v=>v>=1000?(v/1000).toFixed(0)+(hide?'':'K'):v} }
+              ticks:{color:dk?'#8b8985':'#6f6d6a', font:{size:11,family:"'Noto Sans Thai',sans-serif"}, callback:v=>v>=1000?(v/1000).toFixed(0)+(hide?'':'K'):v} }
         }
       }
     });
@@ -517,14 +517,14 @@ const DonutChart = ({ data, theme, centerValue, hideAmt=false }) => {
         ctx.save();
         ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.font=`10px 'Noto Sans Thai',sans-serif`;
-        ctx.fillStyle = on ? (data.colors[i]||'#c9a94b') : (dk?'#64748b':'#94a3b8');
+        ctx.fillStyle = on ? (data.colors[i]||'#c9a94b') : (dk?'#6f6d6a':'#8b8985');
         ctx.fillText(name, cx, cy-13);
         ctx.font=`600 13px 'Noto Sans Thai',sans-serif`;
-        ctx.fillStyle=dk?'#f1f5f9':'#1e293b';
+        ctx.fillStyle=dk?'#eae9e7':'#302f2d';
         ctx.fillText(amt, cx, cy+4);
         if(pct){
           ctx.font=`10px 'Noto Sans Thai',sans-serif`;
-          ctx.fillStyle=dk?'#64748b':'#94a3b8';
+          ctx.fillStyle=dk?'#6f6d6a':'#8b8985';
           ctx.fillText(pct, cx, cy+19);
         }
         ctx.restore();
@@ -564,14 +564,14 @@ const DonutChart = ({ data, theme, centerValue, hideAmt=false }) => {
       // money in the first place.
       <div key={i} style={{display:'flex',alignItems:'baseline',gap:'8px',minWidth:0}}>
         <span style={{display:'inline-block',width:'14px',height:'2.5px',borderRadius:'2px',background:data.colors[i],flexShrink:0,alignSelf:'center'}}/>
-        <span style={{fontSize:'11px',fontFamily:"'Noto Sans Thai',sans-serif",color:dk?'#94a3b8':'#64748b',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,minWidth:0}}>
+        <span style={{fontSize:'11px',fontFamily:"'Noto Sans Thai',sans-serif",color:dk?'#8b8985':'#6f6d6a',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,minWidth:0}}>
           {label}
         </span>
         {narrow ? (
           <span style={{fontSize:'11px',fontVariantNumeric:'tabular-nums',color:dk?'#c9a94b':'#d1b768',flexShrink:0}}>{pct}%</span>
         ) : (
           <span style={{fontSize:'11px',fontFamily:"'Noto Sans Thai',sans-serif",whiteSpace:'nowrap',flexShrink:0,fontVariantNumeric:'tabular-nums'}}>
-            <span style={{color:dk?'#cbd5e1':'#475569'}}>{hideAmt ? '฿ •••••' : fmt(val)}</span>
+            <span style={{color:dk?'#b3b1ad':'#585654'}}>{hideAmt ? '฿ •••••' : fmt(val)}</span>
             <span style={{color:dk?'#c9a94b':'#d1b768',marginLeft:'6px'}}>{pct}%</span>
           </span>
         )}
@@ -612,20 +612,20 @@ const LineChart = ({ data, theme }) => {
       ]}, options:{ responsive:true, maintainAspectRatio:false,
         interaction:{ mode:'index', intersect:false },
         plugins:{
-          legend:{ labels:{ color:dk?'#94a3b8':'#64748b', usePointStyle:true, pointStyle:'circle', padding:20, font:{size:11,family:"'Noto Sans Thai',sans-serif"} } },
+          legend:{ labels:{ color:dk?'#8b8985':'#6f6d6a', usePointStyle:true, pointStyle:'circle', padding:20, font:{size:11,family:"'Noto Sans Thai',sans-serif"} } },
           tooltip:{
             backgroundColor: dk?'rgba(13,27,46,0.95)':'rgba(255,255,255,0.97)',
-            titleColor: dk?'#e2e8f0':'#1e293b',
-            bodyColor: dk?'#94a3b8':'#64748b',
+            titleColor: dk?'#d5d3d0':'#302f2d',
+            bodyColor: dk?'#8b8985':'#6f6d6a',
             borderColor: dk?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)',
             borderWidth:1, padding:10, cornerRadius:10,
             callbacks:{ label:ctx=>` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` }
           }
         },
         scales:{
-          x:{ grid:{display:false}, border:{display:false}, ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Noto Sans Thai',sans-serif"}} },
+          x:{ grid:{display:false}, border:{display:false}, ticks:{color:dk?'#8b8985':'#6f6d6a', font:{size:11,family:"'Noto Sans Thai',sans-serif"}} },
           y:{ grid:{color:dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)'}, border:{display:false},
-              ticks:{color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Noto Sans Thai',sans-serif"}, callback:v=>(v>=1000?(v/1000).toFixed(0)+'K':v)} }
+              ticks:{color:dk?'#8b8985':'#6f6d6a', font:{size:11,family:"'Noto Sans Thai',sans-serif"}, callback:v=>(v>=1000?(v/1000).toFixed(0)+'K':v)} }
         }
       }
     });
@@ -648,7 +648,7 @@ const PlanChart = ({ data, theme }) => {
     if (!ref.current||!data) return;
     if (ch.current) ch.current.destroy();
     const dk = theme==='dark';
-    const axis = { color:dk?'#475569':'#94a3b8', font:{size:11,family:"'Noto Sans Thai',sans-serif"} };
+    const axis = { color:dk?'#8b8985':'#6f6d6a', font:{size:11,family:"'Noto Sans Thai',sans-serif"} };
     ch.current = new Chart(ref.current, { type:'line', data:{
       labels: data.labels,
       datasets:[
@@ -661,10 +661,10 @@ const PlanChart = ({ data, theme }) => {
       ]}, options:{ responsive:true, maintainAspectRatio:false,
         interaction:{ mode:'index', intersect:false },
         plugins:{
-          legend:{ labels:{ color:dk?'#94a3b8':'#64748b', usePointStyle:true, pointStyle:'circle', padding:18, font:{size:11,family:"'Noto Sans Thai',sans-serif"} } },
+          legend:{ labels:{ color:dk?'#8b8985':'#6f6d6a', usePointStyle:true, pointStyle:'circle', padding:18, font:{size:11,family:"'Noto Sans Thai',sans-serif"} } },
           tooltip:{
             backgroundColor: dk?'rgba(13,27,46,0.95)':'rgba(255,255,255,0.97)',
-            titleColor: dk?'#e2e8f0':'#1e293b', bodyColor: dk?'#94a3b8':'#64748b',
+            titleColor: dk?'#d5d3d0':'#302f2d', bodyColor: dk?'#8b8985':'#6f6d6a',
             footerColor: dk?'#7aab8a':'#4b735a',
             borderColor: dk?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)',
             borderWidth:1, padding:10, cornerRadius:10,
@@ -795,7 +795,7 @@ const Modal = ({ open, onClose, onSave, editData, theme, wallets=[], assets=[], 
   const overDraw = f.type==='transfer' && availFrom!==null && (parseFloat(f.amount)||0) > availFrom + 0.01;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData?'แก้ไขรายการ':'เพิ่มรายการใหม่'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -1092,12 +1092,12 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[], c
   );
 };
 
-// ── PASTEL COLOR MAP ──────────────────────────────────────
-const PASTEL_CLR = {
-  'อาหาร':'#fca5a5','การเดินทาง':'#fdba74','ช้อปปิ้ง':'#fde68a',
-  'ที่พัก':'#6ee7b7','บันเทิง':'#93c5fd','สุขภาพ':'#86efac',
-  'การศึกษา':'#67e8f9','Subscription':'#d1b768','อื่นๆ':'#cbd5e1','default':'#cbd5e1'
-};
+// Category colours live in lib.js, reached through catClr(). A second map used
+// to sit here — pink, apricot, butter, mint, sky, lime, cyan — and it coloured
+// the spend-by-category bar while every other category swatch in the app used
+// the warm ramp. One concept described twice is how an interface ends up
+// arguing with itself about what colour it is; catClr() also honours a
+// user-renamed category, which a literal map here never could.
 
 // ── BUDGET METRIC CARD (Stats11 style) ──────────────────────
 const BudgetMetricCard = ({ cat, spent, budget, dk, onEdit }) => {
@@ -1110,7 +1110,7 @@ const BudgetMetricCard = ({ cat, spent, budget, dk, onEdit }) => {
   // made "nearly over" shout louder than "over".
   // Same three states as the budget page, so a category reads the same colour
   // wherever it appears.
-  const barColor = over ? '#d4574a' : warn ? '#d4af45' : catClr(cat);
+  const barColor = over ? '#d4574a' : warn ? '#d9af2b' : catClr(cat);
   return (
     <div className={`relative overflow-hidden rounded-2xl border fade-up ${dk?'card-solid':'bg-white border-slate-200 shadow-sm'}`}>
       <div className="p-4 pb-12">
@@ -1562,8 +1562,8 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           Distinct because it is warm, not because it is foreign. */}
       <div className={`rounded-2xl px-5 py-3.5 fade-up ${dk?'card-solid':'glass-light shadow-sm'}`}
         style={dk
-          ? {background:'linear-gradient(115deg,rgba(212,175,69,0.13) 0%,rgba(232,118,58,0.09) 42%,#0c0c0d 88%)',
-             border:'1px solid rgba(212,175,69,0.22)'}
+          ? {background:'linear-gradient(115deg,rgba(230,200,92,0.16) 0%,rgba(217,175,43,0.10) 42%,#1a1a1f 88%)',
+             border:'1px solid rgba(217,175,43,0.34)'}
           : {background:'linear-gradient(115deg,#faf3e6 0%,#f6efe3 45%,#faf9f7 90%)',border:'1px solid rgba(212,175,69,0.30)'}}>
         <div className="flex items-center gap-3">
 
@@ -1634,7 +1634,9 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
                 {/* clamp rather than a scale step: this figure should grow with
                     the window, and it is the one place in the app where that is
                     true. tabular-nums keeps it from jittering as it counts up. */}
-                <div className={`font-bold tracking-wide tabular-nums ${dk?'text-white':'text-slate-800'}`}
+                {/* The one figure the dashboard exists to show, so it is the one
+                    place the gold is a material rather than a colour. See .metal-gold. */}
+                <div className="font-bold tracking-wide tabular-nums metal-gold"
                   style={{fontSize:'clamp(2.1rem, 5.5vw, 3.4rem)', lineHeight:1.05}}>
                   {mask(fmtNW(animNetWorth))}
                 </div>
@@ -1698,7 +1700,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
               heading no longer states a fixed number: it would have gone stale
               the moment the window changed. */}
           <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-            <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>รายรับ-รายจ่ายรายเดือน</h3>
+            <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>รายรับ-รายจ่ายรายเดือน</h3>
             <div className={`flex gap-0.5 p-0.5 rounded-full ${dk?'bg-white/5':'bg-slate-100'}`}>
               {[{l:'3M',v:3},{l:'6M',v:6},{l:'1Y',v:12},{l:'ALL',v:null}].map(({l,v})=>(
                 <button key={l} onClick={()=>pickRange(v)}
@@ -1711,7 +1713,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           <div className="h-52"><BarChart data={barData} theme={theme} hide={hideAmt||privacy}/></div>
         </div>
         <div className={card}>
-          <h3 className={`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-700'}`}>รายจ่ายตามหมวด (เดือนนี้)</h3>
+          <h3 className={`text-sm font-semibold mb-4 ${dk?'text-gold-300':'text-gold-700'}`}>รายจ่ายตามหมวด (เดือนนี้)</h3>
           <div>
             {donutData.labels.length>0 ? <DonutChart data={donutData} theme={theme} centerValue={fmt(donutData.values.reduce((s,v)=>s+v,0))} hideAmt={hideAmt}/> : <div className={`h-32 flex items-center justify-center text-sm ${subTx}`}>ยังไม่มีรายจ่ายเดือนนี้</div>}
           </div>
@@ -1731,7 +1733,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           is what the small holdings needed anyway. */}
       <div className={card + ' p-5'}>
         <div className="flex items-baseline gap-2.5 flex-wrap mb-4">
-          <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>แผนผังพอร์ต</h3>
+          <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>แผนผังพอร์ต</h3>
           <p className={`text-xs ${subTx}`}>ขนาด = มูลค่า · สี = กำไร/ขาดทุน · ชี้เพื่อดูรายละเอียด</p>
         </div>
         <PortfolioTreemap assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy}/>
@@ -2362,13 +2364,17 @@ const Analytics = ({ txs, theme }) => {
             <div className={`flex h-2.5 w-full overflow-hidden rounded-full mb-4 ${dk?'bg-white/10':'bg-slate-100'}`}>
               {spendSegs.map(({cat,val})=>(
                 <div key={cat} className="h-full transition-all duration-700"
-                  style={{width:`${totalExp>0?val/totalExp*100:0}%`,background:PASTEL_CLR[cat]||PASTEL_CLR.default}}/>
+                  style={{width:`${totalExp>0?val/totalExp*100:0}%`,background:catClr(cat)}}/>
               ))}
             </div>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
               {spendSegs.map(({cat,val})=>(
                 <div key={cat} className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{background:PASTEL_CLR[cat]||PASTEL_CLR.default}}/>
+                  {/* The ring only in the light theme: two of the nine swatches land
+                      near 2.4 against a near-white card, which a hairline fixes without
+                      pushing the palette darker than the dark theme wants it. */}
+                  <span className={`w-3 h-3 rounded-sm flex-shrink-0 ${dk?'':'ring-1 ring-black/15'}`}
+                    style={{background:catClr(cat)}}/>
                   <span className={`text-sm ${dk?'text-slate-400':'text-slate-500'}`}>{cat}</span>
                   <span className={`text-sm tabular-nums ${dk?'text-slate-300':'text-slate-600'}`}>฿{val.toLocaleString('th-TH')}</span>
                 </div>
@@ -2391,7 +2397,7 @@ const Analytics = ({ txs, theme }) => {
       {/* Budget Edit Modal */}
       {editCat&&(
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={()=>setEditCat(null)}>
-          <div className={`w-full max-w-sm rounded-2xl p-6 shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+          <div className={`w-full max-w-sm rounded-2xl p-6 shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
             <h3 className={`text-base font-semibold mb-1 ${dk?'text-white':'text-slate-800'}`}>Update Budget</h3>
             <p className={`text-sm mb-5 ${dk?'text-slate-400':'text-slate-500'}`}>งบประมาณสำหรับหมวด <span className="font-medium" style={{color:catClr(editCat)}}>{editCat}</span></p>
             <div>
@@ -2425,7 +2431,7 @@ const EthIcon = ({s=18})=><svg width={s} height={s} viewBox="0 0 32 32"><circle 
 const TronIcon = ({s=18})=><svg width={s} height={s} viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#EB0029"/><polygon fill="#fff" points="9,9 24,12 15,26"/><polygon fill="#fff" opacity=".55" points="9,9 16,10.5 12,22"/></svg>;
 const UsdtIcon = ({s=18})=><svg width={s} height={s} viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#26A17B"/><path fill="#fff" d="M17.9 17.3v-.01c-.11.01-.68.04-1.95.04-1.01 0-1.72-.03-1.97-.04v.02c-3.6-.16-6.29-.79-6.29-1.54s2.69-1.38 6.29-1.55v2.47c.26.02.98.06 1.99.06 1.21 0 1.82-.05 1.93-.06v-2.46c3.59.16 6.27.79 6.27 1.54s-2.68 1.38-6.27 1.54zm0-3.34v-2.21h5.02V8.4H9.12v3.35h5.02v2.21c-4.08.19-7.15 1-7.15 1.96s3.07 1.77 7.15 1.96v7.02h3.76v-7.03c4.07-.19 7.13-1 7.13-1.95s-3.06-1.76-7.13-1.95z"/></svg>;
 const GoldIcon = ({s=18})=><svg width={s} height={s} viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="100" height="120" rx="18" fill="#FFB300"/><rect x="8" y="8" width="84" height="104" rx="13" fill="#FFCA28"/><rect x="16" y="16" width="68" height="88" rx="9" fill="#FFB300"/><text x="50" y="50" textAnchor="middle" fill="#FFE082" fontSize="22" fontWeight="bold" fontFamily="sans-serif">GOLD</text><text x="50" y="78" textAnchor="middle" fill="#FFE082" fontSize="18" fontWeight="bold" fontFamily="sans-serif">999.9</text><text x="50" y="102" textAnchor="middle" fill="#FFE082" fontSize="18" fontWeight="bold" fontFamily="sans-serif">1M</text></svg>;
-const BankIcon = ({s=18})=><svg width={s} height={s} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="28" width="52" height="5" rx="2" fill="#3d4a5c"/><rect x="10" y="33" width="7" height="20" rx="2" fill="#3d4a5c"/><rect x="22" y="33" width="7" height="20" rx="2" fill="#3d4a5c"/><rect x="35" y="33" width="7" height="20" rx="2" fill="#3d4a5c"/><rect x="47" y="33" width="7" height="20" rx="2" fill="#3d4a5c"/><rect x="4" y="53" width="56" height="6" rx="3" fill="#3d4a5c"/><polygon points="32,8 4,28 60,28" fill="#3d4a5c"/><circle cx="32" cy="18" r="12" fill="#4caf50" stroke="white" strokeWidth="2"/><text x="32" y="23" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold" fontFamily="Arial,sans-serif">$</text></svg>;
+const BankIcon = ({s=18})=><svg width={s} height={s} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="28" width="52" height="5" rx="2" fill="#4a453f"/><rect x="10" y="33" width="7" height="20" rx="2" fill="#4a453f"/><rect x="22" y="33" width="7" height="20" rx="2" fill="#4a453f"/><rect x="35" y="33" width="7" height="20" rx="2" fill="#4a453f"/><rect x="47" y="33" width="7" height="20" rx="2" fill="#4a453f"/><rect x="4" y="53" width="56" height="6" rx="3" fill="#4a453f"/><polygon points="32,8 4,28 60,28" fill="#4a453f"/><circle cx="32" cy="18" r="12" fill="#4caf50" stroke="white" strokeWidth="2"/><text x="32" y="23" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold" fontFamily="Arial,sans-serif">$</text></svg>;
 // CashIcon was three overlapping banknotes in fixed cream and tan. It went with
 // its last caller: TYPE_SVG.cash is drawn in currentColor, so the cash wallet
 // now takes its colour from the ramp like every other type instead of carrying
@@ -2530,7 +2536,7 @@ const needsRing = bg => {
       .map(v => v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4));
     return 0.2126*c[0] + 0.7152*c[1] + 0.0722*c[2];
   };
-  const [x,y] = [rel(bg), rel('#0c0c0d')].sort((p,q) => q-p);
+  const [x,y] = [rel(bg), rel('#0c0c0b')].sort((p,q) => q-p);
   return (x+0.05)/(y+0.05) < 1.6;
 };
 
@@ -2737,7 +2743,7 @@ const TickerSearch = ({ value, onChange, onPick, dk, inp }) => {
         </div>
       </div>
       {open&&(
-        <div className={`absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-2xl max-h-56 overflow-y-auto ${dk?'bg-[#0d1625] border-white/12':'bg-white border-slate-200'}`}>
+        <div className={`absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-2xl max-h-56 overflow-y-auto ${dk?'bg-[#1a1a19] border-white/12':'bg-white border-slate-200'}`}>
           {busy&&!hits.length&&<div className={`px-3 py-2.5 text-xs ${dk?'text-slate-400':'text-slate-500'}`}>กำลังค้นหา…</div>}
           {!busy&&!hits.length&&<div className={`px-3 py-2.5 text-xs ${dk?'text-slate-400':'text-slate-500'}`}>ไม่พบ — ลองพิมพ์ชื่อภาษาอังกฤษดูค่ะ</div>}
           {hits.map(h=>(
@@ -2953,7 +2959,7 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
   const showTabs = !editData && defaultWalletId;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData?'Edit Asset':'Add Asset'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -5147,7 +5153,7 @@ const Toast = ({toasts, remove, cancelUndo}) => (
   <div className="fixed top-[70px] left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-2 pointer-events-none w-full max-w-md px-4">
     {toasts.map(t=>(
       t.type==='undo'
-        ? <div key={t.id} className="relative overflow-hidden flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-semibold toast-drop pointer-events-auto w-full max-w-sm bg-[#0c1018] border border-amber-500/40 text-slate-100">
+        ? <div key={t.id} className="relative overflow-hidden flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-semibold toast-drop pointer-events-auto w-full max-w-sm bg-[#1a1a19] border border-amber-500/40 text-slate-100">
             <span className="flex-1 truncate">{t.msg}</span>
             <button onClick={()=>cancelUndo(t.id)} className="text-amber-400 hover:text-amber-300 font-semibold text-xs whitespace-nowrap px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 transition-colors flex-shrink-0">ยกเลิก</button>
             <div className="absolute bottom-0 left-0 h-[2px] bg-amber-400/60 undo-bar rounded-full"/>
@@ -5460,10 +5466,10 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
             <button onClick={()=>!isCurM&&setViewM(m=>shiftMonth(m,1))} disabled={isCurM} title="เดือนถัดไป"
               className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-colors ${isCurM?'opacity-25 cursor-default border-transparent':(dk?'border-white/15 text-slate-300 hover:bg-gold-500/15 hover:text-gold-300 hover:border-gold-400/50':'border-slate-200 text-slate-600 hover:bg-gold-50 hover:text-gold-600 hover:border-gold-300')}`}><Ic n="chevR" s={16}/></button>
           </div>
-          <span className="text-xs font-semibold" style={{color:totPct>=100?'#d4574a':totPct>=80?'#d4af45':'#7aab8a'}}>{totPct.toFixed(1)}%</span>
+          <span className="text-xs font-semibold" style={{color:totPct>=100?'#d4574a':totPct>=80?'#d9af2b':'#7aab8a'}}>{totPct.toFixed(1)}%</span>
         </div>
         <div className={`w-full h-3 rounded-full ${dk?'bg-white/5':'bg-slate-100'} overflow-hidden`}>
-          <div className="h-full rounded-full transition-all duration-700" style={{width:`${Math.min(totPct,100)}%`,background:totPct>=100?'#d4574a':totPct>=80?'#d4af45':'#7aab8a'}}/>
+          <div className="h-full rounded-full transition-all duration-700" style={{width:`${Math.min(totPct,100)}%`,background:totPct>=100?'#d4574a':totPct>=80?'#d9af2b':'#7aab8a'}}/>
         </div>
         <div className={`mt-1.5 text-xs ${sub}`}>{fmt(totSpent)} / {fmt(totBudget)}</div>
       </div>
@@ -5518,12 +5524,12 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
             // then gold, then a red with enough blood in it to stop a scroll —
             // and the 60% tier goes, because a fourth band nobody could name was
             // what forced the other three so close together.
-            const clr = over ? '#d4574a' : rawPct>=80 ? '#d4af45' : '#7aab8a';
+            const clr = over ? '#d4574a' : rawPct>=80 ? '#d9af2b' : '#7aab8a';
             // Border and tint follow the same three colours, so a card that is
             // over reads as over from its edge as well as its bar rather than
             // from a fourth shade that agreed with neither.
-            const borderClr=over?(dk?'border-[#d4574a]/45':'border-[#e8a89e]/60'):warn?(dk?'border-[#d4af45]/40':'border-[#f0c99a]/60'):'';
-            const bgTint=over?(dk?'bg-[#d4574a]/[0.07]':'bg-[#fdf0ee]'):warn?(dk?'bg-[#d4af45]/[0.05]':'bg-[#fdf7ee]'):'';
+            const borderClr=over?(dk?'border-[#d4574a]/45':'border-[#e8a89e]/60'):warn?(dk?'border-[#d9af2b]/40':'border-[#f0c99a]/60'):'';
+            const bgTint=over?(dk?'bg-[#d4574a]/[0.07]':'bg-[#fdf0ee]'):warn?(dk?'bg-[#d9af2b]/[0.05]':'bg-[#fdf7ee]'):'';
             const isExp=expandedCat===cat;
             return (
               <div key={cat} className={`rounded-xl border transition-all overflow-hidden
@@ -5813,7 +5819,7 @@ const DebtModal = ({ open, onClose, onSave, editData, theme }) => {
   return (
     <Portal>
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 modal-bg">
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData?'แก้ไขรายการหนี้':'เพิ่มรายการหนี้ใหม่'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -5958,7 +5964,7 @@ const DebtPage = ({ theme, debts, setDebts }) => {
 
       {debts.map(debt=>{
         const c=calcDebt(debt);
-        const clr=c.pct>=100?'#7aab8a':dk?'#475569':'#94a3b8';
+        const clr=c.pct>=100?'#7aab8a':dk?'#585654':'#8b8985';
         const extra=extraMap[debt.id]||'';
         const extraAmt=parseFloat(extra)||0;
         let extraInfo=null;
@@ -6091,7 +6097,7 @@ const WalletModal = ({ open, onClose, onSave, editData, theme }) => {
   const lbl = `text-xs font-medium mb-1.5 block ${dk?'text-slate-400':'text-slate-500'}`;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData?'แก้ไขกระเป๋าเงิน':'เพิ่มกระเป๋าเงินใหม่'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -6176,7 +6182,7 @@ const CustodialModal = ({ open, onClose, onSave, editData, theme, wallets=[] }) 
   return (
     <Portal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-amber-900/40':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-amber-900/40':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData?'แก้ไขเงินที่ถือแทน':'🔒 เพิ่มเงินที่ถือแทน'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -6247,7 +6253,7 @@ const DCAModal = ({open, onClose, asset, usdRate=35, theme}) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <div>
             <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>🧮 DCA Calculator</h2>
@@ -6509,11 +6515,11 @@ const UnifiedTransferModal = ({open, onClose, onSave, wallets=[], assets=[], txs
 
   const inp=`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all ${dk?'bg-white/5 border-white/10 text-white placeholder-slate-600 focus:border-gold-500':'bg-slate-50 border-slate-200 text-slate-800 focus:border-gold-400'}`;
   const lbl2=`text-xs font-medium mb-1.5 block ${dk?'text-slate-400':'text-slate-500'}`;
-  const sel=`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all ${dk?'bg-[#1a1a2e] border-white/10 text-white focus:border-gold-500':'bg-slate-50 border-slate-200 text-slate-800 focus:border-gold-400'}`;
+  const sel=`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all ${dk?'bg-[#161615] border-white/10 text-white focus:border-gold-500':'bg-slate-50 border-slate-200 text-slate-800 focus:border-gold-400'}`;
   if(!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-900/40':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-900/40':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <div>
             <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>💸 โยกเงิน / ลงทุน</h2>
@@ -6910,7 +6916,13 @@ const ReturnRanking = ({ assets, txs, usdRate, theme }) => {
 // guesswork — the scale is normalised to whatever range these months happen to
 // span. The exact figures live in the P/L card further down, where they carry
 // units.
-const HeroSpark = ({ history, accent='#e8763a' }) => {
+// Gold, not the action orange. This fill is the largest coloured area on the
+// dashboard — it sweeps the whole width behind the headline figure — and orange
+// laid over a dark ground composites brown at every opacity, which made the
+// single biggest thing on the page the one colour the theme is trying not to
+// be. Everything else was tuned around it for a while before the fill itself
+// was checked.
+const HeroSpark = ({ history, accent='#d9af2b' }) => {
   const d = useMemo(()=>{
     const pts = [...history].sort((a,b)=>a.month.localeCompare(b.month)).map(h=>h.total);
     if(pts.length < 2) return null;
@@ -6927,7 +6939,7 @@ const HeroSpark = ({ history, accent='#e8763a' }) => {
       preserveAspectRatio="none" aria-hidden="true">
       <defs>
         <linearGradient id="heroSparkFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor={accent} stopOpacity="0.16"/>
+          <stop offset="0%"   stopColor={accent} stopOpacity="0.20"/>
           <stop offset="100%" stopColor={accent} stopOpacity="0"/>
         </linearGradient>
       </defs>
@@ -6978,12 +6990,12 @@ const PageHeader = ({ lead, accent, sub, theme, right=null }) => {
       {dk && (
         <>
           <div className="absolute inset-0 pointer-events-none" style={{
-            background:'radial-gradient(ellipse 80% 130% at 12% 0%, rgba(232,118,58,0.07) 0%, transparent 62%),'
-                      +'radial-gradient(ellipse 60% 120% at 88% 100%, rgba(212,175,69,0.05) 0%, transparent 58%)',
+            background:'radial-gradient(ellipse 80% 130% at 12% 0%, rgba(230,200,92,0.09) 0%, transparent 62%),'
+                      +'radial-gradient(ellipse 60% 120% at 88% 100%, rgba(217,175,43,0.07) 0%, transparent 58%)',
           }}/>
           <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 90" preserveAspectRatio="none" aria-hidden="true">
-            <circle cx="330" cy="-95" r="150" fill="none" stroke="#d4af45" strokeWidth="0.7" opacity="0.22" vectorEffect="non-scaling-stroke"/>
-            <circle cx="378" cy="-40" r="150" fill="none" stroke="#e8763a" strokeWidth="0.7" opacity="0.14" vectorEffect="non-scaling-stroke"/>
+            <circle cx="330" cy="-95" r="150" fill="none" stroke="#d9af2b" strokeWidth="0.7" opacity="0.22" vectorEffect="non-scaling-stroke"/>
+            <circle cx="378" cy="-40" r="150" fill="none" stroke="#e6c85c" strokeWidth="0.7" opacity="0.18" vectorEffect="non-scaling-stroke"/>
           </svg>
         </>
       )}
@@ -7332,10 +7344,14 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
             </div>
             <div className="flex flex-wrap gap-2">
               {[
-                {key:'cash',   icon:'💵', label:'เงินสด', val:cashTotal,   color:'#9AA374', show:true},
-                {key:'crypto', icon:'🔐', label:'Crypto', val:cryptoTotal, color:'#DB5A6B', show:hasCrypto},
-                {key:'stock',  icon:'📈', label:'หุ้น',   val:stockTotal,  color:'#26c6da', show:hasStocks},
-                {key:'other',  icon:'👛', label:'อื่นๆ',  val:otherTotal,  color:'#6b6154', show:hasOtherWallets},
+                // Same colours ASSET_TYPES uses for the same four words. They were an
+                // olive, a raspberry, a cyan and a brown — four hues invented here and
+                // used nowhere else, so "หุ้น" was one colour on this page and another
+                // on the assets page. One concept, one colour.
+                {key:'cash',   icon:'💵', label:'เงินสด', val:cashTotal,   color:'#d99669', show:true},
+                {key:'crypto', icon:'🔐', label:'Crypto', val:cryptoTotal, color:'#f0cbb2', show:hasCrypto},
+                {key:'stock',  icon:'📈', label:'หุ้น',   val:stockTotal,  color:'#f8e3d5', show:hasStocks},
+                {key:'other',  icon:'👛', label:'อื่นๆ',  val:otherTotal,  color:'#c97e4d', show:hasOtherWallets},
               ].filter(c=>c.show).map(c=>{
                 // Must match the headline above, or the chips add up to a
                 // different number than the total they sit beside.
@@ -7500,7 +7516,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                       four facts printed twice. The month-on-month arrow stayed
                       gone: moving money between your own accounts swung it
                       wildly while nothing was earned or spent. */}
-                  <WalletCardFace w={w} meta={meta} accent="#d4af45" hidden={hidden}
+                  <WalletCardFace w={w} meta={meta} accent="#d9af2b" hidden={hidden}
                     balanceText={fmtSigned(w.balance)}
                     usdText={'$'+(w.balance/usdRate).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}/>
                   <div className="mb-3">
@@ -7665,7 +7681,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                   <div className={`px-3 py-2.5 border-t space-y-2 ${dk?'border-white/8 bg-teal-500/5':'border-teal-100 bg-teal-50/60'}`} onClick={e=>e.stopPropagation()}>
                     <p className={`text-[11px] font-semibold ${dk?'text-teal-400':'text-teal-700'}`}>💰 บันทึกเงินปันผล</p>
                     <div className="flex gap-1.5">
-                      <select className={`flex-1 px-2 py-1.5 rounded-lg border text-xs outline-none ${dk?'bg-[#1a1a2e] border-white/15 text-white':'bg-white border-slate-300 text-slate-700'}`}
+                      <select className={`flex-1 px-2 py-1.5 rounded-lg border text-xs outline-none ${dk?'bg-[#161615] border-white/15 text-white':'bg-white border-slate-300 text-slate-700'}`}
                         value={divAssetId} onChange={e=>{ setDivAssetId(e.target.value); setDivTtl(''); }}>
                         <option value="">— หุ้น/กองทุน (ไม่บังคับ) —</option>
                         {assets.filter(a=>a.type!=='cash').map(a=><option key={a.id} value={a.id}>{a.name}{a.ticker?` (${a.ticker})`:''}</option>)}
@@ -7699,7 +7715,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                       const cashHere = assets.filter(a=>a.type==='cash' && String(a.walletId)===String(w.id));
                       if (!cashHere.length) return null;
                       return (
-                        <select className={`w-full px-2 py-1.5 rounded-lg border text-xs outline-none ${dk?'bg-[#1a1a2e] border-white/15 text-white':'bg-white border-slate-300 text-slate-700'}`}
+                        <select className={`w-full px-2 py-1.5 rounded-lg border text-xs outline-none ${dk?'bg-[#161615] border-white/15 text-white':'bg-white border-slate-300 text-slate-700'}`}
                           value={divToAssetId} onChange={e=>setDivToAssetId(e.target.value)}>
                           <option value="">💵 เงินเข้า: เงินสดในกระเป๋า</option>
                           {cashHere.map(a=><option key={a.id} value={a.id}>💵 เงินเข้า: {a.name}</option>)}
@@ -7829,7 +7845,7 @@ const RecurringModal = ({open, onClose, onSave, editData, theme, wallets=[], add
   return (
     <Portal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData&&!addLabel?'แก้ไขรายการประจำ':'เพิ่มรายการประจำ'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -8031,7 +8047,7 @@ const TrashModal = ({open, onClose, theme, trash, wallets, assets, onRestore, on
   const typeLbl = t => t.type==='transfer'?'โยกเงิน':t.type==='income'?'รายรับ':t.type==='adjustment'?'ปรับยอด':t.type==='dividend'?'ปันผล':'รายจ่าย';
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>🗑 ถังขยะ <span className={`text-xs font-normal ${dk?'text-slate-500':'text-slate-400'}`}>({trash.length})</span></h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -8092,7 +8108,7 @@ const BackupModal = ({open, onClose, onRestore, theme, txs, assets, wallets, deb
     setPass(''); setPass2(''); setShowPass(false); setEncFile(null); setUnlockPass(''); setBusy(''); } },[open]);
 
   const inp = `w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none ${dk?'bg-white/5 border-white/10 text-white':'bg-slate-50 border-slate-200 text-slate-800'}`;
-  const sel = `w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none ${dk?'bg-[#0c1018] border-white/10 text-white':'bg-slate-50 border-slate-200 text-slate-800'}`;
+  const sel = `w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none ${dk?'bg-[#1a1a19] border-white/10 text-white':'bg-slate-50 border-slate-200 text-slate-800'}`;
 
   const handleExport = async () => {
     const data = {
@@ -8198,7 +8214,7 @@ const BackupModal = ({open, onClose, onRestore, theme, txs, assets, wallets, deb
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>💾 Backup & Restore</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -8339,7 +8355,7 @@ const ImportModal = ({open, onClose, onImport, theme}) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-lg rounded-2xl shadow-2xl scale-in ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-lg rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>📥 นำเข้าข้อมูล</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -8426,7 +8442,7 @@ const VerifyEmail = ({ user, dk, addToast }) => {
 
   return (
     <div className={`min-h-screen flex items-center justify-center p-6 ${dk?'bg-app':'bg-slate-50'}`}>
-      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
         <div className="text-4xl mb-4">📧</div>
         {/* The first screen a stranger meets, so it reads as a system notice
             rather than as a message from a person. */}
@@ -8754,7 +8770,7 @@ const PinModal = ({mode, onClose, onDone, dk}) => {
       <div className="fixed z-[9998] flex items-center justify-center p-4" onClick={onClose}
         style={{inset:0, top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.55)', backdropFilter:'blur(3px)'}}>
         <div onClick={e=>e.stopPropagation()} role="dialog" aria-modal="true" aria-label={head}
-          className={`w-full max-w-[300px] rounded-2xl shadow-2xl p-5 scale-in ${dk?'bg-[#0c1018] border border-white/10':'bg-white'}`}>
+          className={`w-full max-w-[300px] rounded-2xl shadow-2xl p-5 scale-in ${dk?'bg-[#1a1a19] border border-white/10':'bg-white'}`}>
           <div className="text-center mb-4">
             <div className="text-3xl mb-1.5">{mode==='unlock'?'🔒':mode==='off'?'🔓':mode==='change'?'🔁':'🔐'}</div>
             <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{head}</div>
@@ -10068,12 +10084,12 @@ const App = () => {
   // sat in the header and everything below it was flat black. Fixed keeps the
   // same glow in view the whole way down. iOS Safari ignores this and falls
   // back to the old scroll behaviour, which is merely what we had before.
-  const bgStyle = { background: _th[dk?'dark':'light'], backgroundAttachment:'fixed', '--card-bg': _th.card || '#0b1220' };
+  const bgStyle = { background: _th[dk?'dark':'light'], backgroundAttachment:'fixed', '--card-bg': _th.card || '#090908' };
 
   // ── Auth guard ──
   if (kickedOut) return (
     <div className="min-h-screen flex items-center justify-center" style={bgStyle}>
-      <div className={`w-full max-w-sm rounded-2xl shadow-2xl scale-in p-8 text-center ${theme==='dark'?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-sm rounded-2xl shadow-2xl scale-in p-8 text-center ${theme==='dark'?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
         <div className="text-5xl mb-4">⚠️</div>
         <h2 className={`text-lg font-bold mb-2 ${theme==='dark'?'text-white':'text-slate-800'}`}>ออกจากระบบอัตโนมัติ</h2>
         <p className={`text-sm mb-6 ${theme==='dark'?'text-slate-400':'text-slate-500'}`}>บัญชีนี้ถูกเข้าสู่ระบบจากอุปกรณ์อื่น<br/>กรุณาเข้าสู่ระบบใหม่อีกครั้ง</p>
@@ -10160,7 +10176,7 @@ const App = () => {
 
   if (user && userStatus === 'pending') return (
     <div className={`min-h-screen flex items-center justify-center ${dk?'bg-app':'bg-slate-50'}`}>
-      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
         {/* A wait with no stated length, no reason and no next step reads as
             being stonewalled. All three are cheap to give, and the page now
             watches the registry, so it lets itself in the moment approval
@@ -10181,7 +10197,7 @@ const App = () => {
 
   if (userStatus === 'rejected') return (
     <div className={`min-h-screen flex items-center justify-center ${dk?'bg-app':'bg-slate-50'}`}>
-      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
         <div className="text-5xl mb-4">🚫</div>
         <h2 className={`text-lg font-bold mb-2 ${dk?'text-white':'text-slate-800'}`}>ไม่ได้รับอนุญาต</h2>
         {/* Two lines rather than one wrapped paragraph: the single line broke
@@ -10237,7 +10253,7 @@ const App = () => {
               <button onClick={()=>setMenuOpen(o=>!o)} title="เมนู" className={`p-2 rounded-xl transition-colors ${menuOpen?(dk?'bg-white/10 text-white':'bg-slate-100 text-slate-800'):(dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-700')}`}><Ic n="menu" s={16}/></button>
               {menuOpen&&(<>
                 <div className="fixed inset-0 z-40" onClick={()=>setMenuOpen(false)}/>
-                <div className={`absolute right-0 mt-2 w-56 rounded-xl shadow-2xl z-50 py-1.5 ${dk?'bg-[#0d1625] border border-white/10':'bg-white border border-slate-200'}`}>
+                <div className={`absolute right-0 mt-2 w-56 rounded-xl shadow-2xl z-50 py-1.5 ${dk?'bg-[#1a1a19] border border-white/10':'bg-white border border-slate-200'}`}>
                   {[
                     {icon:'💡', label: discover?'ซ่อนคำแนะนำการใช้งาน':'คำแนะนำการใช้งาน', on:()=>setDiscover(d=>!d)},
                     {icon:'📥', label:'นำเข้าข้อมูล', on:()=>setImport(true)},
@@ -10494,7 +10510,7 @@ const App = () => {
       {isEmptyData && !onboardDone && (
         <Portal>
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-            <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in p-6 text-center ${dk?'bg-[#080f1e] border border-gold-500/25':'bg-white'}`}>
+            <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in p-6 text-center ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
               <div className="text-5xl mb-3">👋</div>
               <h2 className={`text-lg font-bold mb-1 ${dk?'text-white':'text-slate-800'}`}>ยินดีต้อนรับสู่ FinTracker</h2>
               <p className={`text-sm mb-6 ${dk?'text-slate-400':'text-slate-500'}`}>ติดตามเงิน กระเป๋า สินทรัพย์ และงบประมาณ ในที่เดียว</p>
@@ -10521,7 +10537,7 @@ const App = () => {
       <Toast toasts={toasts} remove={rmToast} cancelUndo={cancelUndo}/>
       {assetCreatedAlert&&(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-          <div className={`relative w-full max-w-sm rounded-2xl shadow-2xl scale-in overflow-hidden ${dk?'bg-[#080f1e] border border-white/10':'bg-white'}`}>
+          <div className={`relative w-full max-w-sm rounded-2xl shadow-2xl scale-in overflow-hidden ${dk?'bg-[#151514] border border-white/10':'bg-white'}`}>
             <button onClick={()=>setAssetCreatedAlert(null)} aria-label="ปิด" className={`absolute top-3 right-3 z-10 p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-500':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
             <div className="px-6 pt-9 pb-6 text-center">
               <div className="mx-auto mb-4 w-16 h-16 rounded-full flex items-center justify-center bg-emerald-500 shadow-lg shadow-emerald-500/30" style={{animation:'checkPop .4s cubic-bezier(.34,1.4,.5,1) both'}}>
@@ -10553,14 +10569,14 @@ class ErrorBoundary extends React.Component {
   render(){
     if(this.state.err){
       return (
-        <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px',background:'#05080f',color:'#e2e8f0',fontFamily:'system-ui,sans-serif'}}>
+        <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px',background:'#05080f',color:'#d5d3d0',fontFamily:'system-ui,sans-serif'}}>
           <div style={{maxWidth:'420px',textAlign:'center'}}>
             <div style={{fontSize:'42px',marginBottom:'12px'}}>⚠️</div>
             <div style={{fontSize:'18px',fontWeight:700,marginBottom:'8px',color:'#d4a017'}}>เกิดข้อผิดพลาดในการแสดงผล</div>
-            <div style={{fontSize:'13px',color:'#94a3b8',marginBottom:'4px'}}>ข้อมูลของคุณปลอดภัย (เก็บไว้ในเครื่อง + คลาวด์)</div>
-            <div style={{fontSize:'13px',color:'#94a3b8',marginBottom:'20px'}}>กดโหลดใหม่เพื่อกลับเข้าใช้งานได้เลยค่ะ</div>
+            <div style={{fontSize:'13px',color:'#8b8985',marginBottom:'4px'}}>ข้อมูลของคุณปลอดภัย (เก็บไว้ในเครื่อง + คลาวด์)</div>
+            <div style={{fontSize:'13px',color:'#8b8985',marginBottom:'20px'}}>กดโหลดใหม่เพื่อกลับเข้าใช้งานได้เลยค่ะ</div>
             <button onClick={()=>location.reload()} style={{background:'#d4a017',color:'#05080f',border:'none',borderRadius:'12px',padding:'10px 24px',fontSize:'14px',fontWeight:700,cursor:'pointer'}}>โหลดใหม่</button>
-            <pre style={{marginTop:'18px',fontSize:'11px',color:'#475569',whiteSpace:'pre-wrap',textAlign:'left',maxHeight:'120px',overflow:'auto'}}>{String(this.state.err&&this.state.err.message||this.state.err)}</pre>
+            <pre style={{marginTop:'18px',fontSize:'11px',color:'#585654',whiteSpace:'pre-wrap',textAlign:'left',maxHeight:'120px',overflow:'auto'}}>{String(this.state.err&&this.state.err.message||this.state.err)}</pre>
           </div>
         </div>
       );
