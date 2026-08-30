@@ -172,8 +172,13 @@ const db   = firebase.firestore();
      work in the reference is that only the big panels carry it while rows and
      chips inside stay tight, so the curve marks the panel edge instead of
      repeating at four scales. Set here rather than at ~200 call sites. */
-  .rounded-2xl { border-radius: 1.125rem !important; }
-  .rounded-xl  { border-radius: 0.75rem  !important; }
+  /* 14px and 9px. 18px was soft enough to read as app chrome; 6px went the
+     other way and made the panels look like untouched boxes. The middle keeps
+     the corner visible as a deliberate curve without it becoming the loudest
+     thing about the shape, and the inner radius stays roughly two thirds of the
+     outer so a chip inside a panel still reads as nested. */
+  .rounded-2xl { border-radius: 0.875rem !important; }
+  .rounded-xl  { border-radius: 0.5625rem !important; }
 
   /* ── Pill controls ───────────────────────────────────────────────────────
      Buttons go fully round, which is the single most recognisable thing about

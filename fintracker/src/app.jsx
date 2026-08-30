@@ -1526,14 +1526,29 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
   const dayOfYear = Math.floor((now - new Date(now.getFullYear(),0,1)) / 86400000);
   const todayQ = QUOTES[dayOfYear % QUOTES.length];
 
-  const StatCard = ({ icon, label, val, sub, accent, extra='', valCls='' }) => (
-    <div className={`${card} ${extra}`}>
-      <div className="flex items-center justify-between mb-3">
-        <span className={`text-xs font-medium uppercase tracking-wide ${dk?'text-slate-400':'text-slate-500'}`}>{label}</span>
-        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${accent}`}>{icon}</div>
+  // Four boxes became four columns under one rule. A card is a container you
+  // reach for when content needs separating from its neighbours; these four
+  // figures are the same kind of thing measured four ways, and boxing each one
+  // said they were unrelated. The rule above them says the opposite, and takes
+  // a border, a background, a corner radius and an icon plate off the screen.
+  //
+  // What is left carries the weight: a small letterspaced label, a large figure,
+  // and a hairline that fades as it travels. The icon plate is gone — a coloured
+  // square behind a coloured glyph stated the same thing twice.
+  const StatCard = ({ icon, label, val, sub, extra='', valCls='' }) => (
+    <div className={`relative pt-4 pr-4 ${extra}`}>
+      <span className="absolute top-0 left-0 right-4 h-px" aria-hidden="true"
+        style={{background: dk
+          ? 'linear-gradient(90deg, rgba(217,175,43,0.55) 0%, rgba(217,175,43,0.10) 70%, transparent 100%)'
+          : 'linear-gradient(90deg, rgba(154,120,16,0.45) 0%, rgba(154,120,16,0.08) 70%, transparent 100%)'}}/>
+      <div className="flex items-center gap-1.5 mb-2.5">
+        <span className="opacity-70">{icon}</span>
+        <span className={`text-[10px] font-medium uppercase ${dk?'text-slate-400':'text-slate-500'}`}
+          style={{letterSpacing:'0.16em'}}>{label}</span>
       </div>
-      <div className={`text-2xl font-bold tracking-tight ${valCls||(dk?'text-white':'text-slate-800')}`}>{val}</div>
-      {sub&&<div className={subTx+' mt-1'}>{sub}</div>}
+      <div className={`text-[1.65rem] font-semibold tabular-nums ${valCls||(dk?'text-slate-100':'text-slate-800')}`}
+        style={{letterSpacing:'-0.015em', lineHeight:1.1}}>{val}</div>
+      {sub&&<div className={subTx+' mt-1.5'}>{sub}</div>}
     </div>
   );
 
@@ -1677,15 +1692,16 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="ยอดคงเหลือ"  val={mask(fmt(balance))}     sub={balance>=0?null:'⚠ ติดลบ'}  icon={<Ic n="wallet" s={15} cls="text-gold-300"/>} accent="bg-gold-500/15" extra="" valCls={dk?'tg-white':'text-slate-800'}/>
-        {/* No tinted border or glow. Income vs expense was being encoded five
-            times over on one card — figure colour, icon colour, icon backing,
-            border tint and an outer halo — for a single bit the number states
-            outright. The card keeps the shared gold hairline; the figure and
-            the icon still carry the colour. */}
-        <StatCard label="รายรับรวม"   val={mask(fmt(income))}      sub={`${txs.filter(t=>t.type==='income').length} รายการ`}  icon={<Ic n="up" s={15} cls="text-emerald-400"/>} accent="bg-emerald-500/15" valCls={dk?'tg-emerald':'text-slate-800'}/>
-        <StatCard label="รายจ่ายรวม"  val={mask(fmt(expense))}     sub={`${txs.filter(t=>t.type==='expense').length} รายการ`} icon={<Ic n="down" s={15} cls="text-rose-400"/>} accent="bg-rose-500/15" valCls={dk?'tg-red':'text-slate-800'}/>
-        <StatCard label="อัตราออม"    val={hideAmt?'••%':`${savRate.toFixed(1)}%`} sub={savRate>=20?'✓ ดีมาก':'↑ เพิ่มได้อีก'} icon={<Ic n="chart" s={15} cls="text-amber-400"/>} accent="bg-amber-500/15" valCls={dk?'tg-gold':'text-slate-800'}/>
+        {/* Income vs expense used to be stated five ways on one card: figure
+            colour, glyph colour, glyph backing, border tint, outer halo. The
+            label already says which is which, and these four are read as a row
+            — a green figure beside a red one turns a row of related numbers
+            into a scoreboard. The glyph keeps the distinction; the figures are
+            one colour so the row reads as one thing. */}
+        <StatCard label="ยอดคงเหลือ"  val={mask(fmt(balance))}     sub={balance>=0?null:'⚠ ติดลบ'}  icon={<Ic n="wallet" s={14} cls="text-gold-400"/>}/>
+        <StatCard label="รายรับรวม"   val={mask(fmt(income))}      sub={`${txs.filter(t=>t.type==='income').length} รายการ`}  icon={<Ic n="up" s={14} cls="text-gold-400"/>}/>
+        <StatCard label="รายจ่ายรวม"  val={mask(fmt(expense))}     sub={`${txs.filter(t=>t.type==='expense').length} รายการ`} icon={<Ic n="down" s={14} cls="text-gold-400"/>}/>
+        <StatCard label="อัตราออม"    val={hideAmt?'••%':`${savRate.toFixed(1)}%`} sub={savRate>=20?'✓ ดีมาก':'↑ เพิ่มได้อีก'} icon={<Ic n="chart" s={14} cls="text-gold-400"/>} valCls={dk?'tg-gold':'text-slate-800'}/>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
