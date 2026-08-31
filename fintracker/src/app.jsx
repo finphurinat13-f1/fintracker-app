@@ -1698,6 +1698,7 @@ const useConfirm = (dk=false) => {
 
 // ── DASHBOARD ──────────────────────────────────────────────
 const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, debts=[], custodial=[], privacy=false, hideAmt=false, onToggleHide }) => {
+  const [nwOpen, setNwOpen] = useState(false);
   const dk = theme==='dark';
   const now = new Date();
   const curM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
@@ -1884,6 +1885,8 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
     // animating as one block is exactly what made every section land on the
     // same frame. The children carry the animation now.
     <div className="space-y-7 stagger">
+      <NetWorthBreakdown open={nwOpen} onClose={()=>setNwOpen(false)}
+        wallets={wallets} assets={assets} debts={debts} txs={txs} usdRate={usdRate} dk={dk}/>
 
       {/* ── Hero + Quote (merged) ──
           This band is the masthead — logo, greeting, quote, date — not a data
@@ -1967,7 +1970,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           <div className="relative flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div className={`text-xs font-medium uppercase tracking-widest ${dk?'text-slate-400':'text-slate-500'}`}>Net Worth · มูลค่าทรัพย์สินสุทธิ <span title="เงินสด + สินทรัพย์ทั้งหมด หักหนี้สิน = เงินที่เป็นของคุณจริงๆ (เงินที่ถือแทนคนอื่นแสดงแยกไว้ ไม่รวมในยอดนี้)" style={{cursor:'help',opacity:.7}}>ⓘ</span></div>
+                <div className={`text-xs font-medium uppercase tracking-widest ${dk?'text-slate-400':'text-slate-500'}`}>Net Worth · มูลค่าทรัพย์สินสุทธิ <button onClick={()=>setNwOpen(true)} title="ดูว่าตัวเลขนี้มาจากไหน" style={{cursor:'pointer',opacity:.7}}>ⓘ</button></div>
               </div>
               <button data-hint="คลิกซ่อน/แสดงจำนวนเงิน" onClick={()=>onToggleHide&&onToggleHide()} className={`flex items-center gap-2 group cursor-pointer text-left`}>
                 {/* clamp rather than a scale step: this figure should grow with
@@ -2206,6 +2209,8 @@ const MonthGroup = ({ month, txs, dk, defaultOpen=false, sel, toggleSel, onEdit,
                 <span className={`tabular-nums font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>เงินสดรวม {fmtSigned(close.total)}</span>
               </div>
             )}
+            <SwipeRow dk={dk} disabled={!onEdit&&!onDelete}
+              onEdit={()=>onEdit&&onEdit(t)} onDelete={()=>onDelete&&onDelete(t.id)}>
             <div
               className={`flex items-center gap-3 px-4 py-4 border-t group transition-colors ${dk?(dayBand[t.id]===0?'border-white/[0.04] bg-white/[0.01] hover:bg-white/[0.05]':'border-white/[0.04] bg-black/[0.08] hover:bg-white/[0.04]'):(dayBand[t.id]===0?'border-slate-100 bg-white hover:bg-slate-50':'border-slate-100 bg-slate-50/50 hover:bg-slate-100/60')}`}>
               <input type="checkbox" checked={sel.includes(t.id)} onChange={()=>toggleSel(t.id)} className="rounded w-3.5 h-3.5 flex-shrink-0 opacity-50 hover:opacity-100 transition-opacity"/>
@@ -2280,6 +2285,7 @@ const MonthGroup = ({ month, txs, dk, defaultOpen=false, sel, toggleSel, onEdit,
                 <button title="ลบ" onClick={e=>{e.stopPropagation();onDelete(t.id);}} className={`p-1.5 rounded-lg ${dk?'hover:bg-rose-500/20 text-rose-400':'hover:bg-rose-50 text-rose-400'}`}><Ic n="trash" s={11}/></button>
               </div>
             </div>
+            </SwipeRow>
             </React.Fragment>
            );
           })}
@@ -5624,6 +5630,215 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
           "how much" twice before it answered "where". */}
       </>)}
     </div>
+  );
+};
+
+// ── SWIPE ROW ──────────────────────────────────────────────────────────────
+// The row actions are revealed by hover, and a phone has no hover — so on touch
+// they were either always visible and cluttering, or unreachable. A swipe is
+// the gesture people already use on a list on a phone, and it costs no pixels.
+//
+// Pointer Events rather than touch handlers: the same code then covers a stylus
+// and a trackpad drag, and only one set of listeners can ever be attached.
+// Horizontal intent is checked before anything moves — a row that slides while
+// the page is being scrolled is a row that fights the page.
+const SwipeRow = ({ onEdit, onDelete, disabled, children, dk }) => {
+  const [dx, setDx] = useState(0);
+  const st = useRef(null);
+  const THRESHOLD = 70, CAP = 96;
+
+  const down = e => {
+    if (disabled || e.pointerType === 'mouse') return;
+    st.current = { x: e.clientX, y: e.clientY, locked: null };
+  };
+  const move = e => {
+    if (!st.current) return;
+    const ddx = e.clientX - st.current.x, ddy = e.clientY - st.current.y;
+    if (st.current.locked === null) {
+      if (Math.abs(ddx) < 8 && Math.abs(ddy) < 8) return;
+      st.current.locked = Math.abs(ddx) > Math.abs(ddy) * 1.5 ? 'x' : 'y';
+    }
+    if (st.current.locked !== 'x') return;
+    setDx(Math.max(-CAP, Math.min(CAP, ddx)));
+  };
+  const up = () => {
+    if (!st.current) return;
+    const d = dx;
+    st.current = null;
+    setDx(0);
+    if (d <= -THRESHOLD && onDelete) onDelete();
+    else if (d >= THRESHOLD && onEdit) onEdit();
+  };
+
+  const armed = Math.abs(dx) >= THRESHOLD;
+  return (
+    <div className="relative overflow-hidden" style={{touchAction:'pan-y'}}>
+      {dx !== 0 && (
+        <div aria-hidden="true" className="absolute inset-0 flex items-center justify-between px-5 pointer-events-none">
+          <span className={`text-sm transition-opacity ${dx>0?'opacity-100':'opacity-0'} ${dk?'text-gold-300':'text-gold-700'}`}>
+            {armed?'ปล่อยเพื่อแก้ไข':'แก้ไข'}
+          </span>
+          <span className={`text-sm transition-opacity ${dx<0?'opacity-100':'opacity-0'} text-rose-400`}>
+            {armed?'ปล่อยเพื่อลบ':'ลบ'}
+          </span>
+        </div>
+      )}
+      <div onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
+        style={{transform:`translateX(${dx}px)`, transition: dx===0?'transform .18s ease':'none'}}>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// ── NET WORTH BREAKDOWN ────────────────────────────────────────────────────
+// The one figure the whole app builds towards, and until now it showed only its
+// answer. Three double-counting bugs in one day all had the same shape: a
+// number quietly wrong, with nothing on screen able to disagree with it. A
+// total that can be taken apart is a total that can be checked.
+//
+// Wallets and assets are listed separately and never netted against each other,
+// because that separation is exactly what the bugs violated — money counted in
+// a wallet AND in a holding it was already inside.
+const NetWorthBreakdown = ({ open, onClose, wallets, assets, debts, txs, usdRate, dk }) => {
+  if (!open) return null;
+
+  const cashRows = wallets
+    .map(w => ({ name: `${w.icon||''} ${w.name}`, val: walletCash(w, txs, assets) }))
+    .filter(r => Math.abs(r.val) > 0.005);
+  const cashSum = cashRows.reduce((s,r)=>s+r.val, 0);
+
+  const assetRows = assets
+    .map(a => ({ name: a.name || a.ticker || 'สินทรัพย์', type: a.type,
+                 val: assetVal(a, txs, usdRate) }))
+    .filter(r => Math.abs(r.val) > 0.005)
+    .sort((a,b)=>b.val-a.val);
+  const assetSum = assetRows.reduce((s,r)=>s+r.val, 0);
+
+  const debtSum = (debts||[]).reduce((s,d)=>s+(Number(d.remaining)||0), 0);
+  const net = cashSum + assetSum - debtSum;
+
+  const Row = ({ name, val, muted }) => (
+    <div className="flex items-baseline justify-between gap-3 py-1">
+      <span className={`text-xs truncate ${muted?(dk?'text-slate-500':'text-slate-400'):(dk?'text-slate-300':'text-slate-600')}`}>{name}</span>
+      <span className={`text-xs tabular-nums flex-shrink-0 ${dk?'text-slate-200':'text-slate-700'}`}>{fmt(val)}</span>
+    </div>
+  );
+  const Sub = ({ label, val }) => (
+    <div className={`flex items-baseline justify-between gap-3 mt-1.5 pt-1.5 border-t ${dk?'border-white/8':'border-slate-100'}`}>
+      <span className={`text-xs font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>{label}</span>
+      <span className={`text-sm font-semibold tabular-nums ${dk?'text-slate-100':'text-slate-800'}`}>{fmt(val)}</span>
+    </div>
+  );
+
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 z-[75] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()}
+        className={`w-full max-w-md max-h-[80vh] overflow-y-auto rounded-2xl border p-5 ${dk?'bg-[#1a1a1f] border-gold-500/25':'bg-white border-slate-200'}`}>
+        <div className="flex items-center justify-between mb-4">
+          <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>มูลค่าสุทธิมาจากไหน</span>
+          <button onClick={onClose} className={dk?'text-slate-500':'text-slate-400'}><Ic n="x" s={16}/></button>
+        </div>
+
+        <div className="mb-4">
+          {cashRows.length ? cashRows.map(r=><Row key={r.name} {...r}/>)
+            : <Row name="ไม่มีเงินสดในกระเป๋า" val={0} muted/>}
+          <Sub label="เงินสดในกระเป๋า" val={cashSum}/>
+        </div>
+
+        <div className="mb-4">
+          {assetRows.length ? assetRows.map(r=><Row key={r.name+r.val} {...r}/>)
+            : <Row name="ยังไม่มีสินทรัพย์" val={0} muted/>}
+          <Sub label="สินทรัพย์" val={assetSum}/>
+        </div>
+
+        {debtSum>0 && (
+          <div className="mb-4">
+            {(debts||[]).filter(d=>Number(d.remaining)>0).map(d=>(
+              <Row key={d.id} name={d.name||'หนี้สิน'} val={-Number(d.remaining)}/>
+            ))}
+            <Sub label="หักหนี้สิน" val={-debtSum}/>
+          </div>
+        )}
+
+        <div className={`flex items-baseline justify-between gap-3 pt-3 border-t-2 ${dk?'border-gold-500/30':'border-gold-700/30'}`}>
+          <span className={`text-sm font-semibold ${dk?'text-slate-100':'text-slate-800'}`}>มูลค่าสุทธิ</span>
+          <span className={`text-lg font-semibold tabular-nums ${dk?'text-gold-300':'text-gold-700'}`}>{fmt(net)}</span>
+        </div>
+
+        <p className={`text-[10px] mt-3 leading-relaxed ${dk?'text-slate-500':'text-slate-400'}`}>
+          เงินสดกับสินทรัพย์นับแยกกันเสมอ · เงินที่อยู่ในสินทรัพย์ประเภทเงินสดจะไม่ถูกนับซ้ำที่กระเป๋าของมัน
+        </p>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+// ── COMMAND PALETTE ────────────────────────────────────────────────────────
+// One place that reaches everything, opened without leaving the keyboard. The
+// app had exactly one shortcut before this — Esc to close a dialog — so every
+// other action cost a trip to the mouse, and the actions people repeat are the
+// ones that cost the most that way.
+//
+// It searches two things at once: what the app can do, and what is in it. A
+// palette that only lists commands makes you remember what things are called;
+// one that also finds a transaction by name answers the question people
+// actually arrive with, which is "where is that thing I typed".
+const CommandPalette = ({ open, onClose, actions, txs, onPick, dk }) => {
+  const [q, setQ] = useState('');
+  const [i, setI] = useState(0);
+  useEffect(()=>{ if(open){ setQ(''); setI(0); } },[open]);
+
+  const results = useMemo(()=>{
+    const needle = q.trim().toLowerCase();
+    const cmds = actions.filter(a => !needle || a.label.toLowerCase().includes(needle));
+    if (needle.length < 2) return cmds.slice(0, 8);
+    // Rows come after commands and are capped: the palette is a way to act, and
+    // a list of forty matching payments turns it into a search results page.
+    const rows = txs
+      .filter(t => (t.title||'').toLowerCase().includes(needle))
+      .slice(0, 5)
+      .map(t => ({ label: t.title, hint: `${t.date} · ${fmt(Math.abs(t.amount))}`, tx: t }));
+    return [...cmds.slice(0, 6), ...rows];
+  }, [q, actions, txs]);
+
+  useEffect(()=>{ setI(0); }, [q]);
+  useEffect(()=>{
+    if (!open) return;
+    const key = e => {
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === 'ArrowDown') { e.preventDefault(); setI(n => Math.min(n+1, results.length-1)); }
+      if (e.key === 'ArrowUp')   { e.preventDefault(); setI(n => Math.max(n-1, 0)); }
+      if (e.key === 'Enter')     { e.preventDefault(); const r = results[i]; if (r) { onPick(r); onClose(); } }
+    };
+    document.addEventListener('keydown', key);
+    return () => document.removeEventListener('keydown', key);
+  }, [open, results, i, onPick, onClose]);
+
+  if (!open) return null;
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 z-[80] flex items-start justify-center pt-[12vh] px-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()}
+        className={`w-full max-w-lg rounded-2xl border overflow-hidden ${dk?'bg-[#1a1a1f] border-gold-500/25':'bg-white border-slate-200'}`}>
+        <input autoFocus value={q} onChange={e=>setQ(e.target.value)}
+          placeholder="พิมพ์คำสั่ง หรือชื่อรายการ…"
+          className={`w-full px-4 py-3.5 bg-transparent outline-none text-sm ${dk?'text-slate-100 placeholder-slate-600':'text-slate-800 placeholder-slate-400'}`}/>
+        <div className={`max-h-80 overflow-y-auto border-t ${dk?'border-white/8':'border-slate-100'}`}>
+          {results.length===0
+            ? <p className={`px-4 py-6 text-center text-xs ${dk?'text-slate-500':'text-slate-400'}`}>ไม่พบอะไรที่ตรง</p>
+            : results.map((r, n)=>(
+              <button key={n} onMouseEnter={()=>setI(n)} onClick={()=>{ onPick(r); onClose(); }}
+                className={`w-full text-left px-4 py-2.5 flex items-center justify-between gap-3 transition-colors ${
+                  n===i ? (dk?'bg-white/8':'bg-slate-100') : ''}`}>
+                <span className={`text-sm truncate ${dk?'text-slate-200':'text-slate-700'}`}>{r.label}</span>
+                {r.hint && <span className={`text-[11px] tabular-nums flex-shrink-0 ${dk?'text-slate-500':'text-slate-400'}`}>{r.hint}</span>}
+              </button>
+            ))}
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 };
 
@@ -9790,6 +10005,34 @@ const App = () => {
     }
   },[]);
   const [quickOpen,setQuickOpen]       = useState(false);
+  const [paletteOpen,setPaletteOpen]   = useState(false);
+  // Ctrl/Cmd+K, and only when nothing else is capturing the keyboard — opening
+  // a palette over a half-typed amount loses the amount.
+  useEffect(()=>{
+    const key = e => {
+      if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k') {
+        const el = document.activeElement;
+        if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+        e.preventDefault();
+        setPaletteOpen(o=>!o);
+      }
+    };
+    document.addEventListener('keydown', key);
+    return ()=>document.removeEventListener('keydown', key);
+  },[]);
+  const goPage = k => { setPage(k); try{localStorage.setItem('ft-page',k);}catch{} };
+  const paletteActions = useMemo(()=>[
+    { label:'เพิ่มรายการใหม่',  run:()=>setModal({open:true,editData:null,prefill:null,defaultWalletId:null}) },
+    { label:'บันทึกเร็ว',       run:()=>setQuickOpen(true) },
+    { label:'ไปหน้าหลัก',       run:()=>goPage('dashboard') },
+    { label:'ไปหน้ารายการ',     run:()=>goPage('transactions') },
+    { label:'ไปหน้าสินทรัพย์',   run:()=>goPage('assets') },
+    { label:'ไปหน้ากระเป๋าเงิน', run:()=>goPage('wallet') },
+    { label:'ไปหน้า Budget',    run:()=>goPage('budget') },
+    { label:'ไปหน้าหนี้สิน',     run:()=>goPage('debt') },
+    { label:'ไปหน้าสรุป',       run:()=>goPage('summary') },
+    { label:'สลับโหมดสว่าง/มืด', run:()=>setTheme(t=>t==='dark'?'light':'dark') },
+  ],[]);
   const [wModal,setWModal]             = useState({open:false,editData:null});
   const [toasts,setToasts]     = useState([]);
   const txsRef                 = useRef(txs);
@@ -11145,6 +11388,9 @@ const App = () => {
         style={{bottom:'calc(4.75rem + env(safe-area-inset-bottom))'}}>
         +
       </button>
+      <CommandPalette open={paletteOpen} onClose={()=>setPaletteOpen(false)}
+        actions={paletteActions} txs={txs} dk={dk}
+        onPick={r=>{ if(r.run) r.run(); else if(r.tx) openEdit(r.tx); }}/>
       <QuickAdd open={quickOpen} onClose={()=>setQuickOpen(false)} onSave={saveModal}
         txs={txs} wallets={wallets} dk={dk}
         /* The wallet the last spend came from, which is the one it will come from
