@@ -2597,7 +2597,7 @@ const Analytics = ({ txs, theme }) => {
   const momExp=lstExp>0?((curExp-lstExp)/lstExp*100):0;
 
   const card=`rounded-2xl p-5 fade-up ${dk?'card-solid':'glass-light shadow-sm'}`;
-  const ttl=`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-700'}`;
+  const ttl=`text-sm font-semibold mb-4 ${dk?'text-gold-300':'text-gold-700'}`;
   const sub=`text-xs ${dk?'text-slate-400':'text-slate-500'}`;
 
   return (
@@ -4953,7 +4953,8 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
 
   // ── Analytics data ──
   const months6=useMemo(()=>{ const ms=[]; for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);ms.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);} return ms; },[]);
-  const lineData=useMemo(()=>({ labels:months6.map(m=>{ const[,mo]=m.split('-'); return MONTHS_TH[parseInt(mo)-1]; }), income:months6.map(m=>sumTxMonth(txs,'income',m)), expense:months6.map(m=>sumTxMonth(txs,'expense',m)) }),[txs,months6]);
+  // lineData went with the six-month line chart it fed. The dashboard keeps
+  // its own copy of this series, with the range control this page never had.
   const topCats=useMemo(()=>{ const byC={}; const period=view==='yearly'?String(now.getFullYear()):curM; txs.filter(t=>t.type==='expense'&&t.date.startsWith(period)).forEach(t=>{ byC[t.category]=(byC[t.category]||0)+t.amount; }); return Object.entries(byC).sort((a,b)=>b[1]-a[1]); },[txs,curM,view]);
   const topCatsExpTotal = topCats.reduce((s,[,amt])=>s+amt,0);
   const curInc=sumTxMonth(txs,'income',curM), lstInc=sumTxMonth(txs,'income',lastM);
@@ -5077,15 +5078,23 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
+        {/* One colour across the row, matching the dashboard's. These four are the
+            same span measured four ways and they are read together; a gold
+            figure beside a red one beside a green one turns a summary into a
+            scoreboard, and the labels already say which is which.
+
+            Two exceptions earn their colour. The net goes terracotta when it is
+            negative, which is the one fact here worth interrupting for, and the
+            saving rate stays gold because it is the figure the page is about. */}
         {[
-          { label:'รายรับรวม',   val:totInc, cls:'text-gold-400' },
-          { label:'รายจ่ายรวม',  val:totExp, cls:'text-rose-400' },
-          { label:'คงเหลือสุทธิ',val:totBal, cls:totBal>=0?'text-emerald-400':'text-rose-400' },
-          { label:'อัตราออมเฉลี่ย',val:null, cls:totRate>=20?'text-emerald-400':'text-amber-400', custom:`${totRate.toFixed(1)}%` },
+          { label:'รายรับรวม',   val:totInc, cls:dk?'text-slate-100':'text-slate-800' },
+          { label:'รายจ่ายรวม',  val:totExp, cls:dk?'text-slate-100':'text-slate-800' },
+          { label:'คงเหลือสุทธิ',val:totBal, cls:totBal>=0?(dk?'text-slate-100':'text-slate-800'):'text-rose-400' },
+          { label:'อัตราออมเฉลี่ย',val:null, cls:dk?'text-gold-300':'text-gold-700', custom:`${totRate.toFixed(1)}%` },
         ].map(({label,val,cls,custom})=>(
-          <div key={label} className={`${card} p-5`}>
-            <div className={`text-xs font-medium mb-2 uppercase tracking-wide ${dk?'text-slate-400':'text-slate-500'}`}>{label}</div>
-            <div className={`text-xl font-bold ${cls}`}>{custom || fmt(val)}</div>
+          <div key={label} className="stat-rule">
+            <div className={`text-[10px] font-medium mb-2 uppercase stat-label ${dk?'text-slate-400':'text-slate-500'}`}>{label}</div>
+            <div className={`text-xl font-semibold tabular-nums ${cls}`}>{custom || fmt(val)}</div>
           </div>
         ))}
       </div>
@@ -5095,20 +5104,25 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
           height of the P/L card for a total two orders of magnitude smaller. The
           figures now share one line with the heading, and each asset is one row
           with its bar in the middle instead of stacked underneath. */}
+      {/* A rule, not a card. Three lines of content in a full-width panel reads
+          as a box someone forgot to fill: the problem was never the height, it
+          was that a section reporting a few thousand baht was given the same
+          frame as the holdings table. The per-asset breakdown folds away with
+          the payments, so the closed state is one line. */}
       {divTxs.length>0 && (
-        <div className={`${card} p-4`}>
-          <div className="flex items-baseline justify-between gap-3 flex-wrap">
-            <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>💰 เงินปันผลรับ</div>
-            <span className={sub}>{divTxs.length} ครั้ง</span>
-          </div>
-          <div className="flex items-baseline gap-x-5 gap-y-1 flex-wrap mt-2">
-            <div className="flex items-baseline gap-1.5">
-              <span className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>รับทั้งหมด</span>
-              <span className="text-lg font-bold text-teal-400">+{fmt(divTotal)}</span>
+        <div className="stat-rule pb-1">
+          {/* Heading and both totals on one line. They were three stacked rows for
+              two numbers, which gave a section reporting a few thousand baht the
+              vertical weight of the P/L card above it. Dividends are worth
+              reporting and are not worth that much of the page. */}
+          <div className="flex items-baseline justify-between gap-x-4 gap-y-1 flex-wrap">
+            <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>
+              💰 เงินปันผลรับ
+              <span className={`ml-2 text-xs font-normal ${dk?'text-slate-500':'text-slate-400'}`}>{divTxs.length} ครั้ง</span>
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>ปีนี้ ({curYear})</span>
-              <span className={`text-sm font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>+{fmt(divYear)}</span>
+            <div className="flex items-baseline gap-x-4">
+              <span className="text-sm font-semibold tabular-nums text-teal-400">+{fmt(divTotal)}</span>
+              <span className={`text-xs tabular-nums ${dk?'text-slate-400':'text-slate-500'}`}>ปีนี้ +{fmt(divYear)}</span>
             </div>
           </div>
           {/* No bars. A bar earns its place when the figures are far apart on
@@ -5117,9 +5131,9 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
               line, and one holding paying ฿7,927 against another paying ฿60 is
               not a comparison that needs drawing. The bars were saying what the
               numbers beside them had already said. */}
-          {divByAsset.length>0 && (
-            <div className="mt-3 space-y-1">
-              {divByAsset.slice(0,6).map((d,i)=>(
+          {divOpen && divByAsset.length>0 && (
+            <div className="mt-2 space-y-0.5">
+              {divByAsset.slice(0,3).map((d,i)=>(
                 <div key={i} className="flex items-baseline justify-between gap-3 text-xs">
                   <span className={`truncate ${dk?'text-slate-300':'text-slate-600'}`}>
                     {d.name}<span className={`ml-1 ${dk?'text-slate-500':'text-slate-400'}`}>×{d.count}</span>
@@ -5133,7 +5147,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
               what gets read month to month; the individual rows are for the once
               -in-a-while check that a specific payment was recorded. */}
           <button onClick={()=>setDivOpen(o=>!o)}
-            className={`w-full mt-3 pt-2.5 border-t flex items-center justify-center gap-1.5 text-xs font-medium transition-colors ${dk?'border-white/10 text-slate-400 hover:text-teal-400':'border-slate-100 text-slate-500 hover:text-teal-600'}`}>
+            className={`w-full mt-2 pt-2 flex items-center justify-center gap-1.5 text-xs font-medium transition-colors ${dk?'border-white/10 text-slate-400 hover:text-teal-400':'border-slate-100 text-slate-500 hover:text-teal-600'}`}>
             <span className={`inline-block transition-transform duration-200 ${divOpen?'rotate-90':''}`}>▶</span>
             {divOpen?'ซ่อนรายการ':`ดูรายการทั้งหมด (${divTxs.length})`}
           </button>
@@ -5311,28 +5325,42 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
 
       {/* Top spending categories */}
       <div className={`${card} p-5`}>
-        <h3 className={`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-700'}`}>หมวดจ่ายทั้งหมด ({view==='yearly'?'ปีนี้':'เดือนนี้'})</h3>
+        <h3 className={`text-sm font-semibold mb-4 ${dk?'text-gold-300':'text-gold-700'}`}>หมวดจ่ายทั้งหมด ({view==='yearly'?'ปีนี้':'เดือนนี้'})</h3>
         {topCats.length===0
           ? <div className={`text-sm ${sub}`}>ยังไม่มีรายจ่าย{view==='yearly'?'ปีนี้':'เดือนนี้'}</div>
           : <>
-              {/* หลอดรวมเดียว — สัดส่วนทุกหมวดในแท่งเดียว เหมือนการ์ด Net Worth */}
-              <div className={`flex h-3 w-full overflow-hidden rounded-full mb-4 ${dk?'bg-white/8':'bg-slate-200'}`}>
-                {topCats.map(([cat,amt])=>{
-                  const pct = topCatsExpTotal>0 ? (amt/topCatsExpTotal*100) : 0;
-                  return <div key={cat} className="h-full transition-all duration-700" style={{width:`${pct}%`,background:catClr(cat)}} title={`${cat} ${pct.toFixed(1)}%`}/>;
-                })}
-              </div>
-              <div className="space-y-2.5">
+              {/* The stacked bar is gone and the percentage moved to the front.
+                  The bar was drawing the same proportions the percentages state
+                  exactly, in thirteen segments most of which were a few pixels
+                  wide — a chart nobody can read is decoration.
+
+                  Percentages lead because that is the column being compared. On
+                  the right they were a ragged edge at the end of thirteen names
+                  of different lengths; on the left they line up, and the eye can
+                  run down them without reading a single category. */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1.5">
                 {topCats.map(([cat,amt])=>{
                   const pct = topCatsExpTotal>0 ? (amt/topCatsExpTotal*100) : 0;
                   return (
-                    <div key={cat} className="flex items-baseline justify-between gap-2">
-                      <div className="flex items-baseline gap-2 min-w-0">
-                        <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{background:catClr(cat)}}/>
-                        <span className={`text-sm font-medium truncate ${dk?'text-slate-300':'text-slate-600'}`}>{cat}</span>
-                        <span className={`text-sm font-semibold whitespace-nowrap ${dk?'text-white':'text-slate-700'}`}>{fmt(amt)}</span>
-                      </div>
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{background:catClr(cat)+'28',color:catClr(cat)}}>{pct.toFixed(1)}%</span>
+                    <div key={cat} className="flex items-baseline gap-2.5 min-w-0">
+                      {/* Fixed width, or the capsules end at thirteen different
+                          places and the column stops being a column. The swatch
+                          that used to sit beside this is gone: the capsule is
+                          already tinted with the category's colour, and a
+                          coloured dot next to it states that twice.
+
+                          The figure is NOT in the category colour. It was, and
+                          the darkest steps of the ramp came out at 1.25 against
+                          their own tint — invisible. A colour cannot be both the
+                          identity of a thing and the thing you read off it; the
+                          tint carries the identity and the ink stays legible, at
+                          6.15 or better across every step. */}
+                      <span className={`w-14 flex-shrink-0 text-center text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full self-center ${dk?'text-slate-100':'text-slate-700'}`}
+                        style={{background:catClr(cat)+(dk?'47':'2e')}}>
+                        {pct.toFixed(1)}%
+                      </span>
+                      <span className={`text-sm truncate ${dk?'text-slate-400':'text-slate-600'}`}>{cat}</span>
+                      <span className={`ml-auto text-sm font-medium tabular-nums whitespace-nowrap ${dk?'text-slate-200':'text-slate-700'}`}>{fmt(amt)}</span>
                     </div>
                   );
                 })}
@@ -5389,7 +5417,30 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
       {/* 📊 Category trend (last 6 months) */}
       {catTrend.length>0&&(
         <div className={`${card} p-5`}>
-          <div className={`text-sm font-semibold mb-3 ${dk?'text-white':'text-slate-700'}`}>📊 เทรนด์หมวดรายจ่าย <span className={sub}>(6 เดือนล่าสุด)</span></div>
+          <div className={`text-sm font-semibold mb-3 ${dk?'text-gold-300':'text-gold-700'}`}>📊 เทรนด์หมวดรายจ่าย <span className={sub}>(6 เดือนล่าสุด)</span></div>
+          {/* A month row, aligned to the bars by repeating their exact column
+              structure — same widths on both sides, same flex-1 gap-0.5 in the
+              middle. Six bars with nothing naming them is a shape without a
+              scale: "spending rose" is only readable as news if you can see
+              which month it rose in. The last column is marked because "now" is
+              the one a trend is read against. */}
+          <div className="flex items-center gap-3 mb-1.5">
+            <div className="w-24 flex-shrink-0"/>
+            <div className="flex-1 flex gap-0.5">
+              {months6.map((m,i)=>{
+                const [,mo] = m.split('-');
+                const last = i===months6.length-1;
+                return (
+                  <span key={m} className={`flex-1 text-center text-[10px] tabular-nums ${
+                    last ? (dk?'text-gold-300 font-semibold':'text-gold-700 font-semibold')
+                         : (dk?'text-slate-600':'text-slate-400')}`}>
+                    {MONTHS_TH[parseInt(mo)-1]}
+                  </span>
+                );
+              })}
+            </div>
+            <div className="w-28 flex-shrink-0"/>
+          </div>
           <div className="space-y-2.5">
             {catTrend.map(({cat,vals,cur,chg,mx})=>(
               <div key={cat} className="flex items-center gap-3">
@@ -5404,7 +5455,11 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
                   ))}
                 </div>
                 <div className="w-28 flex-shrink-0 text-right">
-                  <div className={`text-xs font-semibold ${dk?'text-slate-200':'text-slate-700'}`}>{fmt(cur)}</div>
+                  {/* Up a step from text-xs. This is the figure the row exists to
+                      report — the bars beside it show the shape and the change
+                      underneath gives the direction, but the amount is what gets
+                      read, and it was set smaller than the heading above it. */}
+                  <div className={`text-sm font-semibold tabular-nums ${dk?'text-slate-100':'text-slate-800'}`}>{fmt(cur)}</div>
                   {chg!==null&&chg!==0&&<div className={`text-[10px] ${chg>0?'text-rose-400':'text-emerald-400'}`}>{chg>0?'▲':'▼'}{Math.abs(chg).toFixed(0)}% จากเดือนก่อน</div>}
                 </div>
               </div>
@@ -5413,11 +5468,12 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
         </div>
       )}
 
-      {/* Line chart */}
-      <div className={`${card} p-5`}>
-        <h3 className={`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-700'}`}>แนวโน้ม 6 เดือน</h3>
-        <div className="h-64"><LineChart data={lineData} theme={theme}/></div>
-      </div>
+      {/* The six-month income-and-expense line is gone. It plotted the series
+          the dashboard already draws as bars, with fewer ranges — the same
+          numbers a third time on one screen as the category trend above, which
+          is built from the same expenses but says what the totals cannot: which
+          categories moved, and against what. Keeping both had the page answer
+          "how much" twice before it answered "where". */}
       </>)}
     </div>
   );
@@ -6265,7 +6321,7 @@ const DebtPage = ({ theme, debts, setDebts }) => {
       {debts.length===0&&(
         <div className={`${card} p-10 text-center`}>
           <div className="text-5xl mb-4">💳</div>
-          <p className={`text-base font-semibold mb-1 ${dk?'text-white':'text-slate-700'}`}>ยังไม่มีรายการหนี้</p>
+          <p className={`text-base font-semibold mb-1 ${dk?'text-gold-300':'text-gold-700'}`}>ยังไม่มีรายการหนี้</p>
           <p className={`text-xs mb-5 max-w-md mx-auto leading-relaxed ${sub}`}>บันทึกหนี้บัตรเครดิต ผ่อนสินค้า หรือเงินกู้ เพื่อติดตามยอดคงเหลือและดอกเบี้ย — ถ้ายังไม่มีหนี้ก็ถือเป็นเรื่องดีค่ะ</p>
           <button onClick={()=>setDModal({open:true,editData:null})} className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-gold-500 hover:bg-gold-600 text-white text-sm font-semibold"><Ic n="plus" s={14}/> เพิ่มหนี้</button>
         </div>
@@ -7797,7 +7853,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
       {wallets.length===0 ? (
         <div className={`${card} p-10 text-center`}>
           <div className="text-5xl mb-4">👛</div>
-          <p className={`text-base font-semibold mb-1 ${dk?'text-white':'text-slate-700'}`}>เริ่มต้นด้วยกระเป๋าเงินใบแรก</p>
+          <p className={`text-base font-semibold mb-1 ${dk?'text-gold-300':'text-gold-700'}`}>เริ่มต้นด้วยกระเป๋าเงินใบแรก</p>
           <p className={`text-xs mb-5 max-w-md mx-auto leading-relaxed ${dk?'text-slate-400':'text-slate-500'}`}>กระเป๋าเงินคือที่เก็บยอดเงินของคุณ เช่น บัญชีธนาคาร เงินสด พอร์ตหุ้น หรือ Crypto Wallet — สร้างใบแรกเพื่อเริ่มบันทึกรายรับ-รายจ่าย</p>
           <button onClick={()=>onOpenWalletModal(null)} className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-gold-500 hover:bg-gold-600 text-white text-sm font-semibold"><Ic n="plus" s={14}/> เพิ่มกระเป๋าใบแรก</button>
         </div>
@@ -9007,7 +9063,7 @@ const lockVerify = async pin => {
 const LockedPanel = ({onUnlock, dk}) => (
   <div className={`rounded-2xl px-6 py-20 text-center fade-up ${dk?'card-solid':'glass-light shadow-sm'}`}>
     <div className="text-5xl mb-4">🔒</div>
-    <div className={`text-base font-semibold mb-1 ${dk?'text-white':'text-slate-700'}`}>FinTracker is locked</div>
+    <div className={`text-base font-semibold mb-1 ${dk?'text-gold-300':'text-gold-700'}`}>FinTracker is locked</div>
     <div className={`text-xs mb-7 ${dk?'text-slate-400':'text-slate-500'}`}>Enter your passcode to continue</div>
     <button onClick={onUnlock} className="px-8 py-3 rounded-xl text-sm font-semibold bg-gold-500 hover:bg-gold-600">Enter passcode</button>
   </div>
