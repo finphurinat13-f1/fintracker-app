@@ -216,13 +216,28 @@ export const CAT_PALETTE = ['#f4ecc6','#84660f','#cbac33','#544009','#b7941a','#
 export const CAT_EMOJIS  = ['other','food','transport','shopping','home','entertain','health','education','phone','invest','travel','fitness','gift','coffee','pet','utilities','movie','beauty','music','water','power','work'];
 // ── Asset tagging: decide whether a tx moves money IN or OUT of an asset ──
 // income tagged → in · expense tagged → out (except invest-buy which adds to the asset) · transfers use transferDir
+// A holding is worth its units times its price. Money is only added on top of
+// that when it went in without buying anything — a deposit into a cash asset,
+// an adjustment. Both of the expense rules that used to live here broke that:
+//
+//   [invest] expenses counted as money in, but the buy flow that creates them
+//   also raises qty and avgCost. A ฿3,000 purchase of a fund holding ฿2,000
+//   came out as ฿8,000 — the units said ฿5,000 and the tag added the ฿3,000 a
+//   second time. Proven by running assetVal on the shape the flow produces.
+//
+//   Plain expenses counted as money out, so tagging one to a fund took the
+//   amount off the wallet AND off the holding: ฿6,000 of net worth for a
+//   ฿3,000 payment. There is no reading of "wallet + non-cash asset + expense"
+//   where both should move, which is why the field is gone from the form.
+//
+// Purchases belong to บันทึกความเคลื่อนไหว, which asks for units and a price —
+// the two things an amount on its own can never supply.
 export const isAssetTxOut = (t, id) =>
   (t.fromAssetId===id && t.transferDir!=='from') ||
-  (t.targetAssetId===id && t.type==='expense' && t.notes!=='[invest]') ||
   (t.targetAssetId===id && t.type==='adjustment' && t.amount<0);
 export const isAssetTxIn = (t, id) =>
   (t.toAssetId===id && t.transferDir!=='to') ||
-  (t.targetAssetId===id && (t.type==='income' || (t.type==='expense' && t.notes==='[invest]'))) ||
+  (t.targetAssetId===id && t.type==='income') ||
   (t.targetAssetId===id && t.type==='adjustment' && t.amount>0);
 export const assetTagged = (txs, id) => {
   let taggedIn=0, taggedOut=0;

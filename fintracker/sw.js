@@ -1,5 +1,5 @@
 // Bump CACHE on every shippable change so the activate step purges old caches.
-const CACHE = 'fintracker-v11';
+const CACHE = 'fintracker-v12';
 
 // Stable, versioned runtime libs — safe to precache. The app HTML is NOT here:
 // it must always come network-first so new deploys reach users immediately.
@@ -7,7 +7,7 @@ const PRECACHE = [
   'https://unpkg.com/react@18/umd/react.production.min.js',
   'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
   'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js',
-  'https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&display=swap',
+  'https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap',
 ];
 
 self.addEventListener('install', e => {

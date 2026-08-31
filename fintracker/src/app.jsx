@@ -929,14 +929,11 @@ const Modal = ({ open, onClose, onSave, editData, theme, wallets=[], assets=[], 
               </select>
             </div>
           )}
-          {f.type!=='transfer'&&assets.length>0&&(
-            <div><label className={lbl}>🏷️ สินทรัพย์ที่เกี่ยวข้อง (ไม่บังคับ)</label>
-              <select className={inp} value={f.targetAssetId||''} onChange={e=>set('targetAssetId',e.target.value?parseInt(e.target.value):null)}>
-                <option value="">— ไม่ระบุ —</option>
-                {assets.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-            </div>
-          )}
+          {/* No asset picker here at all. Wallet cash and holdings stay separate
+              accounts of the same money: an asset already names the wallet it
+              belongs to, so linking a transaction to one as well counts the
+              amount in two places. See isAssetTxIn/Out in lib.js for what that
+              cost. Adding to a holding is บันทึกความเคลื่อนไหว on the asset. */}
           {/* A row with neither a wallet nor an asset is money with nowhere to
               come from: Budget counts the spend, Net Worth does not, and the two
               disagree with nothing to say so. It is legitimate — cash the app was
@@ -1794,7 +1791,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
     // `stagger` replaces `fade-up` here rather than joining it: the parent
     // animating as one block is exactly what made every section land on the
     // same frame. The children carry the animation now.
-    <div className="space-y-5 stagger">
+    <div className="space-y-7 stagger">
 
       {/* ── Hero + Quote (merged) ──
           This band is the masthead — logo, greeting, quote, date — not a data
@@ -1886,6 +1883,12 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
                     true. tabular-nums keeps it from jittering as it counts up. */}
                 {/* The one figure the dashboard exists to show, so it is the one
                     place the gold is a material rather than a colour. See .metal-gold. */}
+                {/* One family, and the reason is not restraint for its own sake. A
+                    high-contrast serif was tried here and rejected on sight: the
+                    face is beautiful at this size, but its ฿ has to fall through
+                    to Noto, so the currency mark and the digits beside it come
+                    from two different alphabets — and that seam is the first
+                    thing the eye lands on in a figure this large. */}
                 <div className="font-bold tracking-wide tabular-nums metal-gold"
                   style={{fontSize:'clamp(2.1rem, 5.5vw, 3.4rem)', lineHeight:1.05}}>
                   {mask(fmtNW(animNetWorth))}
@@ -1926,7 +1929,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
         </div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
         {/* Income vs expense used to be stated five ways on one card: figure
             colour, glyph colour, glyph backing, border tint, outer halo. The
             label already says which is which, and these four are read as a row
@@ -2011,7 +2014,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
               on one baseline the gloss would push the heading off on its own
               line and read worse than it does above it. Same rule everywhere:
               one line where there is room for one. */}
-          <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>ผลตอบแทนต่อปี</h3>
+          <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>ผลตอบแทนต่อปี</h3>
           <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>คิดแบบทบต้น เทียบกันได้ข้ามระยะเวลาถือ</p>
           <ReturnRanking assets={assets} txs={txs} usdRate={usdRate} theme={theme}/>
         </div>
@@ -2340,7 +2343,7 @@ const TxPage = ({ txs, theme, onEdit, onAdd, onDelete, onBulkDelete, onExport, w
   const SI=({f})=>sortBy===f?<Ic n={sortDir==='asc'?'up':'down'} s={11} cls="inline ml-1"/>:null;
 
   return (
-    <div className="space-y-4 fade-up">
+    <div className="space-y-7 fade-up">
       {/* The add button moves into the header, the way Budget already does it.
           It had a strip of its own below, headed "📋 รายการทั้งหมด" — a title
           restating the page title two lines under it, existing only to give the
@@ -2451,7 +2454,7 @@ const TxPage = ({ txs, theme, onEdit, onAdd, onDelete, onBulkDelete, onExport, w
           </div>
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <Ic n="repeat" s={13}/>
-            <span className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>รายการประจำ</span>
+            <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>รายการประจำ</span>
             <span className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{recList.length} รายการ · {MONTHS_TH[rNow.getMonth()]} {rNow.getFullYear()}</span>
           </div>
           {pendingRec.length>0&&<span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-400">{pendingRec.length} ยังไม่บันทึก</span>}
@@ -2599,7 +2602,7 @@ const Analytics = ({ txs, theme }) => {
   const sub=`text-xs ${dk?'text-slate-400':'text-slate-500'}`;
 
   return (
-    <div className="space-y-4 fade-up">
+    <div className="space-y-7 fade-up">
       <div className="grid grid-cols-2 gap-4">
         {[{label:'รายรับ MoM',val:curInc,mom:momInc,good:true},{label:'รายจ่าย MoM',val:curExp,mom:momExp,good:false}].map(({label,val,mom,good})=>(
           <div key={label} className="stat-rule">
@@ -4246,14 +4249,14 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
   const sub  = `text-xs ${dk?'text-slate-400':'text-slate-500'}`;
 
   return (
-    <div className="space-y-4 fade-up">
+    <div className="space-y-7 fade-up">
       <PageHeader theme={theme} lead="Your" accent="Holdings"
         sub={`${assets.length} รายการ · หุ้น คริปโต ทองคำ และอื่นๆ`}/>
       {/* Header */}
       <div className={`${card} p-4 flex items-center justify-between flex-wrap gap-3`}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="min-w-0">
-            <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>พอร์ตสินทรัพย์</div>
+            <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>พอร์ตสินทรัพย์</div>
             <div className={sub}>{enriched.length}{enriched.length!==assets.length?` / ${assets.length}`:''} รายการ</div>
           </div>
           <div onClick={()=>searchInputRef.current?.focus()} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border flex-1 max-w-sm cursor-text flex-wrap ${dk?'border-white/10 bg-white/5':'border-slate-200 bg-white'}`}>
@@ -4355,7 +4358,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
         {[
           {label:'มูลค่าพอร์ต (฿)', val:fmt(totVal),    cls:dk?'text-2xl font-bold tracking-wide tg-white':'text-2xl font-bold tracking-wide text-slate-800',                                        note:'ราคาปัจจุบันรวม',    extra:wallets.length>0?'':(dk?'card-hero':'')},
           {label:'ต้นทุนรวม (฿)',   val:fmt(totCost),   cls:`text-2xl font-bold tracking-wide ${dk?'text-slate-300':'text-slate-600'}`,                                                  note:'เงินที่ลงทุนไป',     extra:''},
@@ -4379,7 +4382,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
       {/* Table - full width */}
       <div className={`${card} overflow-hidden`}>
         <div className={`flex items-center justify-between gap-3 px-5 py-3 border-b flex-wrap ${dk?'border-white/5':'border-slate-100'}`}>
-          <span className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>รายการสินทรัพย์ทั้งหมด</span>
+          <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>รายการสินทรัพย์ทั้งหมด</span>
           <div className="flex items-center gap-2 flex-wrap">
             {wallets.length>0&&(
               <select value={walletFilter} onChange={e=>setWalletFilter(e.target.value)}
@@ -4610,8 +4613,13 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                       {a.holdDays!==null&&<div className={`text-[11px] tabular-nums mt-0.5 ${dk?'text-slate-500':'text-slate-400'}`}>{fmtHold(a.holdDays)}</div>}
                     </td>
                     <td className="px-4 py-4">
+                      {/* Green only ever meant "not negative" on the cash line. A cash
+                          balance being positive is the ordinary state of a cash balance,
+                          not a gain, and colouring every one of them put the loudest
+                          colour on the page's least surprising fact. Red stays: an
+                          overdrawn balance is worth interrupting for. */}
                       {a.isCash
-                        ? <><div className={`text-sm font-bold whitespace-nowrap ${a.valTot<0?'text-rose-500':'text-emerald-500'}`}>{fmtSigned(a.valTot)}</div>
+                        ? <><div className={`text-sm font-bold whitespace-nowrap ${a.valTot<0?'text-rose-500':(dk?'text-slate-200':'text-slate-700')}`}>{fmtSigned(a.valTot)}</div>
                           <div className={`text-[10px] ${sub}`}>ยอดคงเหลือ</div></>
                         : <><div className={`text-sm font-medium whitespace-nowrap ${dk?'text-slate-200':'text-slate-700'}`}>{fmtA(a.costTot,a.currency)}</div>
                           {a.currency==='USD'&&<div className={`text-xs ${sub}`}>≈ {fmt(a.costTHB)}</div>}</>
@@ -4623,7 +4631,11 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                         : <><div className={`text-sm font-semibold whitespace-nowrap ${a.pl>=0?'text-emerald-400':'text-rose-400'}`}>{a.pl>=0?'+':''}{fmtA(a.pl,a.currency)}</div>
                           {/* the percentage is this same figure in another unit,
                               so it sits under it rather than a column away */}
-                          <div className={`text-xs font-medium ${a.plPct>=0?'text-emerald-400/80':'text-rose-400/80'}`}>{a.plPct>=0?'+':''}{a.plPct.toFixed(2)}%</div>
+                          {/* Uncoloured, because the figure directly above it is the
+                              same fact in another unit and already carries the colour.
+                              Two coloured numbers stacked say "gain" twice and leave the
+                              row with no quiet part to read the loud one against. */}
+                          <div className={`text-xs font-medium ${dk?'text-slate-400':'text-slate-500'}`}>{a.plPct>=0?'+':''}{a.plPct.toFixed(2)}%</div>
                           {a.currency==='USD'&&<div className={`text-xs ${sub}`}>≈ {a.plTHB>=0?'+':''}{fmtSigned(a.plTHB)}</div>}</>
                       }
                     </td>
@@ -4863,7 +4875,7 @@ const PlanTab = ({ dk, card, theme, byType={} }) => {
       {series.length>1&&isFinite(peak)&&(
         <div className={`${card} p-5`}>
           <div className="flex items-baseline justify-between gap-3 mb-3">
-            <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>การเติบโตรายปี</div>
+            <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>การเติบโตรายปี</div>
             <div className={`text-[11px] ${dk?'text-slate-500':'text-slate-400'}`}>ชี้ที่กราฟเพื่อดูตัวเลขของแต่ละปี</div>
           </div>
           <div className="h-64"><PlanChart theme={theme} data={{
@@ -5042,13 +5054,13 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
   );
 
   return (
-    <div className="space-y-4 fade-up">
+    <div className="space-y-7 fade-up">
       <PageHeader theme={theme} lead="Financial" accent="Summary"
         sub="รายเดือน รายปี และเป้าหมายเงินเก็บ"/>
       {/* Toggle */}
       <div className={`${card} p-4 flex items-center justify-between flex-wrap gap-3`}>
         <div>
-          <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>{view==='plan'?'ประมาณการผลตอบแทนทบต้น':'สรุปรายรับ-รายจ่าย'}</div>
+          <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>{view==='plan'?'ประมาณการผลตอบแทนทบต้น':'สรุปรายรับ-รายจ่าย'}</div>
           <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>
             {view==='plan' ? 'คำนวณเพื่อประกอบการวางแผน — ไม่บันทึกและไม่แก้ไขข้อมูลจริง' : `${data.length} ${view==='monthly'?'เดือน':'ปี'} · ${txs.length} รายการทั้งหมด`}
           </div>
@@ -5065,7 +5077,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
       {view==='plan' ? <PlanTab dk={dk} card={card} theme={theme} byType={assetsByType}/> : (<>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
         {[
           { label:'รายรับรวม',   val:totInc, cls:'text-gold-400' },
           { label:'รายจ่ายรวม',  val:totExp, cls:'text-rose-400' },
@@ -5087,7 +5099,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
       {divTxs.length>0 && (
         <div className={`${card} p-4`}>
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
-            <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>💰 เงินปันผลรับ</div>
+            <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>💰 เงินปันผลรับ</div>
             <span className={sub}>{divTxs.length} ครั้ง</span>
           </div>
           <div className="flex items-baseline gap-x-5 gap-y-1 flex-wrap mt-2">
@@ -5235,7 +5247,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
       {view==='yearly' && realizedYears.length>0 && (
         <div className={`${card} p-5`}>
           <div className="flex items-baseline justify-between gap-3 mb-4 flex-wrap">
-            <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>💰 กำไรที่รับรู้แล้ว</h3>
+            <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>💰 กำไรที่รับรู้แล้ว</h3>
             <div className={`flex rounded-lg p-0.5 gap-0.5 ${dk?'bg-white/5':'bg-slate-100'}`}>
               {realizedYears.map(y=>(
                 <button key={y} onClick={()=>setRlzYear(y)}
@@ -5263,7 +5275,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
                 {b.dividends.map(d=><Row key={d.id} label={d.name} sub2={d.date} amount={d.amount}/>)}
               </div>)}
               <div className={`flex items-baseline justify-between gap-3 pt-2.5 border-t ${dk?'border-white/8':'border-slate-100'}`}>
-                <span className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>รวมเงินจริงที่ได้ปี {rlzYear}</span>
+                <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>รวมเงินจริงที่ได้ปี {rlzYear}</span>
                 <span className={`text-lg font-bold tabular-nums ${b.total>=0?'text-emerald-400':'text-rose-400'}`}>{b.total>=0?'+':''}{fmtSigned(b.total)}</span>
               </div>
               <div className={`flex items-baseline justify-between gap-3 mt-2 pt-2 border-t ${dk?'border-white/8':'border-slate-100'}`}>
@@ -5334,7 +5346,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
       <div className={`${card} p-5`}>
         <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
           <div>
-            <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>🎯 เป้าหมายเงินเก็บ</div>
+            <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>🎯 เป้าหมายเงินเก็บ</div>
             <div className={sub}>เก็บได้ {fmt(currentSaved)} จาก {fmt(goal)}</div>
           </div>
           <div className="flex items-center gap-2">
@@ -5366,7 +5378,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
       {/* 💧 Runway */}
       <div className={`${card} p-5 flex items-center justify-between flex-wrap gap-3`}>
         <div>
-          <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>💧 เงินสำรอง (Runway)</div>
+          <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>💧 เงินสำรอง (Runway)</div>
           <div className={sub}>ถ้าหยุดมีรายได้ เงินเก็บปัจจุบันอยู่ได้นานแค่ไหน</div>
         </div>
         <div className="text-right">
@@ -5663,7 +5675,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
   const sub  = `text-xs ${dk?'text-slate-400':'text-slate-500'}`;
 
   return (
-    <div className="space-y-4 fade-up">
+    <div className="space-y-7 fade-up">
       <PageHeader theme={theme} lead="Monthly" accent="Budget"
         sub="วงเงินรายหมวด ยอดใช้จ่าย และส่วนที่เหลือ"
         right={isCurM
@@ -5672,7 +5684,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
               + เพิ่มหมวด
             </button>
           : <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${dk?'bg-white/8 text-slate-400':'bg-slate-100 text-slate-500'}`}>ดูย้อนหลัง · แก้ไขไม่ได้</span>}/>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-x-8 gap-y-6">
         {[{l:'Budget รวม',v:fmt(totBudget),c:dk?'tg-gold':'text-gold-600',
            note: bSplit.irregular>0 ? `ประจำ ${fmt(bSplit.regular)} · ไม่ประจำ ${fmt(bSplit.irregular)}` : null},
           // money moved into investments is excluded on purpose — it is still yours.
@@ -5696,7 +5708,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
       </div>
       {/* Insight row — today-relative, only meaningful for the current month */}
       {isCurM&&(
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-x-8 gap-y-6">
         <div className="stat-rule">
           <div className={`text-[10px] font-medium mb-2 uppercase stat-label ${dk?'text-slate-400':'text-slate-500'}`}>ใช้ได้อีก/วัน</div>
           <div className={`text-lg sm:text-xl font-semibold leading-tight break-words tabular-nums ${dailyAllowance>=0?'text-emerald-400':'text-rose-400'}`}>{fmt(Math.max(dailyAllowance,0))}</div>
@@ -5718,7 +5730,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
       <div className={`${card} p-5`}>
         <button onClick={()=>setDayExpOpen(o=>!o)} className="w-full flex items-center justify-between text-left">
           <div>
-            <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>รายจ่ายรายวัน ({isCurM?'เดือนนี้':`${MONTHS_TH[parseInt(viewM.split('-')[1])-1]} ${viewM.split('-')[0]}`})</h3>
+            <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>รายจ่ายรายวัน ({isCurM?'เดือนนี้':`${MONTHS_TH[parseInt(viewM.split('-')[1])-1]} ${viewM.split('-')[0]}`})</h3>
             <p className={`text-xs mt-0.5 ${sub}`}>{isCurM?`วันนี้ใช้ไป ${fmt(todaySpent)}${todayTxs.length>0?` · ${todayTxs.length} รายการ`:''}`:`รวมทั้งเดือน ${fmt(totSpent)}`}</p>
           </div>
           <Ic n="chevD" s={14} cls={`transition-transform duration-200 flex-shrink-0 ${dayExpOpen?'rotate-180':''} ${dk?'text-slate-500':'text-slate-400'}`}/>
@@ -5743,7 +5755,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
           <div className="flex items-center gap-2">
             <button onClick={()=>setViewM(m=>shiftMonth(m,-1))} title="เดือนก่อนหน้า"
               className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-colors ${dk?'border-white/15 text-slate-300 hover:bg-gold-500/15 hover:text-gold-300 hover:border-gold-400/50':'border-slate-200 text-slate-600 hover:bg-gold-50 hover:text-gold-600 hover:border-gold-300'}`}><Ic n="chevL" s={16}/></button>
-            <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>ภาพรวม{isCurM?'เดือนนี้':''} — {MONTHS_TH[parseInt(viewM.split('-')[1])-1]} {viewM.split('-')[0]}</h3>
+            <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>ภาพรวม{isCurM?'เดือนนี้':''} — {MONTHS_TH[parseInt(viewM.split('-')[1])-1]} {viewM.split('-')[0]}</h3>
             <button onClick={()=>!isCurM&&setViewM(m=>shiftMonth(m,1))} disabled={isCurM} title="เดือนถัดไป"
               className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-colors ${isCurM?'opacity-25 cursor-default border-transparent':(dk?'border-white/15 text-slate-300 hover:bg-gold-500/15 hover:text-gold-300 hover:border-gold-400/50':'border-slate-200 text-slate-600 hover:bg-gold-50 hover:text-gold-600 hover:border-gold-300')}`}><Ic n="chevR" s={16}/></button>
           </div>
@@ -5981,7 +5993,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
               {regularEntries.length>0 && (
                 <div className={`${card} p-5`}>
                   <div className="flex items-center justify-between mb-3">
-                    <span className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>🔁 ประจำ (รายวัน)</span>
+                    <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>🔁 ประจำ (รายวัน)</span>
                     <span className={`text-xs font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>{fmt(regularTotal)}</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -5992,7 +6004,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
               {irregularEntries.length>0 && (
                 <div className={`${card} p-5`}>
                   <div className="flex items-center justify-between mb-3">
-                    <span className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>📦 ไม่ประจำ (นานๆ ที)</span>
+                    <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>📦 ไม่ประจำ (นานๆ ที)</span>
                     <span className={`text-xs font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>{fmt(irregularTotal)}</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -6223,11 +6235,11 @@ const DebtPage = ({ theme, debts, setDebts }) => {
   const delDebt = (id) => ask('ลบรายการหนี้','ยืนยันการลบรายการหนี้นี้ออกจากระบบ? การดำเนินการนี้ไม่สามารถย้อนกลับได้',()=>setDebts(ds=>ds.filter(d=>d.id!==id)));
 
   return (
-    <div className="space-y-4 fade-up">
+    <div className="space-y-7 fade-up">
       <PageHeader theme={theme} lead="Outstanding" accent="Debt"
         sub="ยอดค้าง ดอกเบี้ย และแผนการผ่อน"/>
       {debts.length>0&&(
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-x-8 gap-y-6">
           {[{l:'หนี้คงเหลือ',v:fmt(totals.remaining),c:dk?'tg-red':'text-rose-500'},
             {l:'จ่ายไปแล้ว',v:fmt(totals.paid),c:dk?'tg-emerald':'text-emerald-600'},
             {l:'ดอกเบี้ยรวม',v:fmt(totals.interest),c:dk?'tg-gold':'text-amber-500'}].map(({l,v,c})=>(
@@ -7637,7 +7649,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
   const hasStocks     = stockCount>0;
 
   return (
-    <div className="space-y-4 fade-up">
+    <div className="space-y-7 fade-up">
       <PageHeader theme={theme} lead="All" accent="Wallets"
         sub={`${wallets.length} กระเป๋า · เงินสด บัญชีธนาคาร และวอลเล็ตคริปโต`}/>
       {/* Summary header */}
@@ -7734,7 +7746,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <span className="text-base">🔒</span>
-            <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>เงินที่ถือแทน / เงินฝาก <span title="เงินของคนอื่นที่คุณถือไว้ (เงินฝาก/บริษัท) — แสดงแยกไว้เฉยๆ ไม่ปนกับเงินเรา ไม่หักออกจาก Net Worth" style={{cursor:'help',opacity:.7}}>ⓘ</span></h3>
+            <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>เงินที่ถือแทน / เงินฝาก <span title="เงินของคนอื่นที่คุณถือไว้ (เงินฝาก/บริษัท) — แสดงแยกไว้เฉยๆ ไม่ปนกับเงินเรา ไม่หักออกจาก Net Worth" style={{cursor:'help',opacity:.7}}>ⓘ</span></h3>
             <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${dk?'bg-amber-500/15 text-amber-400':'bg-amber-50 text-amber-600'}`}>ไม่ใช่เงินเรา</span>
           </div>
           <button onClick={()=>setCustModal({open:true,editData:null})} className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl border font-medium transition-colors ${dk?'border-amber-500/40 text-amber-300 hover:bg-amber-500/10':'border-amber-300 text-amber-600 hover:bg-amber-50'}`}><Ic n="plus" s={12}/> เพิ่มเงินฝาก</button>
@@ -7748,16 +7760,21 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
               {[...custodial].sort((a,b)=>(a.returned?1:0)-(b.returned?1:0)).map(c=>{
                 const cw = wallets.find(x=>x.id===c.walletId);
                 return (
-                  <div key={c.id} className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl ${c.returned?(dk?'bg-white/[0.02] opacity-50':'bg-slate-50 opacity-60'):(dk?'bg-amber-500/[0.06]':'bg-amber-50/60')}`}>
+                  <div key={c.id} className={`group flex items-center justify-between gap-2 px-3 py-2 rounded-xl ${c.returned?(dk?'bg-white/[0.02] opacity-50':'bg-slate-50 opacity-60'):(dk?'bg-amber-500/[0.06]':'bg-amber-50/60')}`}>
                     <div className="min-w-0">
                       <div className={`text-sm font-medium truncate ${dk?'text-slate-200':'text-slate-700'} ${c.returned?'line-through':''}`}>{c.source}</div>
                       <div className={`text-[11px] truncate ${dk?'text-slate-500':'text-slate-400'}`}>{cw?`👛 ${cw.name}`:'ไม่ระบุกระเป๋า'}{c.date?` · ${c.date}`:''}{c.note?` · ${c.note}`:''}{c.returned?' · คืนแล้ว':''}</div>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <span className={`text-sm font-bold tabular-nums mr-1 ${c.returned?'text-slate-400':'text-amber-500'}`}>{fmt(c.amount)}</span>
+                      {/* The figure stays; the three controls fade back until the row is
+                          pointed at. Editing a custodial entry is a once-in-a-while job and
+                          the amount is why the row is read. card-actions keeps them on touch. */}
+                      <div className="flex items-center gap-1 card-actions">
                       <button onClick={()=>toggleReturnedCust(c.id)} title={c.returned?'ทำเป็นยังไม่คืน':'ทำเครื่องหมายคืนแล้ว'} className={`text-xs px-1.5 py-1 rounded-lg ${c.returned?(dk?'text-emerald-400 hover:bg-emerald-500/10':'text-emerald-600 hover:bg-emerald-50'):(dk?'text-slate-500 hover:bg-white/10':'text-slate-400 hover:bg-slate-100')}`}>{c.returned?'↩':'✓'}</button>
                       <button onClick={()=>setCustModal({open:true,editData:c})} title="แก้ไข" className={`p-1 rounded-lg ${dk?'text-slate-500 hover:bg-white/10':'text-slate-400 hover:bg-slate-100'}`}><Ic n="edit" s={12}/></button>
                       <button onClick={()=>ask('ลบรายการเงินฝาก',`ลบ "${c.source}" ออกจากรายการเงินที่ถือแทน?`,()=>delCust(c.id))} title="ลบ" className={`p-1 rounded-lg ${dk?'text-slate-500 hover:text-rose-400 hover:bg-rose-500/10':'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}`}><Ic n="trash" s={12}/></button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -9221,7 +9238,7 @@ const AdminPage = ({ theme }) => {
   };
 
   return (
-    <div className="space-y-4 fade-up">
+    <div className="space-y-7 fade-up">
       <div className={`${card} p-5`}>
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -10452,7 +10469,7 @@ const App = () => {
             ) : (
               <>
                 <div className={`h-40 ${sk}`}/>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
                   {[0,1,2,3].map(i=><div key={i} className={`h-24 ${sk}`}/>)}
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -10707,7 +10724,7 @@ const App = () => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-lg">🚀</span>
-                <h3 className={`text-sm font-semibold ${dk?'text-white':'text-slate-700'}`}>เริ่มต้นใช้งาน</h3>
+                <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>เริ่มต้นใช้งาน</h3>
                 <span className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{clDone}/3</span>
               </div>
               <button onClick={()=>{setChecklistDone(true);try{localStorage.setItem('ft-checklist-done','1');}catch{}}} className={`text-xs ${dk?'text-slate-500 hover:text-slate-300':'text-slate-400 hover:text-slate-600'}`}>ซ่อน</button>
