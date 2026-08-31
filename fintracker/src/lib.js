@@ -216,24 +216,25 @@ export const CAT_PALETTE = ['#f4ecc6','#84660f','#cbac33','#544009','#b7941a','#
 export const CAT_EMOJIS  = ['other','food','transport','shopping','home','entertain','health','education','phone','invest','travel','fitness','gift','coffee','pet','utilities','movie','beauty','music','water','power','work'];
 // ── Asset tagging: decide whether a tx moves money IN or OUT of an asset ──
 // income tagged → in · expense tagged → out (except invest-buy which adds to the asset) · transfers use transferDir
-// A holding is worth its units times its price. Money is only added on top of
-// that when it went in without buying anything — a deposit into a cash asset,
-// an adjustment. Both of the expense rules that used to live here broke that:
+// These say only whether a transaction points at this asset and in which
+// direction. Whether the amount is then applied is decided by asset type in
+// assetTaggedNet below, because the answer differs completely:
 //
-//   [invest] expenses counted as money in, but the buy flow that creates them
-//   also raises qty and avgCost. A ฿3,000 purchase of a fund holding ฿2,000
-//   came out as ฿8,000 — the units said ฿5,000 and the tag added the ฿3,000 a
-//   second time. Proven by running assetVal on the shape the flow produces.
+//   A holding is worth its units times its price. Adding a tagged amount on top
+//   counts the same money twice — buying ฿3,000 of a fund holding ฿2,000 came
+//   out as ฿8,000, the units saying ฿5,000 and the tag adding the purchase
+//   again. Taking one off does the same in reverse: an expense tagged to a fund
+//   left the wallet AND the holding, ฿6,000 of net worth for a ฿3,000 payment.
 //
-//   Plain expenses counted as money out, so tagging one to a fund took the
-//   amount off the wallet AND off the holding: ฿6,000 of net worth for a
-//   ฿3,000 payment. There is no reading of "wallet + non-cash asset + expense"
-//   where both should move, which is why the field is gone from the form.
+//   A cash asset has no units to speak of. qty x price is its opening balance
+//   and the tagged flow is the only record of what happened since, so the same
+//   amounts that are double-counting on a fund are the whole balance here.
 //
-// Purchases belong to บันทึกความเคลื่อนไหว, which asks for units and a price —
-// the two things an amount on its own can never supply.
+// [invest] is excluded from "in" regardless of type: the flow that writes it
+// raises qty and avgCost in the same action, so the units already carry it.
 export const isAssetTxOut = (t, id) =>
   (t.fromAssetId===id && t.transferDir!=='from') ||
+  (t.targetAssetId===id && t.type==='expense' && t.notes!=='[invest]') ||
   (t.targetAssetId===id && t.type==='adjustment' && t.amount<0);
 export const isAssetTxIn = (t, id) =>
   (t.toAssetId===id && t.transferDir!=='to') ||
@@ -298,9 +299,16 @@ export const sumTxMonth = (txs, type, month) => txs.filter(t=>t.type===type&&t.d
 
 // ── canonical money formulas — single source of truth, used by every view ──
 // asset value incl. tagged cash flows (matches the Assets page valTot)
-export const assetVal = (a, txs, usdRate=1) => {
+// The net tagged amount that actually moves this asset. Zero for anything with
+// units, because units are already the record of what was bought.
+export const assetTaggedNet = (a, txs) => {
+  if (!a || a.type !== 'cash') return 0;
   const {taggedIn, taggedOut} = assetTagged(txs, a.id);
-  return (a.qty*a.currentPrice + taggedIn - taggedOut) * (a.currency==='USD' ? usdRate : 1);
+  return taggedIn - taggedOut;
+};
+
+export const assetVal = (a, txs, usdRate=1) => {
+  return (a.qty*a.currentPrice + assetTaggedNet(a, txs)) * (a.currency==='USD' ? usdRate : 1);
 };
 // wallet cash. Pass `assets` to exclude txs already attributed to the wallet's
 // own cash-type assets (those count via assetVal) — avoids double-counting.
@@ -891,9 +899,9 @@ export const annualisedReturn = ({ value, cost, days, minDays = 90 }) => {
 export const assetTotalReturn = (asset, txs = [], usdRate = 35) => {
   if (!asset) return null;
   const mult = asset.currency === 'USD' ? usdRate : 1;
-  const { taggedIn, taggedOut } = assetTagged(txs, asset.id);
+  const taggedNet = assetTaggedNet(asset, txs);
 
-  const value = (asset.qty * asset.currentPrice + taggedIn - taggedOut) * mult;
+  const value = (asset.qty * asset.currentPrice + taggedNet) * mult;
   const heldCost = (asset.qty * asset.avgCost) * mult;
   const unrealised = asset.type === 'cash' ? 0 : value - heldCost;
 

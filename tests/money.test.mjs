@@ -16,7 +16,7 @@ globalThis.localStorage = {
 };
 
 const {
-  walletCash, assetVal, walletDelta, runningBalances, mergeArrById, systemCashByDay, txSign, txAmtCls, revertMove,
+  walletCash, assetVal, assetTaggedNet, walletDelta, runningBalances, mergeArrById, systemCashByDay, txSign, txAmtCls, revertMove,
   isUntouchedBudgets, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, realizedByYear,
   encryptBackup, decryptBackup, isEncryptedBackup, assetCashFlow, whoAmI,
   impliedTicker, catOptions, renameCatInStores, priceAge, annualisedReturn, assetTotalReturn,
@@ -979,13 +979,42 @@ test('assetTotalReturn: dividends count, and only this holding s own', () => {
 // cash-type holdings are built on. It flows through assetVal into the paper
 // gain, so it must not also be counted as a return in its own right, and a
 // dividend must not be double-counted by arriving through both doors.
-test('assetTotalReturn: tagged income lifts the value, and is not a return twice', () => {
+// This test used to assert the opposite, and the assertion was the bug written
+// down: a holding is worth its units times its price, so money tagged to it
+// cannot also be added — the units are already the record of what was bought.
+// Applying both is how a ฿3,000 purchase came out as ฿6,000 of value.
+test('assetTotalReturn: tagged money does not move a holding with units', () => {
   const a = { id: 8, type: 'stock', currency: 'THB', qty: 10, avgCost: 100, currentPrice: 100, moves: [] };
   const txs = [{ id: 1, type: 'income', targetAssetId: 8, amount: 500, date: '2026-01-05' }];
   const r = assetTotalReturn(a, txs, 1);
-  assert.equal(r.unrealised, 500, 'the tagged money is part of what the holding is worth');
+  assert.equal(r.unrealised, 0, '10 units at cost, and the tag adds nothing on top');
   assert.equal(r.dividends, 0, 'income is not a dividend');
-  assert.equal(r.total, 500, 'counted once, through the value');
+  assert.equal(r.total, 0);
+});
+
+// The same amounts that would double-count on a holding are the entire balance
+// on a cash asset: qty x price is the opening figure and the tagged flow is the
+// only record of what has happened since.
+test('assetTaggedNet: cash tracks its tagged flow, a holding ignores it', () => {
+  const cash  = { id: 7, type: 'cash',  qty: 10000, avgCost: 1, currentPrice: 1, currency: 'THB' };
+  const stock = { id: 8, type: 'stock', qty: 10, avgCost: 100, currentPrice: 100, currency: 'THB' };
+  const txs = [
+    { id: 1, type: 'income',  targetAssetId: 7, amount: 3000 },
+    { id: 2, type: 'expense', targetAssetId: 7, amount: 1000 },
+    { id: 3, type: 'income',  targetAssetId: 8, amount: 5000 },
+  ];
+  assert.equal(assetTaggedNet(cash, txs), 2000, '3000 in, 1000 out');
+  assert.equal(assetTaggedNet(stock, txs), 0, 'units already carry it');
+  assert.equal(assetVal(cash, txs, 1), 12000);
+  assert.equal(assetVal(stock, txs, 1), 1000, 'not 6000');
+});
+
+// The buy flow raises qty and avgCost and writes an [invest] expense tagged to
+// the same asset. Counting that tag as money in charged the purchase twice.
+test('an [invest] expense never adds on top of the units it bought', () => {
+  const after = { id: 1, type: 'stock', qty: 250, avgCost: 20, currentPrice: 20, currency: 'THB' };
+  const dca = { id: 9, type: 'expense', amount: 3000, notes: '[invest]', targetAssetId: 1, walletId: 5 };
+  assert.equal(assetVal(after, [dca], 1), 5000, '250 x 20, and the tag adds nothing');
 });
 
 test('assetTotalReturn: a USD holding converts realised but not dividends', () => {

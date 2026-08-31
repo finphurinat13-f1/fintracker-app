@@ -1,5 +1,5 @@
 import {
-  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, GOLD_RAMP, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, annualisedReturn, assetTotalReturn, encryptBackup, decryptBackup, isEncryptedBackup
+  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, GOLD_RAMP, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, assetTaggedNet, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, byNewest, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, annualisedReturn, assetTotalReturn, encryptBackup, decryptBackup, isEncryptedBackup
 } from "./lib.js";
 
 
@@ -988,8 +988,7 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[], c
     const by = {}; let tc=0, tv=0;
     assets.filter(a=>a.type!=='cash').forEach(a=>{
       const mult = a.currency==='USD' ? usdRate : 1;
-      const {taggedIn, taggedOut} = assetTagged(txs, a.id);
-      const val  = (a.qty*a.currentPrice + taggedIn - taggedOut) * mult;
+      const val  = (a.qty*a.currentPrice + assetTaggedNet(a, txs)) * mult;
       const cost = (a.qty*a.avgCost) * mult;
       if(!by[a.type]) by[a.type] = {type:a.type, label:LBL[a.type]||a.type, cost:0, val:0};
       by[a.type].cost += cost; by[a.type].val += val;
@@ -4196,7 +4195,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
       const {taggedIn, taggedOut} = assetTagged(txs, a.id);
       const hasTagged = taggedIn>0||taggedOut>0;
       const isCash = a.type==='cash';
-      let valTot  = a.qty * a.currentPrice + taggedIn - taggedOut;
+      let valTot  = a.qty * a.currentPrice + assetTaggedNet(a, txs);
       let costTot = isCash ? valTot : a.qty * a.avgCost;
       const pl      = isCash ? 0 : valTot - costTot;
       const plPct   = isCash ? 0 : (costTot>0 ? (pl/costTot*100) : 0);
@@ -6990,8 +6989,7 @@ const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
       .filter(inView)
       .map(a=>{
         const mult = a.currency==='USD' ? usdRate : 1;
-        const {taggedIn, taggedOut} = assetTagged(txs, a.id);
-        const val  = (a.qty*a.currentPrice + taggedIn - taggedOut) * mult;
+        const val  = (a.qty*a.currentPrice + assetTaggedNet(a, txs)) * mult;
         const cost = (a.qty*a.avgCost) * mult;
         // The name you gave it, not the symbol the price feed knows it by.
         // ticker-first turned ทองคำ into GC=F and the dollar holding into
@@ -7155,8 +7153,7 @@ const ReturnRanking = ({ assets, txs, usdRate, theme }) => {
     const rows = []; let skipped = 0;
     assets.filter(a=>a.type!=='cash').forEach(a=>{
       const mult = a.currency==='USD' ? usdRate : 1;
-      const {taggedIn, taggedOut} = assetTagged(txs, a.id);
-      const value = (a.qty*a.currentPrice + taggedIn - taggedOut) * mult;
+      const value = (a.qty*a.currentPrice + assetTaggedNet(a, txs)) * mult;
       const cost  = (a.qty*a.avgCost) * mult;
       const days  = a.purchaseDate ? Math.floor((Date.now()-new Date(a.purchaseDate))/86400000) : null;
       const cagr  = annualisedReturn({ value, cost, days });
@@ -7623,7 +7620,12 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
       trendPct = prevBalance!==0 ? (balance-prevBalance)/Math.abs(prevBalance)*100 : 0;
       trendLabel = 'month';
     }
-    const allTxs = [...wt].sort((a,b)=>b.id-a.id);
+    // By date, then by id. It was by id alone, which is the order things were
+    // entered rather than the order they happened — a payment dated the 3rd sat
+    // above one dated the 22nd because it was typed in later. The same sort is
+    // why an edited transfer appeared to jump: rebuilt legs took new ids, and
+    // with nothing but id deciding, a new id meant the top of the list.
+    const allTxs = [...wt].sort(byNewest);
     const recent = allTxs.slice(0,3);
     return { ...w, balance, cashBalance, walletCashOnly, cashAssetValue, assetValue, linkedAssets, mInc, mExp, txCount:wt.length, recent, allTxs, prevBalance, trendPct, trendLabel };
   }),[wallets,txs,assets,curM,usdRate]);
@@ -7917,9 +7919,22 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                         ? <div className={`py-4 text-center text-xs ${dk?'text-slate-500':'text-slate-400'}`}>ไม่มีรายการเดือนนี้</div>
                         : <>
                       <div className="space-y-1">
-                        {(expandedTxMap[w.id]?monthTxs:monthTxs.slice(0,3)).map(t=>(
+                        {(() => {
+                          const rows = expandedTxMap[w.id] ? monthTxs : monthTxs.slice(0,3);
+                          // The day sits in its own narrow column and is printed only
+                          // when it changes. Repeating it on all thirty rows would
+                          // make a column of near-identical numbers next to the one
+                          // thing being read, and a header row per day would spend a
+                          // whole row on it. Blank means "same day as above", which
+                          // is what the eye reads a gap as anyway.
+                          return rows.map((t,i)=>{
+                          const newDay = i===0 || rows[i-1].date!==t.date;
+                          return (
                           <div key={t.id}
                             className={`flex items-center justify-between px-2 py-1 rounded-lg transition-colors group/tx ${dk?'hover:bg-white/8':'hover:bg-slate-50'}`}>
+                            <span className={`w-6 flex-shrink-0 text-[10px] tabular-nums ${dk?'text-slate-600':'text-slate-400'}`}>
+                              {newDay ? Number((t.date||'').slice(8,10)) : ''}
+                            </span>
                             <span onClick={()=>onEditTx&&onEditTx(t)} className={`text-xs truncate flex-1 min-w-0 mr-2 ${onEditTx?'cursor-pointer':''} ${dk?'text-slate-400':'text-slate-500'}`}>{t.title}</span>
                             <div className="flex items-center gap-1.5 flex-shrink-0">
                               <span className={`text-xs font-medium ${txAmtCls(t)}`}>
@@ -7931,7 +7946,9 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                               </button>}
                             </div>
                           </div>
-                        ))}
+                          );
+                          });
+                        })()}
                       </div>
                       {monthTxs.length>3&&(
                         <button onClick={()=>toggleTxExpand(w.id)}
@@ -9957,10 +9974,44 @@ const App = () => {
   const saveModal  = useCallback(data=>{
     if(modal.editData){
       if(Array.isArray(data)){
-        // editing a transfer rebuilds fresh legs → drop the whole old linked group
-        // (the edited leg AND its counterpart), otherwise the old pair orphans
+        // Editing a transfer rebuilds both legs from scratch, so the old linked
+        // group has to go or the pair orphans. What it must not do is give the
+        // rebuilt legs new ids: byNewest breaks ties on id, so renaming a rent
+        // payment from three weeks ago sent it to the top of the month as if it
+        // had just happened. The ids carry over by direction, and each leg is
+        // written back where it already sat.
+        //
+        // A leg with no predecessor is new — the shape can change, wallet-to-
+        // wallet becoming wallet-to-asset — so it is appended, and any old leg
+        // the rebuild no longer produces is dropped.
         const old=modal.editData, lid=old.linkedId;
-        setTxs(ts=>[...data, ...ts.filter(t=> t.id!==old.id && !(lid && t.linkedId===lid) )]);
+        setTxs(ts=>{
+          // linkedId is the reliable way to find the other leg, and it is not
+          // always there: rows written before the field existed have none, and
+          // matching on it alone left the counterpart behind — the rebuild then
+          // added a fresh one and the wallet showed the transfer twice, once
+          // under each name.
+          //
+          // The fallback is what a pair actually is: same date, same size,
+          // opposite direction, and not the row being edited. Amount is compared
+          // by absolute value because the two legs are stored with opposite
+          // signs, which is the whole reason they are a pair.
+          const same = (a,b) => a.date===b.date
+            && Math.abs(a.amount)===Math.abs(b.amount)
+            && a.transferDir && b.transferDir && a.transferDir!==b.transferDir;
+          const oldPair = ts.filter(t=>
+            t.id===old.id
+            || (lid && t.linkedId===lid)
+            || (!lid && t.type==='transfer' && t.id!==old.id && same(t, old)));
+          const legs = data.map(d=>{
+            const prev = oldPair.find(t=>t.transferDir===d.transferDir);
+            return prev ? {...d, id:prev.id, linkedId:prev.linkedId} : d;
+          });
+          const kept    = new Map(legs.map(l=>[l.id,l]));
+          const dropped = new Set(oldPair.filter(o=>!kept.has(o.id)).map(o=>o.id));
+          const fresh   = legs.filter(l=>!ts.some(t=>t.id===l.id));
+          return [...fresh, ...ts.filter(t=>!dropped.has(t.id)).map(t=>kept.get(t.id)||t)];
+        });
       }
       else { const d=linkCashAsset(data); setTxs(ts=>ts.map(t=>t.id===modal.editData.id?{...d,id:t.id}:t)); }
     }
