@@ -113,6 +113,7 @@ const Ic = ({ n, s=18, cls='', fill='none' }) => {
     search:   <><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>,
     up:       <><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></>,
     down:     <><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></>,
+    copy:     <><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></>,
     wallet:   <><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 11h2"/></>,
     trend:    <><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></>,
     target:   <><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></>,
@@ -753,7 +754,10 @@ const PlanChart = ({ data, theme }) => {
 };
 
 // ── MODAL ──────────────────────────────────────────────────
-const Modal = ({ open, onClose, onSave, editData, theme, wallets=[], assets=[], txs=[], defaultWalletId=null }) => {
+// prefill seeds a NEW row from an old one. It cannot be editData: that prop is
+// what tells the save path to overwrite, and repeating a payment has to write a
+// new row or the old one silently becomes this month's.
+const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[], assets=[], txs=[], defaultWalletId=null }) => {
   const dk = theme==='dark';
   const [f, setF] = useState({ title:'', amount:'', category:'เงินเดือน', date:today(), type:'income', notes:'', walletId:null, fromWalletId:null, toWalletId:null, fromAssetId:null, toAssetId:null, targetAssetId:null, fromSource:'', toSource:'' });
   useEffect(() => {
@@ -769,11 +773,69 @@ const Modal = ({ open, onClose, onSave, editData, theme, wallets=[], assets=[], 
       }
       setF({...editData, amount:String(Math.abs(editData.amount)), walletId:editData.walletId||null, targetAssetId:editData.targetAssetId||null, fromSource, toSource});
     }
+    else if (prefill) {
+      // Everything except the date and the identity: a repeat is the same
+      // payment happening again, so it happens today.
+      setF({
+        title: prefill.title||'', amount: String(Math.abs(prefill.amount||0)),
+        category: prefill.category||'อาหาร', date: today(),
+        type: prefill.type||'expense', notes: prefill.notes||'',
+        walletId: prefill.walletId||null, targetAssetId: null,
+        fromWalletId:null, toWalletId:null, fromAssetId:null, toAssetId:null,
+        fromSource:'', toSource:'',
+      });
+    }
     else {
       const fs = defaultWalletId?`w-${defaultWalletId}`:'';
       setF({ title:'', amount:'', category:'อาหาร', date:today(), type:'expense', notes:'', walletId:defaultWalletId, fromWalletId:null, toWalletId:null, fromAssetId:null, toAssetId:null, targetAssetId:null, fromSource:fs, toSource:'' });
     }
-  }, [editData, open, defaultWalletId]);
+  }, [editData, prefill, open, defaultWalletId]);
+  // Guessed from the rows already recorded, not from a lookup table. There are
+  // hundreds of them and every one is a decision Fin already made about which
+  // category a name belongs to — a table would be a second, emptier copy of
+  // that. Same type only: "โอนเข้า" as income and as expense are not the same
+  // event, and matching across the two would suggest the wrong half.
+  //
+  // Exact title beats a prefix beats a substring, and among equals the most
+  // recent wins, because the last decision is the one that stuck.
+  const [catAuto, setCatAuto] = useState(null);
+
+  // Same type, same day, same amount, same name. All four, because any three of
+  // them happen legitimately all the time — two Grab Food orders on one day, a
+  // ฿60 coffee every morning — and a warning that fires on those is one people
+  // learn to click past, which is worse than no warning at all.
+  //
+  // It informs and does not block: a real second purchase looks exactly like a
+  // mistake from here, and only the person who made it can tell the difference.
+  const dupe = useMemo(() => {
+    if (editData) return null;
+    const amt = Math.abs(parseFloat(f.amount));
+    const name = (f.title||'').trim().toLowerCase();
+    if (!name || !amt || isNaN(amt) || f.type === 'transfer') return null;
+    return txs.find(t =>
+      t && t.type === f.type
+      && t.date === f.date
+      && Math.abs(Math.abs(t.amount) - amt) < 0.005
+      && (t.title||'').trim().toLowerCase() === name
+    ) || null;
+  }, [txs, f.title, f.amount, f.date, f.type, editData]);
+
+  const guessCat = (title) => {
+    const q = (title||'').trim().toLowerCase();
+    if (q.length < 2) return null;
+    const pool = txs.filter(t => t && t.type === f.type && t.category && t.title);
+    const rank = t => {
+      const n = t.title.trim().toLowerCase();
+      return n === q ? 3 : n.startsWith(q) ? 2 : n.includes(q) ? 1 : 0;
+    };
+    let best = null, bestRank = 0;
+    for (const t of pool) {
+      const r = rank(t);
+      if (r > bestRank || (r === bestRank && r > 0 && best && t.date > best.date)) { best = t; bestRank = r; }
+    }
+    return bestRank > 0 ? { cat: best.category, from: best.title } : null;
+  };
+
   const set = (k,v) => { const nf={...f,[k]:v}; if(k==='type'){nf.category=v==='income'?'เงินเดือน':v==='transfer'?'โยกเงิน':'อาหาร';} setF(nf); };
   const parseSrcM = v => { if(!v) return {t:null,id:null}; const [t,...r]=v.split('-'); return {t,id:parseInt(r.join('-'))}; };
   const getSrcName = v => { const {t,id}=parseSrcM(v); return t==='w'?wallets.find(x=>x.id===id)?.name:assets.find(x=>x.id===id)?.name||''; };
@@ -870,7 +932,17 @@ const Modal = ({ open, onClose, onSave, editData, theme, wallets=[], assets=[], 
           </div>
           <div>
             <label className={lbl}>รายการ</label>
-            <input className={`${inp} ${f.title===''&&f.amount?'border-rose-500/50':''}`} placeholder={f.type==='income'?'เช่น เงินเดือน, โบนัส, เงินปันผล':'เช่น ค่ากาแฟ, ค่าอาหาร, ค่าเดินทาง'} value={f.title} onChange={e=>set('title',e.target.value)}/>
+            <input className={`${inp} ${f.title===''&&f.amount?'border-rose-500/50':''}`} placeholder={f.type==='income'?'เช่น เงินเดือน, โบนัส, เงินปันผล':'เช่น ค่ากาแฟ, ค่าอาหาร, ค่าเดินทาง'} value={f.title} onChange={e=>{
+              const v = e.target.value;
+              // Only while the category is still untouched. Overwriting a choice
+              // the user just made is worse than not guessing at all.
+              if (!editData && catAuto !== 'manual') {
+                const g = guessCat(v);
+                if (g && g.cat !== f.category) { setF(prev=>({...prev, title:v, category:g.cat})); setCatAuto(g); return; }
+                if (!g && catAuto) setCatAuto(null);
+              }
+              set('title', v);
+            }}/>
             {f.title===''&&f.amount&&<p className="mt-1 text-xs text-rose-400">กรุณากรอกชื่อรายการค่ะ</p>}
           </div>
           <div>
@@ -884,9 +956,21 @@ const Modal = ({ open, onClose, onSave, editData, theme, wallets=[], assets=[], 
           {f.type!=='transfer'?(
             <div className="grid grid-cols-2 gap-3">
               <div><label className={lbl}>หมวดหมู่</label>
-                <select className={inp} value={f.category} onChange={e=>set('category',e.target.value)}>
+                <select className={inp} value={f.category} onChange={e=>{setCatAuto('manual');set('category',e.target.value);}}>
                   {catOptions(f.type==='income'?INCOME_CATS:getExpenseCats(), f.category).map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
-                </select></div>
+                </select>
+                {/* Say where it came from. A field that fills itself without
+                    explanation reads as a glitch the first time and as something
+                    you cannot trust the second; naming the row it copied makes it
+                    checkable, and the picker above it is still the way to
+                    disagree. */}
+                {catAuto && catAuto !== 'manual' && (
+                  <p className={`text-[10px] mt-1 truncate ${dk?'text-slate-500':'text-slate-400'}`}
+                    title={`เดาจาก "${catAuto.from}"`}>
+                    เดาจาก “{catAuto.from}”
+                  </p>
+                )}
+                </div>
               <div><label className={lbl}>วันที่</label><input type="date" className={inp} value={f.date} onChange={e=>set('date',e.target.value)}/></div>
             </div>
           ):(
@@ -947,6 +1031,15 @@ const Modal = ({ open, onClose, onSave, editData, theme, wallets=[], assets=[], 
           )}
           <div><label className={lbl}>หมายเหตุ</label><input className={inp} placeholder="หมายเหตุ (ไม่บังคับ)" value={f.notes} onChange={e=>set('notes',e.target.value)}/></div>
         </div>
+        {dupe && (
+          <div className={`mx-5 mb-3 text-xs rounded-xl px-3 py-2 leading-5 flex items-start gap-2 ${dk?'bg-amber-500/10 text-amber-300':'bg-amber-50 text-amber-700'}`}>
+            <span className="flex-shrink-0">⚠️</span>
+            <span>
+              มีรายการ <b>{dupe.title}</b> {fmt(Math.abs(dupe.amount))} วันเดียวกันอยู่แล้ว —
+              ถ้าจ่ายจริงสองครั้งก็บันทึกต่อได้เลยค่ะ
+            </span>
+          </div>
+        )}
         <div className="flex gap-3 px-5 pb-5">
           <button onClick={onClose} className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${dk?'bg-white/5 hover:bg-white/10 text-slate-300':'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}>ยกเลิก</button>
           <button onClick={save} disabled={overDraw} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed ${f.type==='income'?'bg-gold-500 hover:bg-gold-600':f.type==='transfer'?'bg-gold-500 hover:bg-gold-600':'bg-rose-500 hover:bg-rose-600'}`}>{editData?'บันทึก':'เพิ่มรายการ'}</button>
@@ -2023,7 +2116,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
 };
 
 // ── MONTH GROUP (Accordion Row) ────────────────────────────
-const MonthGroup = ({ month, txs, dk, defaultOpen=false, sel, toggleSel, onEdit, onDelete, walletMap, assets=[], onAddRecurring, onQuickEdit, favKeys, balCol=null, sysDay=null }) => {
+const MonthGroup = ({ month, txs, dk, defaultOpen=false, sel, toggleSel, onEdit, onRepeat, onDelete, walletMap, assets=[], onAddRecurring, onQuickEdit, favKeys, balCol=null, sysDay=null }) => {
   const [open, setOpen] = useState(defaultOpen);
   const [editInline, setEditInline] = useState(null);
   // Banding by day rather than by row. The list is already grouped by date —
@@ -2176,6 +2269,13 @@ const MonthGroup = ({ month, txs, dk, defaultOpen=false, sel, toggleSel, onEdit,
                 {onAddRecurring&&t.type!=='transfer'&&(()=>{ const isFav=favKeys&&favKeys.has(t.title+'|'+t.type); return (
                   <button title={isFav?'⭐ บันทึกเป็นรายการโปรดแล้ว (กดเพื่อเพิ่มอีกได้)':'⭐ บันทึกเป็นรายการโปรด/ประจำ — เปิดหน้าต่างให้ยืนยันก่อน (กันกดผิด)'} onClick={e=>{e.stopPropagation();onAddRecurring(t);}} className={`p-1.5 rounded-lg transition-colors ${isFav?(dk?'bg-gold-500/25 text-gold-300':'bg-gold-100 text-gold-600'):(dk?'hover:bg-gold-500/20 text-slate-400 hover:text-gold-400':'hover:bg-gold-50 text-slate-400 hover:text-gold-500')}`}><Ic n="star" s={12} fill={isFav?'currentColor':'none'}/></button>
                 ); })()}
+                {onRepeat&&t.type!=='transfer'&&(
+                  <button title="บันทึกซ้ำ — เปิดรายการใหม่ด้วยค่าเดิม วันที่วันนี้"
+                    onClick={e=>{e.stopPropagation();onRepeat(t);}}
+                    className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}>
+                    <Ic n="copy" s={13}/>
+                  </button>
+                )}
                 <button title="แก้ไข" onClick={e=>{e.stopPropagation();onEdit(t);}} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-200 text-slate-400'}`}><Ic n="edit" s={11}/></button>
                 <button title="ลบ" onClick={e=>{e.stopPropagation();onDelete(t.id);}} className={`p-1.5 rounded-lg ${dk?'hover:bg-rose-500/20 text-rose-400':'hover:bg-rose-50 text-rose-400'}`}><Ic n="trash" s={11}/></button>
               </div>
@@ -2190,13 +2290,23 @@ const MonthGroup = ({ month, txs, dk, defaultOpen=false, sel, toggleSel, onEdit,
 };
 
 // ── TRANSACTIONS PAGE ───────────────────────────────────────
-const TxPage = ({ txs, theme, onEdit, onAdd, onDelete, onBulkDelete, onExport, wallets=[], assets=[], onAddRecurring, onRecordRecurring, onQuickEdit, favKeys }) => {
+const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, onExport, wallets=[], assets=[], onAddRecurring, onRecordRecurring, onQuickEdit, favKeys }) => {
   const dk = theme==='dark';
   const [confirmEl, ask] = useConfirm(dk);
+  // Filters survive leaving the page. They used to reset every time, so the
+  // same three selections had to be made again on every visit — and the one
+  // filter that did persist (the date range) proved the pattern was wanted.
+  //
+  // The search box is deliberately NOT remembered: a range or a category is a
+  // way of looking at the ledger, but a search is a question you asked once,
+  // and coming back to a list filtered by a word you have forgotten typing
+  // reads as data loss.
+  const savedF = (()=>{ try { return JSON.parse(localStorage.getItem('ft-tx-filters')||'null')||{}; } catch { return {}; } })();
   const [search,setSearch]=useState('');
-  const [fType,setFType]=useState('all');
-  const [fCat,setFCat]=useState('all');
-  const [fWallet,setFWallet]=useState('all');
+  const [fType,setFType]=useState(savedF.fType||'all');
+  const [fCat,setFCat]=useState(savedF.fCat||'all');
+  const [fWallet,setFWallet]=useState(savedF.fWallet||'all');
+  const [views,setViews]=useState(()=>{ try { return JSON.parse(localStorage.getItem('ft-tx-views')||'null')||[]; } catch { return []; } });
   // Which stretch of time the page opens on. Stored as the choice ("today"),
   // never as the date itself — a saved 2026-08-08 would still say 2026-08-08
   // tomorrow, and the page would open on a day that has quietly become
@@ -2211,6 +2321,15 @@ const TxPage = ({ txs, theme, onEdit, onAdd, onDelete, onBulkDelete, onExport, w
   const [fDateFrom,setFDateFrom]=useState(initDates[0]);
   const [fDateTo,setFDateTo]=useState(initDates[1]);
   useEffect(()=>{ try { localStorage.setItem('ft-tx-range', dRange); } catch {} },[dRange]);
+  useEffect(()=>{ try { localStorage.setItem('ft-tx-filters', JSON.stringify({fType,fCat,fWallet})); } catch {} },[fType,fCat,fWallet]);
+  useEffect(()=>{ try { localStorage.setItem('ft-tx-views', JSON.stringify(views)); } catch {} },[views]);
+  const filterOn = fType!=='all'||fCat!=='all'||fWallet!=='all';
+  const applyView = v => { setFType(v.fType||'all'); setFCat(v.fCat||'all'); setFWallet(v.fWallet||'all'); if(v.dRange) setDRange(v.dRange); };
+  const saveView = () => {
+    const name = (window.prompt('ตั้งชื่อมุมมองนี้','')||'').trim();
+    if(!name) return;
+    setViews(vs=>[...vs.filter(v=>v.name!==name), {name, fType, fCat, fWallet, dRange}].slice(-8));
+  };
   const [showAdv,setShowAdv]=useState(false);
   const [sortBy,setSortBy]=useState('date');
   const [sortDir,setSortDir]=useState('desc');
@@ -2390,6 +2509,34 @@ const TxPage = ({ txs, theme, onEdit, onAdd, onDelete, onBulkDelete, onExport, w
             {(fCat!=='all'||fWallet!=='all')&&<span className="w-1.5 h-1.5 rounded-full bg-gold-400"/>}
           </button>
         </div>
+        {/* Saved views, and a way out of whatever is filtering right now.
+            Filters that persist need a visible off switch: coming back to a
+            page that is quietly showing a third of the ledger, with no sign
+            that it is, is how remembered state turns into "my data is gone". */}
+        {(views.length>0 || filterOn) && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-3">
+            {views.map(v=>(
+              <button key={v.name} onClick={()=>applyView(v)}
+                onContextMenu={e=>{e.preventDefault(); if(window.confirm('ลบมุมมอง "'+v.name+'"?')) setViews(vs=>vs.filter(x=>x.name!==v.name));}}
+                title="คลิกเพื่อใช้ · คลิกขวาเพื่อลบ"
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${dk?'bg-white/8 text-slate-300 hover:bg-white/14':'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                {v.name}
+              </button>
+            ))}
+            {filterOn && (
+              <>
+                <button onClick={saveView}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium border border-dashed transition-colors ${dk?'border-white/20 text-slate-400 hover:text-gold-300 hover:border-gold-500/40':'border-slate-300 text-slate-500 hover:text-gold-700'}`}>
+                  + บันทึกมุมมองนี้
+                </button>
+                <button onClick={()=>{setFType('all');setFCat('all');setFWallet('all');}}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium ${dk?'text-slate-500 hover:text-rose-300':'text-slate-400 hover:text-rose-500'}`}>
+                  ล้างตัวกรอง
+                </button>
+              </>
+            )}
+          </div>
+        )}
         {/* Advanced filters (collapsible) */}
         {showAdv&&(
           <div className={`flex flex-wrap items-center gap-2 pt-3 border-t ${dk?'border-white/5':'border-slate-100'}`}>
@@ -2542,6 +2689,7 @@ const TxPage = ({ txs, theme, onEdit, onAdd, onDelete, onBulkDelete, onExport, w
             sel={sel}
             toggleSel={toggleSel}
             onEdit={onEdit}
+            onRepeat={onRepeat}
             onDelete={onDelete}
             walletMap={walletMap}
             assets={assets}
@@ -5476,6 +5624,88 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
           "how much" twice before it answered "where". */}
       </>)}
     </div>
+  );
+};
+
+// ── QUICK ADD ──────────────────────────────────────────────────────────────
+// Two fields, because the six-field form is right at a desk and wrong standing
+// at a till. A spend that is not recorded in the moment mostly does not get
+// recorded, and every field between the amount and Save is a chance to give up.
+//
+// Amount and category. The title takes the category's name — the full form is
+// still there for a row that deserves one, and a row called "อาหาร ฿120" says
+// more than a row that never got written.
+//
+// Categories are offered most-used first, from the last ninety days: the six
+// that come up are Fin's own six, and they change as the spending does.
+const QuickAdd = ({ open, onClose, onSave, txs, wallets, defaultWalletId, dk }) => {
+  const [amt, setAmt] = useState('');
+  const [cat, setCat] = useState(null);
+  const [wid, setWid] = useState(defaultWalletId);
+  useEffect(()=>{ if(open){ setAmt(''); setCat(null); setWid(defaultWalletId); } },[open, defaultWalletId]);
+
+  const top = useMemo(()=>{
+    const since = new Date(Date.now()-90*86400000).toISOString().slice(0,10);
+    const n = {};
+    txs.filter(t=>t.type==='expense'&&t.date>=since&&t.category).forEach(t=>{ n[t.category]=(n[t.category]||0)+1; });
+    const ranked = Object.entries(n).sort((a,b)=>b[1]-a[1]).map(([c])=>c);
+    return ranked.length ? ranked.slice(0,6) : getExpenseCats().slice(0,6);
+  },[txs, open]);
+
+  if (!open) return null;
+  const value = parseFloat(amt);
+  const ready = !isNaN(value) && value > 0 && cat;
+  const commit = () => {
+    if (!ready) return;
+    onSave({ title: cat, amount: value, category: cat, date: today(),
+             type: 'expense', notes: '', walletId: wid || null });
+    onClose();
+  };
+
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()}
+        className={`w-full max-w-sm rounded-2xl border p-5 ${dk?'bg-[#1a1a1f] border-gold-500/25':'bg-white border-slate-200'}`}
+        style={{marginBottom:'env(safe-area-inset-bottom)'}}>
+        <div className="flex items-center justify-between mb-4">
+          <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>บันทึกเร็ว</span>
+          <button onClick={onClose} className={dk?'text-slate-500':'text-slate-400'}><Ic n="x" s={16}/></button>
+        </div>
+
+        {/* inputMode numeric, not type=number: the phone keypad is the point, and
+            type=number adds spinners and swallows a stray comma silently. */}
+        <input autoFocus inputMode="decimal" value={amt} onChange={e=>setAmt(e.target.value.replace(/[^0-9.]/g,''))}
+          onKeyDown={e=>{ if(e.key==='Enter') commit(); }}
+          placeholder="0"
+          className={`w-full text-center text-3xl font-semibold tabular-nums bg-transparent outline-none mb-4 ${dk?'text-slate-100 placeholder-slate-700':'text-slate-800 placeholder-slate-300'}`}/>
+
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {top.map(c=>(
+            <button key={c} onClick={()=>setCat(c)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                cat===c ? 'bg-orange-400 text-[#241304]'
+                        : (dk?'bg-white/8 text-slate-300 hover:bg-white/14':'bg-slate-100 text-slate-600 hover:bg-slate-200')}`}>
+              {c}
+            </button>
+          ))}
+        </div>
+
+        {wallets.length>0 && (
+          <select value={wid||''} onChange={e=>setWid(e.target.value?parseInt(e.target.value):null)}
+            className={`w-full mb-4 px-3 py-2 rounded-xl border text-xs outline-none ${dk?'bg-white/5 border-white/10 text-slate-300':'bg-white border-slate-200 text-slate-600'}`}>
+            <option value="">ไม่ระบุกระเป๋า</option>
+            {wallets.map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
+          </select>
+        )}
+
+        <button onClick={commit} disabled={!ready}
+          className="w-full py-2.5 rounded-xl text-sm font-semibold btn-primary disabled:opacity-40">
+          บันทึก
+        </button>
+      </div>
+    </div>,
+    document.body
   );
 };
 
@@ -9559,6 +9789,7 @@ const App = () => {
       });
     }
   },[]);
+  const [quickOpen,setQuickOpen]       = useState(false);
   const [wModal,setWModal]             = useState({open:false,editData:null});
   const [toasts,setToasts]     = useState([]);
   const txsRef                 = useRef(txs);
@@ -9981,7 +10212,7 @@ const App = () => {
         setModal({open:true,editData:null,defaultWalletId:null});
       }
       if (e.key==='Escape') {
-        if (modal.open)        setModal({open:false,editData:null,defaultWalletId:null});
+        if (modal.open)        setModal({open:false,editData:null,prefill:null,defaultWalletId:null});
         else if (assetModal.open) setAModal({open:false,editData:null,defaultWalletId:null});
         else if (wModal.open)  setWModal({open:false,editData:null});
         else if (unifiedOpen.open) setUnifiedOpen({open:false,from:null,to:null});
@@ -10178,6 +10409,11 @@ const App = () => {
     setTxs(ts=>ts.filter(t=>!willDel(t)));
   },[sendToTrash]);
   const openEdit   = useCallback(t=>setModal({open:true,editData:t}),[]);
+  // Repeat opens the form as a NEW row seeded from an old one, dated today.
+  // editData stays null on purpose: passing the old row there would make the
+  // save overwrite it, and this month's coffee would quietly become last
+  // month's.
+  const openRepeat = useCallback(t=>setModal({open:true,editData:null,prefill:t}),[]);
   const delAsset   = useCallback(id=>{ const a=assetsRef.current.find(a=>a.id===id); showUndo(`🗑 ลบ "${a?.name||'สินทรัพย์'}"`,()=>setAssets(as=>as.filter(a=>a.id!==id))); },[showUndo]);
   // Recycle bin actions
   const restoreFromTrash = useCallback(ids=>{
@@ -10872,7 +11108,7 @@ const App = () => {
             nothing renders until it is entered. */}
         {privacy && lockOn ? <LockedPanel dk={theme==='dark'} onUnlock={()=>setPinGate('unlock')}/> : (<>
         {page==='dashboard'    && <Dashboard     txs={txs} assets={assets} theme={theme} nwHistory={nwHistory} wallets={wallets} user={user} debts={debts} custodial={custodial} privacy={privacy} hideAmt={hideAmt} onToggleHide={toggleHideAmt}/>}
-        {page==='transactions' && <TxPage        txs={txs}    theme={theme} onEdit={openEdit} onAdd={()=>setModal({open:true,editData:null})} onDelete={delOne} onBulkDelete={delBulk} onExport={()=>exportCSV(txs)} wallets={wallets} assets={assets} onAddRecurring={openQuickRecur} onRecordRecurring={addRecur} onQuickEdit={quickEditTx} favKeys={favKeys}/>}
+        {page==='transactions' && <TxPage        txs={txs}    theme={theme} onEdit={openEdit} onRepeat={openRepeat} onAdd={()=>setModal({open:true,editData:null})} onDelete={delOne} onBulkDelete={delBulk} onExport={()=>exportCSV(txs)} wallets={wallets} assets={assets} onAddRecurring={openQuickRecur} onRecordRecurring={addRecur} onQuickEdit={quickEditTx} favKeys={favKeys}/>}
         {page==='assets'       && <AssetsPage    assets={assets} theme={theme} onEdit={editAsset} onDelete={delAsset} onAdd={()=>setAModal({open:true,editData:null})} onInvest={assetId=>setUnifiedOpen({open:true,from:null,to:typeof assetId==='number'?`a-${assetId}`:null})} onPriceUpdate={updatePrices} onQuickPrice={quickPriceEdit} onDCA={a=>setDcaModal({open:true,asset:a})} onAddAssetTx={addAssetTx} onDeleteAssetTx={delAssetTx} onTopUpAsset={topUpAsset} onDeleteMove={deleteAssetMove} onRenameMove={renameAssetMove} onAddItem={addAssetItem} onDelItem={delAssetItem} wallets={wallets} txs={txs}/>}
         {page==='budget'       && <BudgetPage    key={`budget-${dataKey}`}    txs={txs}    theme={theme} onEdit={openEdit} onRenameCategory={renameCategoryInTxs}/>}
         {page==='debt'         && <DebtPage      theme={theme} debts={debts} setDebts={setDebts}/>}
@@ -10901,6 +11137,19 @@ const App = () => {
       )}
 
       {/* ── Bottom Navigation Bar (Mobile Only) ── */}
+      {/* Above the bar rather than inside it. The five tabs are places to go;
+          this is a thing to do, and a control that does something does not
+          belong in a row of controls that only move you. */}
+      <button onClick={()=>setQuickOpen(true)} aria-label="บันทึกเร็ว"
+        className="lg:hidden fixed right-4 z-40 no-print w-14 h-14 rounded-full btn-primary flex items-center justify-center text-2xl font-light active:scale-90 transition-transform"
+        style={{bottom:'calc(4.75rem + env(safe-area-inset-bottom))'}}>
+        +
+      </button>
+      <QuickAdd open={quickOpen} onClose={()=>setQuickOpen(false)} onSave={saveModal}
+        txs={txs} wallets={wallets} dk={dk}
+        /* The wallet the last spend came from, which is the one it will come from
+           again far more often than not. */
+        defaultWalletId={(txs.find(t=>t.type==='expense'&&t.walletId)||{}).walletId||null}/>
       <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 no-print border-t
         ${dk?'bg-[#101012]/98 border-gold-500/15 backdrop-blur-2xl':'bg-[#faf9f7]/95 border-slate-200 backdrop-blur-xl'}`}
         style={{paddingBottom:'env(safe-area-inset-bottom)'}}>
@@ -10934,7 +11183,7 @@ const App = () => {
       </nav>
 
       <WalletModal open={wModal.open} onClose={()=>setWModal({open:false,editData:null})} onSave={data=>{ if(wModal.editData) editWallet({...data,id:wModal.editData.id}); else addWallet(data); setWModal({open:false,editData:null}); }} editData={wModal.editData} theme={theme}/>
-      <Modal       open={modal.open}      onClose={()=>setModal({open:false,editData:null,defaultWalletId:null})}  onSave={saveModal}  editData={modal.editData}     theme={theme} wallets={wallets} assets={assets} txs={txs} defaultWalletId={modal.defaultWalletId}/>
+      <Modal       open={modal.open}      onClose={()=>setModal({open:false,editData:null,prefill:null,defaultWalletId:null})}  onSave={saveModal} prefill={modal.prefill||null}  editData={modal.editData}     theme={theme} wallets={wallets} assets={assets} txs={txs} defaultWalletId={modal.defaultWalletId}/>
       <AssetModal  open={assetModal.open} onClose={()=>setAModal({open:false,editData:null,defaultWalletId:null})} onSave={saveAsset} onAssign={assignAssetToWallet} onUnlink={unlinkAsset} onAssetTransfer={assetId=>setUnifiedOpen({open:true,from:`a-${assetId}`,to:null})} editData={assetModal.editData} theme={theme} wallets={wallets} assets={assets} defaultWalletId={assetModal.defaultWalletId}/>
       <ImportModal  open={importOpen}      onClose={()=>setImport(false)}  onImport={doImport}  theme={theme}/>
       <BackupModal  open={backupOpen}      onClose={()=>setBackupOpen(false)} onRestore={doRestore} theme={theme} txs={txs} assets={assets} wallets={wallets} debts={debts} nwHistory={nwHistory} custodial={custodial}/>
