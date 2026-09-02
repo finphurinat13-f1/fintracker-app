@@ -6445,10 +6445,20 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
           // can still be found and given a budget.
           const unsetEntries = allEntries.filter(([,b])=>!(b>0));
           const budgeted     = allEntries.filter(([,b])=>b>0);
-          const regularEntries = budgeted.filter(([cat])=>!isIrregular(cat));
-          const irregularEntries = budgeted.filter(([cat])=>isIrregular(cat));
-          const regularTotal = regularEntries.reduce((s,[cat])=>s+(spent[cat]||0),0);
-          const irregularTotal = irregularEntries.reduce((s,[cat])=>s+(spent[cat]||0),0);
+          // ลงทุน/ปันผล is left out of Budget รวม deliberately — the money is
+          // still Fin's, it has only moved into assets — but it was sitting
+          // inside the ไม่ประจำ group while contributing nothing to that group's
+          // stated total. The group's header said 50,000 above six cards adding
+          // to 110,000, and nothing on screen said where the other 60,000 had
+          // gone. It gets a section of its own, so every header is the exact sum
+          // of the cards underneath it and the split note above still reconciles:
+          // ประจำ + ไม่ประจำ = Budget รวม, with the excluded group standing apart.
+          const nonSpendEntries  = budgeted.filter(([cat])=>NON_SPEND_CATS.includes(cat));
+          const counted          = budgeted.filter(([cat])=>!NON_SPEND_CATS.includes(cat));
+          const regularEntries   = counted.filter(([cat])=>!isIrregular(cat));
+          const irregularEntries = counted.filter(([cat])=>isIrregular(cat));
+          const sumSpent  = es => es.reduce((t,[cat])=>t+(spent[cat]||0),0);
+          const sumBudget = es => es.reduce((t,[,b])=>t+(Number(b)||0),0);
 
           const renderCard = ([cat,bgt]) => {
             const s=spent[cat]||0, p=bgt>0?Math.min(s/bgt*100,100):0;
@@ -6550,14 +6560,12 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                         </>
                         :<div className="flex items-center gap-1.5 mb-0.5 min-w-0">
                           <span className={`text-sm font-medium truncate ${dk?'text-white':'text-slate-700'}`}>{cat}</span>
-                          {/* This card carries a budget, a ring and a percentage exactly like
-                              every other one, while the totals above deliberately leave it out
-                              — so raising its budget changed nothing on screen and looked
-                              broken. The figures were right; nothing said which ones. */}
-                          {NON_SPEND_CATS.includes(cat)&&(
-                            <span title="เงินลงทุนย้ายไปอยู่ในสินทรัพย์ ไม่ได้ใช้หายไป จึงไม่ถูกนับใน BUDGET รวม · ใช้ไปแล้ว · คงเหลือ · ใช้ได้อีก/วัน"
-                              className={`flex-shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded whitespace-nowrap ${dk?'bg-white/10 text-slate-400':'bg-slate-100 text-slate-500'}`}>ไม่นับในยอดรวม</span>
-                          )}
+                          {/* The "ไม่นับในยอดรวม" badge is gone. It sat here because
+                              this card looked identical to every other one while the
+                              totals above deliberately left it out, and nothing said
+                              which. The category now has a section of its own, whose
+                              header says the same thing with room to say why, so the
+                              badge had become the second place saying it. */}
                         </div>
                       }
                       {/* Spent, then how it stands against the budget, on one
@@ -6670,30 +6678,32 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
             );
           };
 
+          // Three near-identical blocks is two too many to keep in step. The
+          // header carries spent over the group's own budget, because a lone
+          // figure in that corner reads as the budget and was in fact the spend.
+          const groupSection = (icon, label, entries, note) => (
+            <div className={`${card} p-5`}>
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="min-w-0">
+                  <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>{icon} {label}</span>
+                  {note&&<p className={`text-[11px] mt-0.5 ${sub}`}>{note}</p>}
+                </div>
+                <span className={`text-xs font-semibold tabular-nums whitespace-nowrap flex-shrink-0 ${dk?'text-slate-300':'text-slate-600'}`}>
+                  {fmt(sumSpent(entries))} <span className="opacity-50">/ {fmtNW(sumBudget(entries))}</span>
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {entries.map(renderCard)}
+              </div>
+            </div>
+          );
+
           return (
             <>
-              {regularEntries.length>0 && (
-                <div className={`${card} p-5`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>🔁 ประจำ (รายวัน)</span>
-                    <span className={`text-xs font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>{fmt(regularTotal)}</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {regularEntries.map(renderCard)}
-                  </div>
-                </div>
-              )}
-              {irregularEntries.length>0 && (
-                <div className={`${card} p-5`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>📦 ไม่ประจำ (นานๆ ที)</span>
-                    <span className={`text-xs font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>{fmt(irregularTotal)}</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {irregularEntries.map(renderCard)}
-                  </div>
-                </div>
-              )}
+              {regularEntries.length>0   && groupSection('🔁','ประจำ (รายวัน)',regularEntries)}
+              {irregularEntries.length>0 && groupSection('📦','ไม่ประจำ (นานๆ ที)',irregularEntries)}
+              {nonSpendEntries.length>0  && groupSection('💠','ไม่นับในยอดรวม',nonSpendEntries,
+                'เงินลงทุนย้ายไปอยู่ในสินทรัพย์ ไม่ได้ใช้หายไป จึงไม่รวมใน Budget รวม')}
 
               {/* Categories with no budget, folded into one line. Full cards for
                   them said "there is nothing to say here" at the same size as a
