@@ -262,8 +262,14 @@ export const assetTagged = (txs, id) => {
 // cannot be followed to a row is a worry, not a report.
 export const dataHealth = ({ txs = [], assets = [], wallets = [], debts = [] } = {}) => {
   const out = [];
-  const add = (level, title, detail, rows = []) => out.push({ level, title, detail, rows });
+  // kind matters: an asset row and a transaction row look alike from outside —
+  // both carry a .type — and the panel was opening the transaction editor on an
+  // asset, which is why clicking a holding produced an empty form.
+  const add = (level, title, detail, rows = [], kind = 'tx', fix = '') =>
+    out.push({ level, title, detail, rows, kind, fix });
   const assetById = new Map(assets.map(a => [a.id, a]));
+  // Enough decimals to show a fractional share, none of the trailing zeros.
+  const q = n => parseFloat(Number(n || 0).toFixed(8)).toLocaleString('en-US', { maximumFractionDigits: 8 });
 
   // 1. The shape that cost the most: an amount taken off a wallet and off a
   //    holding at the same time. The form no longer allows it; rows saved
@@ -274,11 +280,16 @@ export const dataHealth = ({ txs = [], assets = [], wallets = [], debts = [] } =
     && (assetById.get(t.targetAssetId) || {}).type !== 'cash');
   if (doubled.length) add('warn', 'รายการที่อาจถูกนับสองที่',
     'ผูกทั้งกระเป๋าเงินและสินทรัพย์ที่ไม่ใช่เงินสด — เงินก้อนเดียวถูกนับทั้งสองฝั่ง แก้โดยเปิดรายการแล้วเอาสินทรัพย์ออก',
-    doubled);
+    doubled, 'tx',
+    'เปิดรายการแล้วเอาการผูกสินทรัพย์ออก ให้เหลือแค่กระเป๋าเงิน');
 
   // 2. Units and their own history disagreeing. moves is the record of every
   //    buy and sell; if it does not add up to qty, one of the two was written
   //    by hand and the other was not.
+  const driftOf = a => {
+    const newest = a.moves[0];
+    return (Number(a.qty) || 0) - Number(newest.newQty);
+  };
   const drifted = assets.filter(a => {
     if (!a || a.type === 'cash' || !Array.isArray(a.moves) || !a.moves.length) return false;
     const moved = a.moves.reduce((s, m) => s + (Number(m.qty) || 0), 0);
@@ -287,15 +298,27 @@ export const dataHealth = ({ txs = [], assets = [], wallets = [], debts = [] } =
   });
   if (drifted.length) add('warn', 'จำนวนหน่วยไม่ตรงกับประวัติ',
     'จำนวนที่เก็บไว้ต่างจากบรรทัดล่าสุดในประวัติเติม/เอาออก — มักเกิดจากแก้จำนวนด้วยมือหลังบันทึกความเคลื่อนไหว',
-    drifted);
+    // The row carries the two numbers and the gap between them, because "does
+    // not match" without them is a claim the reader cannot check.
+    drifted.map(a => ({ ...a, _hint:
+      `เก็บไว้ ${q(a.qty)} · ประวัติล่าสุด ${q(a.moves[0].newQty)} · ต่างกัน ${driftOf(a) > 0 ? '+' : ''}${q(driftOf(a))}` })),
+    'asset',
+    'เปิดหน้าสินทรัพย์ → แก้จำนวนให้ตรงกับประวัติ หรือเพิ่มรายการเติม/เอาออกที่ขาดไป');
 
-  // 3. Money with nowhere to come from. Legitimate — cash the app was never
-  //    told about — but it makes Budget and Net Worth disagree with nothing
-  //    on screen to say why.
-  const nowhere = txs.filter(t => t && t.type !== 'transfer' && !t.walletId && !t.targetAssetId);
-  if (nowhere.length) add('info', 'รายการที่ไม่ได้ผูกกระเป๋าหรือสินทรัพย์',
-    'Budget นับรายจ่ายพวกนี้ แต่มูลค่าสุทธิไม่นับ — ตั้งใจได้ ถ้าเป็นเงินสดที่ไม่ได้บอกแอปไว้',
-    nowhere);
+  // 3. Spending cash the app was never told about is not a defect — a Grab ride
+  //    paid out of a pocket nobody declared is exactly how the app is meant to
+  //    be used, and flagging sixty-eight of them buried the finding that
+  //    mattered under a list of things to ignore.
+  //
+  //    Money ARRIVING with nowhere to arrive is a different claim. Every baht of
+  //    it should have raised a balance somewhere, and did not, so Net Worth is
+  //    short by that much unless it was entered by another route.
+  const nowhere = txs.filter(t => t && (t.type === 'income' || t.type === 'dividend')
+    && !t.walletId && !t.targetAssetId);
+  if (nowhere.length) add('info', 'รายรับที่ไม่ได้ระบุปลายทาง',
+    'เงินเข้าแต่ไม่ได้บอกว่าเข้ากระเป๋าหรือสินทรัพย์ไหน — Net Worth เลยไม่ได้นับก้อนนี้ ถ้าบันทึกยอดกระเป๋าไว้ทางอื่นแล้วไม่ต้องแก้ค่ะ',
+    nowhere, 'tx',
+    'เปิดรายการแล้วเลือกกระเป๋าปลายทาง — หรือปล่อยไว้ถ้าตั้งใจไม่ระบุ');
 
   // 4. Half a transfer. Money left one side and never arrived anywhere.
   const legs = {};
@@ -303,24 +326,35 @@ export const dataHealth = ({ txs = [], assets = [], wallets = [], debts = [] } =
   const lonely = Object.values(legs).filter(g => g.length === 1).map(g => g[0])
     .filter(t => t.toWalletId || t.fromWalletId);
   if (lonely.length) add('warn', 'รายการโยกเหลือขาเดียว',
-    'เงินออกจากฝั่งหนึ่งแล้วไม่ปรากฏที่ปลายทาง', lonely);
+    'เงินออกจากฝั่งหนึ่งแล้วไม่ปรากฏที่ปลายทาง', lonely, 'tx',
+    'เปิดรายการโยกแล้วระบุปลายทางใหม่ — หรือลบทิ้งถ้าไม่ได้เกิดขึ้นจริง');
 
   // 5. A cash asset cannot hold less than nothing.
   const negCash = assets.filter(a => a && a.type === 'cash' && assetVal(a, txs, 1) < -0.005);
   if (negCash.length) add('warn', 'สินทรัพย์เงินสดติดลบ',
-    'ยอดคงเหลือต่ำกว่าศูนย์ — มักเป็นรายจ่ายที่ผูกผิดก้อน', negCash);
+    'ยอดคงเหลือต่ำกว่าศูนย์ — มักเป็นรายจ่ายที่ผูกผิดก้อน',
+    negCash.map(a => ({ ...a, _hint: `ยอดคงเหลือ ${assetVal(a, txs, 1).toLocaleString('en-US', { maximumFractionDigits: 2 })}` })),
+    'asset',
+    'หารายจ่ายที่ผูกผิดก้อน แล้วย้ายไปกระเป๋าหรือสินทรัพย์ที่ถูก');
 
   // 6. Two rows sharing an id are one row as far as every lookup is concerned.
   const seen = new Set(), dupIds = new Set();
   txs.forEach(t => { if (t) { if (seen.has(t.id)) dupIds.add(t.id); seen.add(t.id); } });
   if (dupIds.size) add('warn', 'รายการมี id ซ้ำกัน',
-    'การแก้หรือลบรายการหนึ่งจะไปโดนอีกรายการด้วย', txs.filter(t => t && dupIds.has(t.id)));
+    'การแก้หรือลบรายการหนึ่งจะไปโดนอีกรายการด้วย',
+    txs.filter(t => t && dupIds.has(t.id)), 'tx',
+    'ลบรายการที่ซ้ำออกให้เหลือหนึ่ง');
 
   // 7. A price nobody has refreshed is a valuation nobody should trust.
   const stale = assets.filter(a => a && a.type !== 'cash' && a.ticker && a.qty > 0
     && (!a.priceAt || (Date.now() - new Date(a.priceAt).getTime()) > 30 * 86400000));
   if (stale.length) add('info', 'ราคาสินทรัพย์ไม่ได้อัปเดตเกิน 30 วัน',
-    'มูลค่าที่แสดงอ้างอิงราคาเก่า', stale);
+    'มูลค่าที่แสดงอ้างอิงราคาเก่า',
+    stale.map(a => ({ ...a, _hint: a.priceAt
+      ? `อัปเดตล่าสุด ${String(a.priceAt).slice(0,10)} · ${Math.floor((Date.now() - new Date(a.priceAt).getTime()) / 86400000)} วันก่อน`
+      : 'ยังไม่เคยอัปเดตราคา' })),
+    'asset',
+    'เปิดหน้าสินทรัพย์แล้วกดอัปเดตราคา');
 
   return out;
 };

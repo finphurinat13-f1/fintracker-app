@@ -5848,19 +5848,34 @@ const DataHealthPanel = ({ open, onClose, findings, onGoTx, dk }) => {
           {t.outN>0 && <span className="text-rose-400">จ่าย {t.outN} · {fmt(t.outSum)}</span>}
         </div>
       ); })()}
+      {f.fix && (
+        <p className={`text-[11px] mt-2 leading-relaxed ${dk?'text-gold-300/80':'text-gold-700'}`}>
+          <span className="font-semibold">แก้ยังไง · </span>{f.fix}
+        </p>
+      )}
       {f.rows.length>0 && (
         <>
-          <p className={`text-[10px] mt-2 ${dk?'text-slate-600':'text-slate-400'}`}>กดที่รายการเพื่อเปิดดูหรือแก้ไข · ไม่บังคับ</p>
+          <p className={`text-[10px] mt-2 ${dk?'text-slate-600':'text-slate-400'}`}>
+            {f.kind==='asset' ? 'กดที่รายการเพื่อไปหน้าสินทรัพย์' : 'กดที่รายการเพื่อเปิดดูหรือแก้ไข'}
+            {f.level==='warn' ? '' : ' · ไม่บังคับ'}
+          </p>
           <div className={`mt-1 flex flex-col gap-0.5 ${shown[f.title]?'max-h-56 overflow-y-auto pr-1':''}`}>
             {(shown[f.title] ? f.rows : f.rows.slice(0,4)).map((r,i)=>(
-              <button key={r.id||i} onClick={()=>onGoTx&&onGoTx(r)}
-                className={`flex items-baseline justify-between gap-2 text-left text-[11px] px-2 py-1 rounded-lg transition-colors ${dk?'text-slate-300 hover:bg-white/8':'text-slate-600 hover:bg-slate-100'}`}>
-                <span className="truncate">
-                  {r.title || r.name || r.ticker || ('#'+r.id)}
-                  {r.date && <span className={dk?'text-slate-500':'text-slate-400'}> · {r.date}</span>}
+              <button key={r.id||i} onClick={()=>onGoTx&&onGoTx(r, f.kind)}
+                className={`text-left text-[11px] px-2 py-1 rounded-lg transition-colors ${dk?'text-slate-300 hover:bg-white/8':'text-slate-600 hover:bg-slate-100'}`}>
+                <span className="flex items-baseline justify-between gap-2">
+                  <span className="truncate">
+                    {r.title || r.name || r.ticker || ('#'+r.id)}
+                    {r.date && <span className={dk?'text-slate-500':'text-slate-400'}> · {r.date}</span>}
+                  </span>
+                  {typeof r.amount==='number' && (
+                    <span className={`tabular-nums flex-shrink-0 ${dk?'text-slate-400':'text-slate-500'}`}>{fmt(r.amount)}</span>
+                  )}
                 </span>
-                {typeof r.amount==='number' && (
-                  <span className={`tabular-nums flex-shrink-0 ${dk?'text-slate-400':'text-slate-500'}`}>{fmt(r.amount)}</span>
+                {/* "ไม่ตรงกับประวัติ" without the two numbers is a claim the
+                    reader has no way to check, and no way to act on. */}
+                {r._hint && (
+                  <span className={`block tabular-nums mt-0.5 ${dk?'text-slate-500':'text-slate-400'}`}>{r._hint}</span>
                 )}
               </button>
             ))}
@@ -12019,8 +12034,13 @@ const App = () => {
         style={{bottom:'calc(4.75rem + env(safe-area-inset-bottom))'}}>
         +
       </button>
+      {/* Assets carry a .type just like transactions do — 'fund', 'stock' — so
+          testing for one was opening the transaction editor on a holding and
+          producing an empty form. The finding says which kind it holds. */}
       <DataHealthPanel open={healthOpen} onClose={()=>setHealthOpen(false)} findings={health} dk={dk}
-        onGoTx={r=>{ setHealthOpen(false); if(r&&r.type) openEdit(r); else { setPage('assets'); try{localStorage.setItem('ft-page','assets');}catch{} } }}/>
+        onGoTx={(r,kind)=>{ setHealthOpen(false);
+          if (kind==='asset') { setPage('assets'); try{localStorage.setItem('ft-page','assets');}catch{} }
+          else openEdit(r); }}/>
       <CommandPalette open={paletteOpen} onClose={()=>setPaletteOpen(false)}
         actions={paletteActions} txs={txs} dk={dk}
         onPick={r=>{ if(r.run) r.run(); else if(r.tx) openEdit(r.tx); }}/>
