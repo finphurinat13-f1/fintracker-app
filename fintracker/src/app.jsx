@@ -1329,6 +1329,21 @@ const DailySpendTrend = ({ days, budget, dk }) => {
   const pace  = `${X(1).toFixed(2)},${Y(paceAt(1)).toFixed(2)} ${X(monthLen).toFixed(2)},${Y(paceAt(monthLen)).toFixed(2)}`;
 
   const mark = hov!=null ? cum[hov] : last;
+  // The dot's position as percentages, so the label can hang off the same point.
+  // It flips below when the line has climbed near the top of the box, and stops
+  // centring near either edge, where half of it would otherwise sit outside the
+  // card.
+  const mx = X(mark.day)/3, my = Y(mark.total);
+  const tx = mx<9 ? '0%' : mx>91 ? '-100%' : '-50%';
+  // The label takes the side of the dot the pace line is not on, so the figure
+  // and the dashed line never land on the same few pixels. Under pace the dot
+  // sits below the line and the label hangs beneath it; over pace it goes above.
+  // Within a step of either edge it flips back regardless — being clipped by the
+  // box is worse than being close to the line.
+  const paceY = budget>0 ? Y(paceAt(mark.day)) : 100;
+  let ty = my > paceY ? '65%' : '-165%';
+  if (ty === '65%'   && my > 84) ty = '-165%';
+  if (ty === '-165%' && my < 18) ty = '65%';
   const gap  = budget>0 ? mark.total - paceAt(mark.day) : 0;
   const ahead = gap > 0;                                   // ahead of pace = spending too fast
   const tick = d => d===1 || d===10 || d===20 || d===monthLen;
@@ -1369,9 +1384,14 @@ const DailySpendTrend = ({ days, budget, dk }) => {
         {/* Drawn as an element rather than an SVG circle: the viewBox is stretched
             to the card's width, so a circle inside it comes out an ellipse. */}
         <span className="absolute w-2 h-2 rounded-full pointer-events-none transition-all duration-150"
-          style={{ left:`${X(mark.day)/3}%`, top:`${Y(mark.total)}%`,
+          style={{ left:`${mx}%`, top:`${my}%`,
                    background:'#e6c85c', transform:'translate(-50%,-50%)',
                    boxShadow:'0 0 0 3px rgba(217,175,43,0.18)' }}/>
+        <span className="absolute text-[10px] font-semibold tabular-nums whitespace-nowrap pointer-events-none transition-all duration-150"
+          style={{ left:`${mx}%`, top:`${my}%`, transform:`translate(${tx},${ty})`,
+                   color: dk?'#e9d892':'#84660f' }}>
+          {fmtNW(mark.total)}
+        </span>
         <div className="absolute inset-0 flex" onMouseLeave={()=>setHov(null)}>
           {Array.from({length:monthLen},(_,i)=>(
             <div key={i} className="flex-1 h-full cursor-default"
