@@ -67,16 +67,6 @@ const fmtNW = n => (_privacy||_hideAmt) ? '฿ •••••' : '฿' + Math.a
 // screen. Masking follows fmt exactly — a bare number must still hide.
 const fmtBare = n => (_privacy||_hideAmt) ? '•••••' : Math.abs(n).toLocaleString('th-TH',{minimumFractionDigits:0,maximumFractionDigits:0});
 const fmtSigned = n => (n<0?'-':'') + fmt(n);
-// Thirty-one labels across one strip leaves about forty pixels each, which is
-// four characters at 8px. "38,481.00" needs nine. One decimal below ten
-// thousand and none above keeps every label inside its column while staying
-// precise enough to compare two days at a glance.
-const fmtTiny = n => {
-  if (_privacy || _hideAmt) return '•';
-  if (n >= 10000) return Math.round(n/1000) + 'K';
-  if (n >= 1000)  return (n/1000).toFixed(1) + 'K';
-  return String(Math.round(n));
-};
 // Stamped in by the build. The typeof guard keeps the source runnable outside
 // the bundler; a "+" on the hash means that build had uncommitted changes.
 const APP_BUILD = typeof __BUILD_DATE__ !== 'undefined' ? `${__BUILD_DATE__} · ${__GIT_HASH__}` : 'dev build';
@@ -1302,80 +1292,100 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[], c
 // arguing with itself about what colour it is; catClr() also honours a
 // user-renamed category, which a literal map here never could.
 
-// ── BUDGET METRIC CARD (Stats11 style) ──────────────────────
-// ── DAILY SPEND BARS ───────────────────────────────────────────────────────
-// One bar a day, read in a single sweep. This was a scrolling list showing a
-// third of the month, then a four-column grid that fit all of it and made the
-// eye stumble at every column break — a run of thirty-one numbers is scanned,
-// not hunted through, and a column break is a full stop in the middle of the
-// scan. Bars have no breaks, and the shape of the month arrives before a single
-// figure is read.
+// Daily spend as a running total against the pace that would land exactly on
+// budget, rather than as one bar per day.
 //
-// The figures did not go away, they moved: the readout above the chart carries
-// whichever day the pointer is on, and rests on the busiest day when it is not
-// on any. That is the number this panel is opened for, and it used to be the
-// one you had to find by scrolling and comparing.
-const DailySpendBars = ({ days, todayStr, dk }) => {
+// The bars were the honest chart for the data — each day is its own event and a
+// line between them invents values that were never spent — but they answered a
+// question nobody was asking. Nobody opens this to compare the 8th with the
+// 14th; they open it to find out whether the month is going too fast. As bars
+// that took counting, and on the 2nd of the month it was a 112px box holding two
+// stubs at the 2px floor, which is what a chart looks like when it has nothing
+// to say yet.
+//
+// Cumulative has something to say from day one, because the pace line is drawn
+// whether or not anything has been spent, and the gap between the two lines is
+// the whole answer without reading a number.
+const DailySpendTrend = ({ days, budget, dk }) => {
   const [hov, setHov] = useState(null);
-  const max = days.reduce((m,d)=>Math.max(m,d.amt),0) || 1;
-  // Rests on the peak rather than on nothing: an empty readout is a line of
-  // dead space, and the peak is the day worth naming by default.
-  const peak = days.reduce((a,b)=>b.amt>a.amt?b:a, days[0]);
-  const show = hov!=null ? days[hov] : peak;
-  const showDay = show ? Number(show.date.slice(8,10)) : null;
-  const last = days.length;
-  // Sparse labels: thirty-one numbers under a 300px strip is a grey smear.
-  const tick = d => d===1 || d===10 || d===20 || d===last;
+  const [yr, mo] = days[0].date.split('-').map(Number);
+  const monthLen = new Date(yr, mo, 0).getDate();
+
+  const cum = [];
+  let run = 0;
+  for (const d of days) { run += d.amt; cum.push({ day:Number(d.date.slice(8,10)), total:run, amt:d.amt }); }
+  const last = cum[cum.length-1];
+
+  // Headroom above whichever line ends higher, so neither is drawn along the
+  // very top edge of the box.
+  const yMax = Math.max(budget, run, 1) * 1.06;
+  const X = day => (day-1) / Math.max(monthLen-1,1) * 300;
+  const Y = v   => 100 - v / yMax * 100;
+  const pt = p => `${X(p.day).toFixed(2)},${Y(p.total).toFixed(2)}`;
+
+  const line  = cum.map(pt).join(' ');
+  const area  = `${X(1).toFixed(2)},100 ${line} ${X(last.day).toFixed(2)},100`;
+  const paceAt = day => budget * day / monthLen;
+  const pace  = `${X(1).toFixed(2)},${Y(paceAt(1)).toFixed(2)} ${X(monthLen).toFixed(2)},${Y(paceAt(monthLen)).toFixed(2)}`;
+
+  const mark = hov!=null ? cum[hov] : last;
+  const gap  = budget>0 ? mark.total - paceAt(mark.day) : 0;
+  const ahead = gap > 0;                                   // ahead of pace = spending too fast
+  const tick = d => d===1 || d===10 || d===20 || d===monthLen;
+
   return (
     <div>
-      <div className="flex items-baseline justify-between mb-2 min-h-[20px]">
+      <div className="flex items-baseline justify-between gap-2 mb-2 min-h-[20px]">
         <span className={`text-[11px] ${dk?'text-slate-400':'text-slate-500'}`}>
-          {hov!=null ? `วันที่ ${showDay}` : `ใช้มากสุด · วันที่ ${showDay}`}
+          {hov!=null ? `วันที่ ${mark.day} · สะสม` : 'ใช้ไปแล้ว'}
         </span>
-        <span className={`text-sm font-semibold tabular-nums ${dk?'text-gold-300':'text-gold-700'}`}>
-          {show ? fmt(show.amt) : ''}
-        </span>
-      </div>
-      {/* Bars top out at 82% so every label has room above its own bar rather
-          than only the short ones. Reading a figure off a chart should not
-          require putting a pointer on it: the hover readout above stays for the
-          exact amount, and these carry enough to compare two days without it. */}
-      <div className="flex items-end gap-[2px] h-28" onMouseLeave={()=>setHov(null)}>
-        {days.map((d,i)=>{
-          const day = Number(d.date.slice(8,10));
-          const isToday = d.date===todayStr;
-          const on = hov===i;
-          const pct = d.amt>0 ? Math.max(d.amt/max*82, 3) : 0;
-          return (
-            <div key={d.date} onMouseEnter={()=>setHov(i)} title={`วันที่ ${day} · ${fmt(d.amt)}`}
-              className="relative flex-1 h-full flex items-end cursor-default">
-              {d.amt>0&&(
-                <span className={`absolute left-0 right-0 text-center text-[8px] tabular-nums leading-none pointer-events-none ${
-                  on||isToday ? (dk?'text-gold-200':'text-gold-700') : (dk?'text-slate-400':'text-slate-500')}`}
-                  style={{bottom:`calc(${pct}% + 3px)`}}>{fmtTiny(d.amt)}</span>
-              )}
-              <div className="w-full rounded-t-[2px] transition-all duration-150"
-                style={{
-                  // 2px floor so a day with nothing spent still reads as a day
-                  // rather than as a gap in the month.
-                  height: d.amt>0 ? `${pct}%` : '2px',
-                  background: d.amt>0
-                    ? (on ? '#e6c85c' : isToday ? '#d9af2b' : (dk?'rgba(217,175,43,0.42)':'rgba(154,120,16,0.38)'))
-                    : (dk?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.07)'),
-                }}/>
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex gap-[2px] mt-1.5">
-        {days.map(d=>{
-          const day = Number(d.date.slice(8,10));
-          return (
-            <span key={d.date} className={`flex-1 text-center text-[9px] tabular-nums ${dk?'text-slate-600':'text-slate-400'}`}>
-              {tick(day) ? day : ''}
+        <span className="flex items-baseline gap-2">
+          <span className={`text-sm font-semibold tabular-nums ${dk?'text-gold-300':'text-gold-700'}`}>{fmt(mark.total)}</span>
+          {budget>0 && Math.abs(gap) >= 1 && (
+            <span className="text-[11px] font-medium tabular-nums whitespace-nowrap"
+              style={{color: ahead ? '#d4574a' : '#7aab8a'}}>
+              {ahead ? 'เร็วกว่าจังหวะ' : 'ช้ากว่าจังหวะ'} {fmt(Math.abs(gap))}
             </span>
-          );
-        })}
+          )}
+        </span>
+      </div>
+      <div className="relative h-28">
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 100"
+          preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="ftspendfill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor="#d9af2b" stopOpacity="0.28"/>
+              <stop offset="100%" stopColor="#d9af2b" stopOpacity="0.02"/>
+            </linearGradient>
+          </defs>
+          {budget>0 && (
+            <polyline points={pace} fill="none" strokeWidth="1" strokeDasharray="3 3"
+              stroke={dk?'rgba(255,255,255,0.28)':'rgba(15,23,42,0.22)'} vectorEffect="non-scaling-stroke"/>
+          )}
+          <polygon points={area} fill="url(#ftspendfill)"/>
+          <polyline points={line} fill="none" stroke="#d9af2b" strokeWidth="1.75"
+            strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
+        </svg>
+        {/* Drawn as an element rather than an SVG circle: the viewBox is stretched
+            to the card's width, so a circle inside it comes out an ellipse. */}
+        <span className="absolute w-2 h-2 rounded-full pointer-events-none transition-all duration-150"
+          style={{ left:`${X(mark.day)/3}%`, top:`${Y(mark.total)}%`,
+                   background:'#e6c85c', transform:'translate(-50%,-50%)',
+                   boxShadow:'0 0 0 3px rgba(217,175,43,0.18)' }}/>
+        <div className="absolute inset-0 flex" onMouseLeave={()=>setHov(null)}>
+          {Array.from({length:monthLen},(_,i)=>(
+            <div key={i} className="flex-1 h-full cursor-default"
+              title={i<cum.length?`วันที่ ${cum[i].day} · สะสม ${fmt(cum[i].total)}`:undefined}
+              onMouseEnter={()=>setHov(i<cum.length?i:null)}/>
+          ))}
+        </div>
+      </div>
+      <div className="flex mt-1.5">
+        {Array.from({length:monthLen},(_,i)=>(
+          <span key={i} className={`flex-1 text-center text-[9px] tabular-nums ${dk?'text-slate-600':'text-slate-400'}`}>
+            {tick(i+1) ? i+1 : ''}
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -6396,7 +6406,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
           <div className={`mt-4 pt-4 border-t ${dk?'border-white/8':'border-slate-100'}`}>
             {dailyBreakdown.length===0
               ? <p className={`text-xs text-center py-4 ${sub}`}>ยังไม่มีรายจ่ายเดือนนี้ค่ะ</p>
-              : <DailySpendBars days={dailyBreakdown} todayStr={todayStr} dk={dk}/>
+              : <DailySpendTrend days={dailyBreakdown} budget={totBudget} dk={dk}/>
             }
             <div className={`flex items-center justify-between mt-3 pt-3 border-t ${dk?'border-white/8':'border-slate-100'}`}>
               <span className={`text-xs font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>รวมเดือนนี้</span>
