@@ -7052,13 +7052,20 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
               </button>
             </div>
             {/* Underneath the pair, not beside them: it is not the third option
-                of a decision, it is the exit from one. Still asks first. */}
+                of a decision, it is the exit from one.
+
+                Eight pixels below บันทึก put a destructive button inside the
+                travel of a thumb that had already committed to pressing save.
+                A rule and forty pixels make it a different part of the dialog
+                rather than the next thing down, and it still asks first. */}
             {groupEdit.id && groups.length>1 && (
-              <button onClick={()=>{ const g = groups.find(x=>x.id===groupEdit.id);
-                                     setGroupEdit(null); if (g) deleteGroup(g); }}
-                className="w-full mt-2 py-2 rounded-xl text-xs font-medium text-rose-400 hover:text-rose-300 transition-colors">
-                ลบกลุ่มนี้
-              </button>
+              <div className={`mt-7 pt-4 border-t ${dk?'border-white/8':'border-slate-100'}`}>
+                <button onClick={()=>{ const g = groups.find(x=>x.id===groupEdit.id);
+                                       setGroupEdit(null); if (g) deleteGroup(g); }}
+                  className="w-full py-2 rounded-xl text-xs font-medium text-rose-400 hover:text-rose-300 transition-colors">
+                  ลบกลุ่มนี้
+                </button>
+              </div>
             )}
           </div>
         </div>
