@@ -5809,7 +5809,25 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
 // A finding that cannot be followed to a row is a worry rather than a report,
 // so every one of them lists what it is about and how to fix it.
 const DataHealthPanel = ({ open, onClose, findings, onGoTx, dk }) => {
+  // Hook before the early return: a conditional return above a hook skips it on
+  // the closed render, which is the one rule React will not forgive.
+  const [shown, setShown] = useState({});
   if (!open) return null;
+
+  // Four rows and "และอีก 75 รายการ" told you a number and then refused to show
+  // it. Seventy-nine of anything is either a habit or a mistake, and which one
+  // it is cannot be judged from four examples — so the list opens, and the money
+  // in it is added up by direction, which is the figure that decides whether the
+  // finding matters at all.
+  const tally = rows => {
+    const t = { inN:0, inSum:0, outN:0, outSum:0 };
+    for (const r of rows) {
+      if (!r || typeof r.amount !== 'number') continue;
+      if (r.type==='income' || r.type==='dividend') { t.inN++;  t.inSum  += r.amount; }
+      else if (r.type==='expense')                  { t.outN++; t.outSum += r.amount; }
+    }
+    return t;
+  };
   const warns = findings.filter(f => f.level === 'warn');
   const infos = findings.filter(f => f.level !== 'warn');
 
@@ -5824,19 +5842,36 @@ const DataHealthPanel = ({ open, onClose, findings, onGoTx, dk }) => {
         <span className={`text-[11px] tabular-nums flex-shrink-0 ${dk?'text-slate-500':'text-slate-400'}`}>{f.rows.length} รายการ</span>
       </div>
       <p className={`text-[11px] leading-relaxed ${dk?'text-slate-400':'text-slate-500'}`}>{f.detail}</p>
-      {f.rows.length>0 && (
-        <div className="mt-2 flex flex-col gap-0.5">
-          {f.rows.slice(0,4).map((r,i)=>(
-            <button key={r.id||i} onClick={()=>onGoTx&&onGoTx(r)}
-              className={`text-left text-[11px] truncate px-2 py-1 rounded-lg transition-colors ${dk?'text-slate-300 hover:bg-white/8':'text-slate-600 hover:bg-slate-100'}`}>
-              {r.title || r.name || r.ticker || ('#'+r.id)}
-              {r.date && <span className={dk?'text-slate-500':'text-slate-400'}> · {r.date}</span>}
-            </button>
-          ))}
-          {f.rows.length>4 && (
-            <span className={`text-[10px] px-2 ${dk?'text-slate-600':'text-slate-400'}`}>และอีก {f.rows.length-4} รายการ</span>
-          )}
+      {(()=>{ const t = tally(f.rows); return (t.inN>0||t.outN>0) && (
+        <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] tabular-nums">
+          {t.inN>0  && <span className="text-emerald-400">รับ {t.inN} · {fmt(t.inSum)}</span>}
+          {t.outN>0 && <span className="text-rose-400">จ่าย {t.outN} · {fmt(t.outSum)}</span>}
         </div>
+      ); })()}
+      {f.rows.length>0 && (
+        <>
+          <p className={`text-[10px] mt-2 ${dk?'text-slate-600':'text-slate-400'}`}>กดที่รายการเพื่อเปิดดูหรือแก้ไข · ไม่บังคับ</p>
+          <div className={`mt-1 flex flex-col gap-0.5 ${shown[f.title]?'max-h-56 overflow-y-auto pr-1':''}`}>
+            {(shown[f.title] ? f.rows : f.rows.slice(0,4)).map((r,i)=>(
+              <button key={r.id||i} onClick={()=>onGoTx&&onGoTx(r)}
+                className={`flex items-baseline justify-between gap-2 text-left text-[11px] px-2 py-1 rounded-lg transition-colors ${dk?'text-slate-300 hover:bg-white/8':'text-slate-600 hover:bg-slate-100'}`}>
+                <span className="truncate">
+                  {r.title || r.name || r.ticker || ('#'+r.id)}
+                  {r.date && <span className={dk?'text-slate-500':'text-slate-400'}> · {r.date}</span>}
+                </span>
+                {typeof r.amount==='number' && (
+                  <span className={`tabular-nums flex-shrink-0 ${dk?'text-slate-400':'text-slate-500'}`}>{fmt(r.amount)}</span>
+                )}
+              </button>
+            ))}
+          </div>
+          {f.rows.length>4 && (
+            <button onClick={()=>setShown(m=>({...m,[f.title]:!m[f.title]}))}
+              className={`mt-1 text-[10px] px-2 py-1 rounded-lg transition-colors ${dk?'text-gold-400 hover:bg-white/8':'text-gold-600 hover:bg-slate-100'}`}>
+              {shown[f.title] ? 'ย่อกลับ' : `ดูทั้งหมด ${f.rows.length} รายการ`}
+            </button>
+          )}
+        </>
       )}
     </div>
   );
