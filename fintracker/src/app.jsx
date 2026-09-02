@@ -5808,7 +5808,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
 //
 // A finding that cannot be followed to a row is a worry rather than a report,
 // so every one of them lists what it is about and how to fix it.
-const DataHealthPanel = ({ open, onClose, findings, onGoTx, dk }) => {
+const DataHealthPanel = ({ open, onClose, findings, onGoTx, dk, hidden = 0, onAck, onRestore }) => {
   // Hook before the early return: a conditional return above a hook skips it on
   // the closed render, which is the one rule React will not forgive.
   const [shown, setShown] = useState({});
@@ -5880,12 +5880,20 @@ const DataHealthPanel = ({ open, onClose, findings, onGoTx, dk }) => {
               </button>
             ))}
           </div>
-          {f.rows.length>4 && (
-            <button onClick={()=>setShown(m=>({...m,[f.title]:!m[f.title]}))}
-              className={`mt-1 text-[10px] px-2 py-1 rounded-lg transition-colors ${dk?'text-gold-400 hover:bg-white/8':'text-gold-600 hover:bg-slate-100'}`}>
-              {shown[f.title] ? 'ย่อกลับ' : `ดูทั้งหมด ${f.rows.length} รายการ`}
-            </button>
-          )}
+          <div className="flex items-center justify-between gap-2 mt-1">
+            {f.rows.length>4 ? (
+              <button onClick={()=>setShown(m=>({...m,[f.title]:!m[f.title]}))}
+                className={`text-[10px] px-2 py-1 rounded-lg transition-colors ${dk?'text-gold-400 hover:bg-white/8':'text-gold-600 hover:bg-slate-100'}`}>
+                {shown[f.title] ? 'ย่อกลับ' : `ดูทั้งหมด ${f.rows.length} รายการ`}
+              </button>
+            ) : <span/>}
+            {onAck && (
+              <button onClick={()=>onAck(f, true)}
+                className={`text-[10px] px-2 py-1 rounded-lg transition-colors ${dk?'text-slate-500 hover:text-slate-300 hover:bg-white/8':'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}>
+                ✓ ดูแล้ว ไม่ใช่ปัญหา
+              </button>
+            )}
+          </div>
         </>
       )}
     </div>
@@ -5910,6 +5918,20 @@ const DataHealthPanel = ({ open, onClose, findings, onGoTx, dk }) => {
           <div className="flex flex-col gap-2.5">
             {warns.map((f,i)=><Block key={'w'+i} f={f}/>)}
             {infos.map((f,i)=><Block key={'i'+i} f={f}/>)}
+          </div>
+        )}
+        {/* A silently shortened list is worse than a long one: without this the
+            panel would look clean and there would be no way to tell it was
+            hiding anything, or to change your mind. */}
+        {hidden>0 && (
+          <div className={`flex items-center justify-between gap-2 mt-3 pt-3 border-t ${dk?'border-white/8':'border-slate-100'}`}>
+            <span className={`text-[11px] ${dk?'text-slate-500':'text-slate-400'}`}>ซ่อนไว้ {hidden} ข้อ · ที่ดูแล้ว</span>
+            {onRestore && (
+              <button onClick={onRestore}
+                className={`text-[11px] px-2 py-1 rounded-lg transition-colors ${dk?'text-gold-400 hover:bg-white/8':'text-gold-600 hover:bg-slate-100'}`}>
+                แสดงกลับ
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -10660,7 +10682,23 @@ const App = () => {
   // remember to run is a check that does not get run — which is what the
   // terminal audit had been for months. Pure array work over data already in
   // memory; nothing is fetched and nothing is written.
-  const health = useMemo(()=>dataHealth({txs, assets, wallets, debts}), [txs, assets, wallets, debts]);
+  const healthAll = useMemo(()=>dataHealth({txs, assets, wallets, debts}), [txs, assets, wallets, debts]);
+  // A finding Fin has looked at and decided is fine should stop asking. But
+  // "hide this rule forever" would also hide the twelfth row that turns up next
+  // month, which is the one worth seeing — so what gets acknowledged is the
+  // exact set of rows, not the rule. Add a row and the finding comes back.
+  const [healthOk, setHealthOk] = useState(()=>{
+    try { return JSON.parse(localStorage.getItem('ft-health-ok')||'null') || {}; } catch { return {}; }
+  });
+  const healthSig = f => f.rows.map(r=>r&&r.id).filter(Boolean).sort().join('|');
+  const health = useMemo(()=>healthAll.filter(f=>healthOk[f.title]!==healthSig(f)), [healthAll, healthOk]);
+  const healthHidden = healthAll.length - health.length;
+  const ackHealth = (f, on) => setHealthOk(m=>{
+    const nm = {...m};
+    if (on) nm[f.title] = healthSig(f); else delete nm[f.title];
+    try { localStorage.setItem('ft-health-ok', JSON.stringify(nm)); } catch {}
+    return nm;
+  });
   const healthWarn = health.some(f=>f.level==='warn');
   const debtsRef               = useRef(debts);
   const [custodial,setCustodial] = useState(()=>{ try{const s=localStorage.getItem('ft-custodial');return s?JSON.parse(s):[];}catch{return[];} });
@@ -12038,6 +12076,7 @@ const App = () => {
           testing for one was opening the transaction editor on a holding and
           producing an empty form. The finding says which kind it holds. */}
       <DataHealthPanel open={healthOpen} onClose={()=>setHealthOpen(false)} findings={health} dk={dk}
+        hidden={healthHidden} onAck={ackHealth} onRestore={()=>{ setHealthOk({}); try{localStorage.removeItem('ft-health-ok');}catch{} }}
         onGoTx={(r,kind)=>{ setHealthOpen(false);
           if (kind==='asset') { setPage('assets'); try{localStorage.setItem('ft-page','assets');}catch{} }
           else openEdit(r); }}/>
