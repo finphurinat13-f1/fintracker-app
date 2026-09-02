@@ -6249,7 +6249,6 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
   // the repair that may not happen at all. Both parts and the total come out of
   // one pass so the caption cannot end up disagreeing with the figure above it.
   const bSplit    = splitBudget(viewBudgets, isIrregular, NON_SPEND_CATS);
-  const nonSpendBudget = NON_SPEND_CATS.reduce((t,c)=>t+(Number((viewBudgets||{})[c])||0),0);
   const totBudget = bSplit.total;
   const totSpent  = txs.filter(t=>t.type==='expense'&&t.date.startsWith(viewM)&&isRealSpend(t)).reduce((s,t)=>s+t.amount,0);
   // what the line above leaves out — exactly the gap against the Transactions page total
@@ -6327,16 +6326,12 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
           : <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${dk?'bg-white/8 text-slate-400':'bg-slate-100 text-slate-500'}`}>ดูย้อนหลัง · แก้ไขไม่ได้</span>}</>}/>
       <div className="grid grid-cols-3 gap-x-8 gap-y-6">
         {[{l:'Budget รวม',v:fmt(totBudget),c:dk?'tg-gold':'text-gold-600',
-           // Three figures, but only two of them add up to the total directly
-           // above — so ลงทุน goes on its own line behind a "+" and says that it
-           // is not counted, in the same words as the section header further
-           // down. Sitting inline with the other two it would read as a third
-           // term of a sum that does not come out.
-           note: (bSplit.irregular>0||nonSpendBudget>0)
-             ? `Fixed Cost ${fmt(bSplit.regular)}
-Non-fixed expenses ${fmt(bSplit.irregular)}`
-               + (nonSpendBudget>0 ? `\n+ Invest ${fmt(nonSpendBudget)} (ไม่นับในยอดรวม)` : '')
-             : null},
+           // The split used to hang under this figure. Three lines of it made
+           // this column taller than the two beside it, and a row of summary
+           // figures that does not sit on one baseline reads as broken rather
+           // than as detailed. The allocation bar above the sections says the
+           // same thing with room for a bar, so the note goes.
+           note: null},
           // money moved into investments is excluded on purpose — it is still yours.
           // Say so, or this total silently disagrees with the one on Transactions
           // and there is no way to tell which is wrong.
@@ -6717,8 +6712,46 @@ Non-fixed expenses ${fmt(bSplit.irregular)}`
             </div>
           );
 
+          // How the budget is divided, as one bar, directly above the three
+          // sections it describes. Kept out of a card on purpose: it is a legend
+          // for what follows, not a fourth panel competing with them.
+          //
+          // The colours are deliberately not the bar colours used on the cards.
+          // Those three mean under / near / over, and a jar is not a state — a
+          // sage segment here would read as "this one is fine". Two steps of the
+          // gold ramp carry the two spending jars, and Invest takes a muted slate
+          // because it is the one that is not spending at all.
+          const jars = [
+            { label:'Fixed Cost',         total:sumBudget(regularEntries),   clr:'#dcc35e' },
+            { label:'Non-fixed expenses', total:sumBudget(irregularEntries), clr:'#9d7c13' },
+            { label:'Invest',             total:sumBudget(nonSpendEntries),  clr:'#6d8299' },
+          ].filter(j=>j.total>0);
+          const allocation = grandBudget>0 && jars.length>1 && (
+            <div>
+              <div className={`flex h-2.5 rounded-full overflow-hidden gap-px ${dk?'bg-white/5':'bg-slate-100'}`}>
+                {jars.map(j=>(
+                  <div key={j.label} title={`${j.label} · ${fmtNW(j.total)}`}
+                    style={{width:`${j.total/grandBudget*100}%`, background:j.clr}}/>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2.5">
+                {jars.map(j=>(
+                  <span key={j.label} className="flex items-baseline gap-1.5 text-[11px]">
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 self-center" style={{background:j.clr}}/>
+                    <span className={dk?'text-slate-400':'text-slate-500'}>{j.label}</span>
+                    <span className={`font-semibold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>
+                      {Math.round(j.total/grandBudget*100)}%
+                    </span>
+                    <span className={`tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{fmtNW(j.total)}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          );
+
           return (
             <>
+              {allocation}
               {regularEntries.length>0   && groupSection('🔁','Fixed Cost',regularEntries,'ประจำ · เกิดทุกเดือน')}
               {irregularEntries.length>0 && groupSection('📦','Non-fixed expenses',irregularEntries,'ไม่ประจำ · นานๆ ที ไม่นับในค่าเฉลี่ยรายวัน')}
               {nonSpendEntries.length>0  && groupSection('💠','Invest',nonSpendEntries,
