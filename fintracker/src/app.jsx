@@ -1365,7 +1365,11 @@ const DailySpendTrend = ({ days, budget, dk }) => {
   const seriesMax = pts.reduce((m,p)=>Math.max(m,val(p)),0);
   const refSoFar  = isCum ? refAt(last.day) : refAt(1);
   const yMax = niceCeil(Math.max(seriesMax, refSoFar, 1) * 1.02);
-  const X = day => (day-1) / Math.max(monthLen-1,1) * 300;
+  // Day d sits at the centre of day d's column, which is where its label and its
+  // hover target already were. Spreading the points edge to edge instead put
+  // every one of them half a column to the left of its own number: on the 3rd,
+  // the point for the 3rd landed on the "2".
+  const X = day => (day-0.5) / monthLen * 300;
   const Y = v   => 100 - v / yMax * 100;
 
   const line = pts.map(p=>`${X(p.day).toFixed(2)},${Y(val(p)).toFixed(2)}`).join(' ');
@@ -1452,9 +1456,9 @@ const DailySpendTrend = ({ days, budget, dk }) => {
             return (
               <span key={p.day} className="absolute rounded-full pointer-events-none transition-all duration-150"
                 style={{ left:`${X(p.day)/3}%`, top:`${Y(val(p))}%`, transform:'translate(-50%,-50%)',
-                         width:on?'8px':'4px', height:on?'8px':'4px',
+                         width:on?'8px':'5px', height:on?'8px':'5px',
                          background:on?'#e6c85c':'#d9af2b',
-                         opacity:on?1:0.55,
+                         opacity:on?1:0.7,
                          boxShadow:on?'0 0 0 3px rgba(217,175,43,0.18)':'none' }}/>
             );
           })}
