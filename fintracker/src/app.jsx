@@ -6870,16 +6870,20 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 <div className="min-w-0">
                   <span className="flex items-center gap-1.5 min-w-0">
                     <span className={`text-sm font-semibold truncate ${dk?'text-gold-300':'text-gold-700'}`}>{g.icon} {g.name}</span>
+                    {/* A pencil rather than the dots. There were two items behind
+                        them and one of those was "แก้ไข" — a menu whose first
+                        answer is the thing the glyph already promised is a click
+                        spent asking permission to do what was asked. Delete moves
+                        into the dialog the pencil opens, which is where a
+                        destructive action belongs anyway: next to the thing it
+                        destroys, not one press from the page. */}
                     {isCurM&&(
-                      <span className="card-actions flex-shrink-0">
-                        <CardMenu dk={dk} items={[
-                          { icon:'✏', label:'แก้ไขกลุ่ม',
-                            run: ()=>setGroupEdit({ id:g.id, name:g.name, icon:g.icon,
-                                                    counted:!!g.counted, daily:!!g.daily }) },
-                          ...(groups.length>1 ? [{ icon:'🗑', label:'ลบกลุ่ม', danger:true,
-                            run: ()=>deleteGroup(g) }] : []),
-                        ]}/>
-                      </span>
+                      <button title="แก้ไขกลุ่ม"
+                        onClick={()=>setGroupEdit({ id:g.id, name:g.name, icon:g.icon,
+                                                    counted:!!g.counted, daily:!!g.daily })}
+                        className={`card-actions flex-shrink-0 text-xs leading-none transition-colors ${dk?'text-slate-500 hover:text-gold-300':'text-slate-400 hover:text-gold-600'}`}>
+                        ✏
+                      </button>
                     )}
                   </span>
                   {groupNote(g)&&<p className={`text-[11px] mt-0.5 ${sub}`}>{groupNote(g)}</p>}
@@ -7047,6 +7051,15 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 บันทึก
               </button>
             </div>
+            {/* Underneath the pair, not beside them: it is not the third option
+                of a decision, it is the exit from one. Still asks first. */}
+            {groupEdit.id && groups.length>1 && (
+              <button onClick={()=>{ const g = groups.find(x=>x.id===groupEdit.id);
+                                     setGroupEdit(null); if (g) deleteGroup(g); }}
+                className="w-full mt-2 py-2 rounded-xl text-xs font-medium text-rose-400 hover:text-rose-300 transition-colors">
+                ลบกลุ่มนี้
+              </button>
+            )}
           </div>
         </div>
       )}
