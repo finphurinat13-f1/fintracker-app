@@ -6150,7 +6150,12 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
       toIrregular
         ? `ย้าย "${cat}" ไปกลุ่ม "ไม่ประจำ (นานๆ ที)" ใช่ไหมคะ?\nยอดที่บันทึกไว้ไม่เปลี่ยน เปลี่ยนแค่กลุ่มที่แสดงผลค่ะ`
         : `ย้าย "${cat}" กลับไปกลุ่ม "ประจำ (รายวัน)" ใช่ไหมคะ?\nยอดที่บันทึกไว้ไม่เปลี่ยน เปลี่ยนแค่กลุ่มที่แสดงผลค่ะ`,
-      () => setIrregular(cat)
+      // Was the default "ลบ" in red, on a dialog whose own words say the
+      // amounts do not change and only the display group moves. The button is
+      // the last thing read before committing, so it, not the paragraph above
+      // it, is what the action gets remembered as.
+      () => setIrregular(cat),
+      { confirmLabel: 'ย้าย', destructive: false }
     );
   };
 
