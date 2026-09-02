@@ -62,6 +62,10 @@ const fmt   = n => (_privacy||_hideAmt) ? '฿ •••••' : '฿' + Math.a
 const fmtNW = n => (_privacy||_hideAmt) ? '฿ •••••' : '฿' + Math.abs(n).toLocaleString('th-TH',{minimumFractionDigits:0,maximumFractionDigits:0});
 // fmt() strips the sign (amounts pair with a separate +/- prefix). For real
 // balances that can legitimately go negative, fmtSigned keeps the minus sign.
+// Amounts in a footnote line, where the column above has already said these
+// are baht and the sign would otherwise appear a couple of dozen times on one
+// screen. Masking follows fmt exactly — a bare number must still hide.
+const fmtBare = n => (_privacy||_hideAmt) ? '•••••' : Math.abs(n).toLocaleString('th-TH',{minimumFractionDigits:0,maximumFractionDigits:0});
 const fmtSigned = n => (n<0?'-':'') + fmt(n);
 // Thirty-one labels across one strip leaves about forty pixels each, which is
 // four characters at 8px. "38,481.00" needs nine. One decimal below ten
@@ -6485,39 +6489,31 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
             const bgTint='';
             const isExp=expandedCat===cat;
             return (
-              <div key={cat} className={`group rounded-xl border transition-all overflow-hidden
+              <div key={cat} className={`group relative rounded-xl border transition-all overflow-hidden
                 ${isExp?(dk?'border-gold-500/40':'border-gold-300'):borderClr||(dk?'border-white/8':'border-slate-100')} ${bgTint}`}>
-                {/* Utility row — badge + irregular-toggle/rename/delete (not part of the expand toggle) */}
-                <div className="flex items-center justify-between px-3.5 pt-3 pb-1 min-h-[28px]">
-                  {/* The เกิน!/ใกล้เต็ม/เฝ้าระวัง badges are gone. The card
-                      already said the same thing three more times — in the
-                      bar's colour, in the border tint, and in the words
-                      "เกิน ฿5,098.50" which are the only version that says by
-                      how much. Their pale pink and cream backgrounds were also
-                      the last two colours on the page from no palette. */}
-                  <div className="min-w-0"/>
-                  {/* Held back until the pointer is on the card. Three controls on
-                      twelve cards is thirty-six glyphs competing with the figures
-                      they sit above, and none of them is why the page is open.
-                      card-actions keeps them visible on touch, where there is no
-                      hover to reveal anything. */}
-                  {isCurM&&(
-                  <div className="flex items-center flex-shrink-0 card-actions">
-                    <CardMenu dk={dk} items={[
-                      { icon: isIrregular(cat)?'📦':'🔁',
-                        label: isIrregular(cat)?'เปลี่ยนเป็นประจำ':'เปลี่ยนเป็นไม่ประจำ',
-                        run: ()=>toggleIrregular(cat) },
-                      { icon: '✏', label: 'แก้ชื่อหมวด',
-                        run: ()=>{ setRenamingCat(cat); setRenameVal(cat); } },
-                      { icon: '🗑', label: 'ลบหมวด', danger: true,
-                        run: ()=>deleteCat(cat) },
-                    ]}/>
-                  </div>
-                  )}
+                {/* The menu floats in the corner rather than sitting in a row of
+                    its own. That row was 28px of nothing on every card at rest —
+                    it existed only to reserve space for three glyphs that appear
+                    on hover — and it pushed the category name into the middle of
+                    the card instead of letting it anchor the top. CardMenu paints
+                    its dropdown at fixed coordinates, so the card's overflow-hidden
+                    does not clip it. */}
+                {isCurM&&(
+                <div className="absolute top-1.5 right-1.5 z-10 flex items-center card-actions">
+                  <CardMenu dk={dk} items={[
+                    { icon: isIrregular(cat)?'📦':'🔁',
+                      label: isIrregular(cat)?'เปลี่ยนเป็นประจำ':'เปลี่ยนเป็นไม่ประจำ',
+                      run: ()=>toggleIrregular(cat) },
+                    { icon: '✏', label: 'แก้ชื่อหมวด',
+                      run: ()=>{ setRenamingCat(cat); setRenameVal(cat); } },
+                    { icon: '🗑', label: 'ลบหมวด', danger: true,
+                      run: ()=>deleteCat(cat) },
+                  ]}/>
                 </div>
+                )}
                 {/* Ring row — click to expand */}
                 <button data-hint="คลิกดูรายการในหมวด" onClick={()=>setExpandedCat(isExp?null:cat)}
-                  className={`w-full px-3.5 pb-3.5 text-left transition-colors ${dk?'hover:bg-white/[0.03]':'hover:bg-slate-50/70'}`}>
+                  className={`w-full px-3.5 pt-3.5 pb-3.5 text-left transition-colors ${dk?'hover:bg-white/[0.03]':'hover:bg-slate-50/70'}`}>
                   <div className="flex items-center gap-3">
                     {/* A 58px ring with a 10px percentage inside it, twelve to a
                         screen. Two cards' rings could not be compared without
@@ -6602,34 +6598,44 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                             style={{left:`${prevPct}%`}}/>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {!isCurM
-                          ?<span className="text-[11px] text-slate-400">Budget {fmt(bgt)}</span>
-                          :editing===cat
-                          ?<input type="number" defaultValue={bgt} autoFocus
-                              className={`w-full px-1.5 py-0.5 text-xs rounded-lg border outline-none ${dk?'bg-white/10 border-white/20 text-white':'bg-white border-slate-300 text-slate-700'}`}
-                              onClick={e=>e.stopPropagation()}
-                              onBlur={e=>{const v=parseFloat(e.target.value);setBudgets(b=>({...b,[cat]:isNaN(v)||v<0?bgt:v}));setEditing(null);}}
-                              onKeyDown={e=>{if(e.key==='Enter')e.target.blur();if(e.key==='Escape')setEditing(null);}}/>
-                          :<button data-hint="คลิกปรับงบประมาณของหมวดนี้ได้" onClick={e=>{e.stopPropagation();setEditing(cat);}} title="แก้งบประมาณ"
-                              className={`inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md border border-dashed transition-colors ${dk?'border-white/20 text-slate-400 hover:text-gold-300 hover:border-gold-400/50':'border-slate-300 text-slate-500 hover:text-gold-500 hover:border-gold-300'}`}>
-                              Budget {fmt(bgt)} <span className="opacity-60">✏</span>
-                            </button>}
-                        {bgt>0&&editing!==cat&&(
-                          <span className={`text-[11px] tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{rawPct.toFixed(0)}%</span>
-                        )}
-                      </div>
+                      {/* Budget, share used and last month on one line. Three
+                          separate bands — a bordered control, a percentage, then
+                          a divider with a row under it — for what is all the same
+                          footnote: the figures the big number is being measured
+                          against. The dashed box was also the loudest thing in
+                          the lower half of the card, which is wrong for a control
+                          that is not why the page is open; the pencil carries the
+                          affordance on its own, on hover, and card-actions keeps
+                          it visible on touch.
+
+                          ฿ is dropped here. It appeared twice on every one of a
+                          dozen cards, and the figure above has already established
+                          that this column is money. */}
+                      {editing===cat
+                        ?<input type="number" defaultValue={bgt} autoFocus
+                            className={`w-full px-1.5 py-0.5 text-xs rounded-lg border outline-none ${dk?'bg-white/10 border-white/20 text-white':'bg-white border-slate-200 text-slate-700'}`}
+                            onClick={e=>e.stopPropagation()}
+                            onBlur={e=>{const v=parseFloat(e.target.value);setBudgets(b=>({...b,[cat]:isNaN(v)||v<0?bgt:v}));setEditing(null);}}
+                            onKeyDown={e=>{if(e.key==='Enter')e.target.blur();if(e.key==='Escape')setEditing(null);}}/>
+                        :<div className="flex items-baseline justify-between gap-2">
+                          <span className={`text-[11px] tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>
+                            {isCurM
+                              ?<button data-hint="คลิกปรับงบประมาณของหมวดนี้ได้" onClick={e=>{e.stopPropagation();setEditing(cat);}}
+                                  className={`transition-colors ${dk?'hover:text-slate-300':'hover:text-slate-600'}`}>
+                                  จาก {fmtBare(bgt)}<span className="card-actions ml-1">✏</span>
+                                </button>
+                              :<>จาก {fmtBare(bgt)}</>}
+                            {bgt>0&&<> · {rawPct.toFixed(0)}%</>}
+                          </span>
+                          {prevSpent[cat]!=null&&prevSpent[cat]>0&&(
+                            <span className={`text-[11px] tabular-nums whitespace-nowrap flex-shrink-0 ${s>prevSpent[cat]?'text-rose-400':s<prevSpent[cat]?'text-emerald-400':dk?'text-slate-500':'text-slate-400'}`}>
+                              ก่อน {fmtBare(prevSpent[cat])} {s>prevSpent[cat]?'▲':s<prevSpent[cat]?'▼':''}
+                            </span>
+                          )}
+                        </div>}
                     </div>
                     <Ic n="chevD" s={12} cls={`transition-transform duration-200 flex-shrink-0 self-center ${isExp?'rotate-180':''} ${dk?'text-slate-500':'text-slate-400'}`}/>
                   </div>
-                  {prevSpent[cat]!=null&&prevSpent[cat]>0&&(
-                    <div className={`flex justify-between items-center mt-2.5 pt-2 border-t ${dk?'border-white/5':'border-slate-100'}`}>
-                      <span className={`text-[11px] ${sub}`}>เดือนที่แล้ว</span>
-                      <span className={`text-[11px] font-medium ${s>prevSpent[cat]?'text-rose-400':s<prevSpent[cat]?'text-emerald-400':dk?'text-slate-500':'text-slate-400'}`}>
-                        {fmt(prevSpent[cat])} {s>prevSpent[cat]?'▲':s<prevSpent[cat]?'▼':''}
-                      </span>
-                    </div>
-                  )}
                 </button>
                 {/* Drill-down */}
                 {isExp&&(
