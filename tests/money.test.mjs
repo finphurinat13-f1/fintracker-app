@@ -16,7 +16,7 @@ globalThis.localStorage = {
 };
 
 const {
-  walletCash, assetVal, assetTaggedNet, walletDelta, runningBalances, mergeArrById, systemCashByDay, txSign, txAmtCls, revertMove,
+  walletCash, assetVal, assetTaggedNet, dataHealth, walletDelta, runningBalances, mergeArrById, systemCashByDay, txSign, txAmtCls, revertMove,
   isUntouchedBudgets, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, realizedByYear,
   encryptBackup, decryptBackup, isEncryptedBackup, assetCashFlow, whoAmI,
   impliedTicker, catOptions, renameCatInStores, priceAge, annualisedReturn, assetTotalReturn,
@@ -1040,4 +1040,46 @@ test('assetTotalReturn: never divides by a cost basis of zero', () => {
 test('assetTotalReturn: cash has no paper gain to report', () => {
   const a = { id: 4, type: 'cash', currency: 'THB', qty: 1, avgCost: 0, currentPrice: 50000, moves: [] };
   assert.equal(assetTotalReturn(a, [], 1).unrealised, 0);
+});
+
+
+// ── Data health ─────────────────────────────────────────────────────────────
+// The rules exist because the audit that ran before them was structural only,
+// and structural rules said nothing at all while three double-counting bugs
+// moved real money. Each of these is one of those bugs, written down.
+
+test('dataHealth: a row on both a wallet and a holding is flagged', () => {
+  const assets = [{ id: 1, type: 'stock', qty: 10, avgCost: 100, currentPrice: 100 }];
+  const txs = [{ id: 9, type: 'expense', amount: 3000, walletId: 5, targetAssetId: 1 }];
+  const hit = dataHealth({ txs, assets }).find(f => f.title.includes('นับสองที่'));
+  assert.ok(hit, 'the pattern that took ฿6,000 off net worth for a ฿3,000 payment');
+  assert.equal(hit.rows.length, 1);
+});
+
+test('dataHealth: the same row against a cash asset is fine', () => {
+  // Cash assets are exactly where a tagged amount belongs — walletCash already
+  // excludes it, so nothing is counted twice.
+  const assets = [{ id: 1, type: 'cash', qty: 10000, avgCost: 1, currentPrice: 1, walletId: 5 }];
+  const txs = [{ id: 9, type: 'expense', amount: 3000, walletId: 5, targetAssetId: 1 }];
+  assert.equal(dataHealth({ txs, assets }).filter(f => f.title.includes('นับสองที่')).length, 0);
+});
+
+test('dataHealth: units that disagree with their own history are flagged', () => {
+  const assets = [{ id: 1, type: 'stock', qty: 999, avgCost: 20, currentPrice: 20,
+                    moves: [{ id: 'm', qty: 150, newQty: 250, rate: 20 }] }];
+  const hit = dataHealth({ txs: [], assets }).find(f => f.title.includes('จำนวนหน่วย'));
+  assert.ok(hit, 'qty says 999, the newest move says 250');
+});
+
+test('dataHealth: a transfer missing its other leg is flagged', () => {
+  const txs = [{ id: 1, type: 'transfer', amount: 500, linkedId: 'trf-1',
+                 transferDir: 'from', walletId: 1, toWalletId: 2 }];
+  assert.ok(dataHealth({ txs }).find(f => f.title.includes('ขาเดียว')));
+});
+
+test('dataHealth: clean data reports nothing', () => {
+  const assets = [{ id: 1, type: 'stock', qty: 250, avgCost: 20, currentPrice: 20,
+                    moves: [{ id: 'm', qty: 150, newQty: 250, rate: 20 }] }];
+  const txs = [{ id: 1, type: 'expense', amount: 100, walletId: 5 }];
+  assert.equal(dataHealth({ txs, assets }).filter(f => f.level === 'warn').length, 0);
 });

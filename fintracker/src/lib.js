@@ -250,6 +250,81 @@ export const assetTagged = (txs, id) => {
 };
 
 
+// ── DATA HEALTH ────────────────────────────────────────────────────────────
+// Rules about whether the money adds up, kept here rather than in the terminal
+// script so the app and the script can run the same ones. The four rules that
+// existed before this were all structural — an orphaned transfer leg, a
+// duplicate id — and not one of them would have caught any of the three
+// double-counting bugs found on 31 August, which between them moved hundreds of
+// thousands of baht and did it silently.
+//
+// Every finding names the rows it is about, because "something is wrong" that
+// cannot be followed to a row is a worry, not a report.
+export const dataHealth = ({ txs = [], assets = [], wallets = [], debts = [] } = {}) => {
+  const out = [];
+  const add = (level, title, detail, rows = []) => out.push({ level, title, detail, rows });
+  const assetById = new Map(assets.map(a => [a.id, a]));
+
+  // 1. The shape that cost the most: an amount taken off a wallet and off a
+  //    holding at the same time. The form no longer allows it; rows saved
+  //    before it stopped allowing it are still here.
+  const doubled = txs.filter(t =>
+    t && t.walletId && t.targetAssetId
+    && (t.type === 'expense' || t.type === 'income')
+    && (assetById.get(t.targetAssetId) || {}).type !== 'cash');
+  if (doubled.length) add('warn', 'รายการที่อาจถูกนับสองที่',
+    'ผูกทั้งกระเป๋าเงินและสินทรัพย์ที่ไม่ใช่เงินสด — เงินก้อนเดียวถูกนับทั้งสองฝั่ง แก้โดยเปิดรายการแล้วเอาสินทรัพย์ออก',
+    doubled);
+
+  // 2. Units and their own history disagreeing. moves is the record of every
+  //    buy and sell; if it does not add up to qty, one of the two was written
+  //    by hand and the other was not.
+  const drifted = assets.filter(a => {
+    if (!a || a.type === 'cash' || !Array.isArray(a.moves) || !a.moves.length) return false;
+    const moved = a.moves.reduce((s, m) => s + (Number(m.qty) || 0), 0);
+    const newest = a.moves[0];
+    return newest && newest.newQty != null && Math.abs((Number(a.qty) || 0) - Number(newest.newQty)) > 0.00001 && moved !== 0;
+  });
+  if (drifted.length) add('warn', 'จำนวนหน่วยไม่ตรงกับประวัติ',
+    'จำนวนที่เก็บไว้ต่างจากบรรทัดล่าสุดในประวัติเติม/เอาออก — มักเกิดจากแก้จำนวนด้วยมือหลังบันทึกความเคลื่อนไหว',
+    drifted);
+
+  // 3. Money with nowhere to come from. Legitimate — cash the app was never
+  //    told about — but it makes Budget and Net Worth disagree with nothing
+  //    on screen to say why.
+  const nowhere = txs.filter(t => t && t.type !== 'transfer' && !t.walletId && !t.targetAssetId);
+  if (nowhere.length) add('info', 'รายการที่ไม่ได้ผูกกระเป๋าหรือสินทรัพย์',
+    'Budget นับรายจ่ายพวกนี้ แต่มูลค่าสุทธิไม่นับ — ตั้งใจได้ ถ้าเป็นเงินสดที่ไม่ได้บอกแอปไว้',
+    nowhere);
+
+  // 4. Half a transfer. Money left one side and never arrived anywhere.
+  const legs = {};
+  txs.forEach(t => { if (t && t.linkedId) (legs[t.linkedId] = legs[t.linkedId] || []).push(t); });
+  const lonely = Object.values(legs).filter(g => g.length === 1).map(g => g[0])
+    .filter(t => t.toWalletId || t.fromWalletId);
+  if (lonely.length) add('warn', 'รายการโยกเหลือขาเดียว',
+    'เงินออกจากฝั่งหนึ่งแล้วไม่ปรากฏที่ปลายทาง', lonely);
+
+  // 5. A cash asset cannot hold less than nothing.
+  const negCash = assets.filter(a => a && a.type === 'cash' && assetVal(a, txs, 1) < -0.005);
+  if (negCash.length) add('warn', 'สินทรัพย์เงินสดติดลบ',
+    'ยอดคงเหลือต่ำกว่าศูนย์ — มักเป็นรายจ่ายที่ผูกผิดก้อน', negCash);
+
+  // 6. Two rows sharing an id are one row as far as every lookup is concerned.
+  const seen = new Set(), dupIds = new Set();
+  txs.forEach(t => { if (t) { if (seen.has(t.id)) dupIds.add(t.id); seen.add(t.id); } });
+  if (dupIds.size) add('warn', 'รายการมี id ซ้ำกัน',
+    'การแก้หรือลบรายการหนึ่งจะไปโดนอีกรายการด้วย', txs.filter(t => t && dupIds.has(t.id)));
+
+  // 7. A price nobody has refreshed is a valuation nobody should trust.
+  const stale = assets.filter(a => a && a.type !== 'cash' && a.ticker && a.qty > 0
+    && (!a.priceAt || (Date.now() - new Date(a.priceAt).getTime()) > 30 * 86400000));
+  if (stale.length) add('info', 'ราคาสินทรัพย์ไม่ได้อัปเดตเกิน 30 วัน',
+    'มูลค่าที่แสดงอ้างอิงราคาเก่า', stale);
+
+  return out;
+};
+
 export const today = () => new Date().toISOString().split('T')[0];
 export const ym    = d => d.substring(0,7);
 

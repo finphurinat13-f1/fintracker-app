@@ -1,5 +1,5 @@
 import {
-  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, GOLD_RAMP, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, assetTaggedNet, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, byNewest, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, annualisedReturn, assetTotalReturn, encryptBackup, decryptBackup, isEncryptedBackup
+  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, GOLD_RAMP, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, assetTaggedNet, dataHealth, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, byNewest, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, annualisedReturn, assetTotalReturn, encryptBackup, decryptBackup, isEncryptedBackup
 } from "./lib.js";
 
 
@@ -800,6 +800,34 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
   // recent wins, because the last decision is the one that stuck.
   const [catAuto, setCatAuto] = useState(null);
 
+  // The names typed most often in the last ninety days, for this type. Repeat
+  // solves the same problem but only once you have found the old row; guessing
+  // the category only helps after the name is typed. This is the piece that
+  // removes the typing, which is the part that actually costs something daily.
+  //
+  // The amount comes along only when the last three uses agree on it: rent is
+  // the same number every month and Grab Food never is, and filling in a figure
+  // that is usually wrong is worse than leaving it blank, because a wrong
+  // number that is already in the box gets saved.
+  const frequent = useMemo(()=>{
+    if (editData || f.type === 'transfer') return [];
+    const since = new Date(Date.now()-90*86400000).toISOString().slice(0,10);
+    const seen = {};
+    txs.filter(t=>t && t.type===f.type && t.date>=since && (t.title||'').trim())
+       .forEach(t=>{
+         const k = t.title.trim();
+         (seen[k] = seen[k] || { name:k, n:0, cat:t.category, amts:[] });
+         seen[k].n++;
+         if (seen[k].amts.length < 3) seen[k].amts.push(Math.abs(t.amount));
+       });
+    return Object.values(seen)
+      .filter(v=>v.n >= 2)
+      .sort((a,b)=>b.n-a.n)
+      .slice(0,4)
+      .map(v=>({ ...v, fixed: v.amts.length>=2 && v.amts.every(a=>Math.abs(a-v.amts[0])<0.005) ? v.amts[0] : null }));
+  },[txs, f.type, editData]);
+
+
   // Same type, same day, same amount, same name. All four, because any three of
   // them happen legitimately all the time — two Grab Food orders on one day, a
   // ฿60 coffee every morning — and a warning that fires on those is one people
@@ -932,6 +960,27 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
           </div>
           <div>
             <label className={lbl}>รายการ</label>
+            {/* Only while the field is empty. A row of shortcuts that stays put
+                after the choice is made is a row of dead controls sitting over
+                the form for the rest of the session — the help is needed at the
+                moment the field is blank and never again. Four, not six: past
+                about four the row wraps, and a second line of chips costs more
+                attention than the typing it saves. */}
+            {frequent.length>0 && !f.title && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {frequent.map(v=>(
+                  <button key={v.name} type="button"
+                    onClick={()=>{
+                      setF(prev=>({...prev, title:v.name, category:v.cat||prev.category,
+                                   amount: v.fixed!=null ? String(v.fixed) : prev.amount}));
+                      setCatAuto(null);
+                    }}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${dk?'bg-white/8 text-slate-300 hover:bg-white/14':'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                    {v.name}{v.fixed!=null && <span className="opacity-60"> · {fmt(v.fixed)}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
             <input className={`${inp} ${f.title===''&&f.amount?'border-rose-500/50':''}`} placeholder={f.type==='income'?'เช่น เงินเดือน, โบนัส, เงินปันผล':'เช่น ค่ากาแฟ, ค่าอาหาร, ค่าเดินทาง'} value={f.title} onChange={e=>{
               const v = e.target.value;
               // Only while the category is still untouched. Overwriting a choice
@@ -2570,7 +2619,7 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
       {filtered.length>0&&(
         <div className={`rounded-2xl px-5 py-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 ${dk?'card-solid':'glass-light shadow-sm'}`}>
           {/* Hero: net (the number Fin actually wants) */}
-          <div className="flex flex-col gap-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <span className={`text-[11px] font-medium ${dk?'text-slate-400':'text-slate-500'}`}>สุทธิ · {filtered.length} รายการ</span>
             <span className={`flex items-baseline gap-1.5 text-2xl sm:text-3xl font-bold tabular-nums leading-none ${filteredBalance>=0?'text-emerald-400':'text-rose-400'}`}>
               <span className="text-sm font-semibold">{filteredBalance>=0?'▲':'▼'}</span>
@@ -5633,6 +5682,74 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
   );
 };
 
+// ── DATA HEALTH PANEL ──────────────────────────────────────────────────────
+// The same rules the terminal audit runs, on the data already in the browser.
+// The audit needed a backup file downloaded into the repo and a terminal, which
+// in practice meant it was run when somebody happened to think of it — and the
+// three bugs it would have caught were found by noticing an odd figure instead.
+//
+// A finding that cannot be followed to a row is a worry rather than a report,
+// so every one of them lists what it is about and how to fix it.
+const DataHealthPanel = ({ open, onClose, findings, onGoTx, dk }) => {
+  if (!open) return null;
+  const warns = findings.filter(f => f.level === 'warn');
+  const infos = findings.filter(f => f.level !== 'warn');
+
+  const Block = ({ f }) => (
+    <div className={`rounded-xl border p-3.5 ${f.level==='warn'
+      ? (dk?'border-rose-500/25 bg-rose-500/[0.06]':'border-rose-200 bg-rose-50')
+      : (dk?'border-white/10':'border-slate-200')}`}>
+      <div className="flex items-baseline justify-between gap-3 mb-1">
+        <span className={`text-xs font-semibold ${f.level==='warn'?'text-rose-400':(dk?'text-slate-300':'text-slate-600')}`}>
+          {f.level==='warn'?'⚠️ ':'ℹ️ '}{f.title}
+        </span>
+        <span className={`text-[11px] tabular-nums flex-shrink-0 ${dk?'text-slate-500':'text-slate-400'}`}>{f.rows.length} รายการ</span>
+      </div>
+      <p className={`text-[11px] leading-relaxed ${dk?'text-slate-400':'text-slate-500'}`}>{f.detail}</p>
+      {f.rows.length>0 && (
+        <div className="mt-2 flex flex-col gap-0.5">
+          {f.rows.slice(0,4).map((r,i)=>(
+            <button key={r.id||i} onClick={()=>onGoTx&&onGoTx(r)}
+              className={`text-left text-[11px] truncate px-2 py-1 rounded-lg transition-colors ${dk?'text-slate-300 hover:bg-white/8':'text-slate-600 hover:bg-slate-100'}`}>
+              {r.title || r.name || r.ticker || ('#'+r.id)}
+              {r.date && <span className={dk?'text-slate-500':'text-slate-400'}> · {r.date}</span>}
+            </button>
+          ))}
+          {f.rows.length>4 && (
+            <span className={`text-[10px] px-2 ${dk?'text-slate-600':'text-slate-400'}`}>และอีก {f.rows.length-4} รายการ</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 z-[75] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()}
+        className={`w-full max-w-md max-h-[80vh] overflow-y-auto rounded-2xl border p-5 ${dk?'bg-[#1a1a1f] border-gold-500/25':'bg-white border-slate-200'}`}>
+        <div className="flex items-center justify-between mb-4">
+          <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>ตรวจสุขภาพข้อมูล</span>
+          <button onClick={onClose} className={dk?'text-slate-500':'text-slate-400'}><Ic n="x" s={16}/></button>
+        </div>
+
+        {findings.length===0 ? (
+          <div className="py-8 text-center">
+            <div className="text-2xl mb-2">✓</div>
+            <p className={`text-sm ${dk?'text-slate-300':'text-slate-600'}`}>ข้อมูลเรียบร้อยดีค่ะ</p>
+            <p className={`text-[11px] mt-1 ${dk?'text-slate-500':'text-slate-400'}`}>ผ่านการตรวจทั้ง 7 ข้อ</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2.5">
+            {warns.map((f,i)=><Block key={'w'+i} f={f}/>)}
+            {infos.map((f,i)=><Block key={'i'+i} f={f}/>)}
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body
+  );
+};
+
 // ── SWIPE ROW ──────────────────────────────────────────────────────────────
 // The row actions are revealed by hover, and a phone has no hover — so on touch
 // they were either always visible and cluttering, or unreachable. A swipe is
@@ -6136,6 +6253,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
   const dailyAllowance = daysLeft>0 ? (totBudget-totSpent)/daysLeft : 0;
 
   const [dayExpOpen, setDayExpOpen] = useState(false);
+  const [unsetOpen, setUnsetOpen] = useState(false);
   const todayStr    = today();
   const todayTxs    = useMemo(()=>txs.filter(t=>t.type==='expense'&&t.date===todayStr&&isDailyRelevant(t)),[txs,todayStr]);
   const todaySpent  = todayTxs.reduce((s,t)=>s+t.amount,0);
@@ -6174,16 +6292,29 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
   const card = `rounded-2xl ${dk?'card-solid':'glass-light shadow-sm'}`;
   const sub  = `text-xs ${dk?'text-slate-400':'text-slate-500'}`;
 
+  // The month control governs every figure on this page, not just the card it
+  // used to sit in. A control that scopes the whole page belongs in the page
+  // header, which already reserves its right side for exactly that.
+  const navBtn = `w-7 h-7 flex items-center justify-center rounded-lg border transition-colors ${dk?'border-white/15 text-slate-300 hover:bg-gold-500/15 hover:text-gold-300 hover:border-gold-400/50':'border-slate-200 text-slate-600 hover:bg-gold-50 hover:text-gold-600 hover:border-gold-300'}`;
+  const monthNav = (
+    <div className="flex items-center gap-1.5">
+      <button onClick={()=>setViewM(m=>shiftMonth(m,-1))} title="เดือนก่อนหน้า" className={navBtn}><Ic n="chevL" s={15}/></button>
+      <span className={`text-xs font-semibold tabular-nums text-center ${dk?'text-gold-300':'text-gold-700'}`} style={{minWidth:'70px'}}>{MONTHS_TH[parseInt(viewM.split('-')[1])-1]} {viewM.split('-')[0]}</span>
+      <button onClick={()=>!isCurM&&setViewM(m=>shiftMonth(m,1))} disabled={isCurM} title="เดือนถัดไป"
+        className={isCurM?'w-7 h-7 flex items-center justify-center rounded-lg border border-transparent opacity-25 cursor-default':navBtn}><Ic n="chevR" s={15}/></button>
+    </div>
+  );
+
   return (
     <div className="space-y-7 fade-up">
       <PageHeader theme={theme} lead="Monthly" accent="Budget"
         sub="วงเงินรายหมวด ยอดใช้จ่าย และส่วนที่เหลือ"
-        right={isCurM
+        right={<>{monthNav}{isCurM
           ? <button onClick={()=>setAddOpen(true)}
               className="flex items-center gap-1 text-xs px-4 py-2 rounded-full bg-orange-400 hover:bg-orange-300 text-orange-950 font-semibold transition-colors">
               + เพิ่มหมวด
             </button>
-          : <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${dk?'bg-white/8 text-slate-400':'bg-slate-100 text-slate-500'}`}>ดูย้อนหลัง · แก้ไขไม่ได้</span>}/>
+          : <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${dk?'bg-white/8 text-slate-400':'bg-slate-100 text-slate-500'}`}>ดูย้อนหลัง · แก้ไขไม่ได้</span>}</>}/>
       <div className="grid grid-cols-3 gap-x-8 gap-y-6">
         {[{l:'Budget รวม',v:fmt(totBudget),c:dk?'tg-gold':'text-gold-600',
            note: bSplit.irregular>0 ? `ประจำ ${fmt(bSplit.regular)} · ไม่ประจำ ${fmt(bSplit.irregular)}` : null},
@@ -6205,6 +6336,18 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
             <div className={`text-lg sm:text-xl font-semibold leading-tight break-words tabular-nums ${c}`}>{v}</div>
             {note&&<div className={`text-[10px] mt-1 ${dk?'text-slate-500':'text-slate-400'}`}>{note}</div>}
           </div>))}
+      </div>
+      {/* What survived of the "ภาพรวมเดือนนี้" card. The card held five things
+          and three of them were the row above it read back: ฿spent / ฿budget
+          are literally the ใช้ไปแล้ว and Budget รวม figures, and the heading
+          named what the reader was already looking at. Only the bar said
+          something the numbers could not — the shape of the month at a glance —
+          so only the bar stayed, tucked under the row it summarises. */}
+      <div className="flex items-center gap-3" style={{marginTop:'0.5rem'}}>
+        <div className={`flex-1 h-1.5 rounded-full ${dk?'bg-white/5':'bg-slate-100'} overflow-hidden`}>
+          <div className="h-full rounded-full transition-all duration-700" style={{width:`${Math.min(totPct,100)}%`,background:totPct>=100?'#d4574a':totPct>=80?'#d9af2b':'#7aab8a'}}/>
+        </div>
+        <span className="text-[10px] font-semibold tabular-nums" style={{color:totPct>=100?'#d4574a':totPct>=80?'#d9af2b':'#7aab8a'}}>{totPct.toFixed(1)}%</span>
       </div>
       {/* Insight row — today-relative, only meaningful for the current month */}
       {isCurM&&(
@@ -6249,24 +6392,6 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
         )}
       </div>
 
-      {/* Month overview bar — moved here, right above the category grid it governs */}
-      <div className={`${card} p-5`}>
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center gap-2">
-            <button onClick={()=>setViewM(m=>shiftMonth(m,-1))} title="เดือนก่อนหน้า"
-              className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-colors ${dk?'border-white/15 text-slate-300 hover:bg-gold-500/15 hover:text-gold-300 hover:border-gold-400/50':'border-slate-200 text-slate-600 hover:bg-gold-50 hover:text-gold-600 hover:border-gold-300'}`}><Ic n="chevL" s={16}/></button>
-            <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>ภาพรวม{isCurM?'เดือนนี้':''} — {MONTHS_TH[parseInt(viewM.split('-')[1])-1]} {viewM.split('-')[0]}</h3>
-            <button onClick={()=>!isCurM&&setViewM(m=>shiftMonth(m,1))} disabled={isCurM} title="เดือนถัดไป"
-              className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-colors ${isCurM?'opacity-25 cursor-default border-transparent':(dk?'border-white/15 text-slate-300 hover:bg-gold-500/15 hover:text-gold-300 hover:border-gold-400/50':'border-slate-200 text-slate-600 hover:bg-gold-50 hover:text-gold-600 hover:border-gold-300')}`}><Ic n="chevR" s={16}/></button>
-          </div>
-          <span className="text-xs font-semibold" style={{color:totPct>=100?'#d4574a':totPct>=80?'#d9af2b':'#7aab8a'}}>{totPct.toFixed(1)}%</span>
-        </div>
-        <div className={`w-full h-3 rounded-full ${dk?'bg-white/5':'bg-slate-100'} overflow-hidden`}>
-          <div className="h-full rounded-full transition-all duration-700" style={{width:`${Math.min(totPct,100)}%`,background:totPct>=100?'#d4574a':totPct>=80?'#d9af2b':'#7aab8a'}}/>
-        </div>
-        <div className={`mt-1.5 text-xs ${sub}`}>{fmt(totSpent)} / {fmt(totBudget)}</div>
-      </div>
-
       {/* The "แต่ละหมวด" card is gone. It was a full panel wrapped around one
           button, a read-only notice and a hint — a heading for a section that
           starts immediately below it and needs no announcing. The button moved
@@ -6277,8 +6402,19 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
           line of instructions for a click the chevron on every card already
           advertises. */}
         {(() => {
+          // Ordered by how much of each budget is gone, which is the right
+          // question in the second half of a month and no question at all on the
+          // first, when every category is at 0% and the sort collapses to
+          // whichever category happened to be created first. Last month's spend
+          // breaks the tie: the categories that matter in an ordinary month are
+          // the ones that mattered in the last one, and the order is then stable
+          // from day one instead of arriving at meaning by the tenth.
           const allEntries = Object.entries(viewBudgets||{}).filter(([cat])=>!['ที่พัก','สาธารณูปโภค'].includes(cat))
-            .sort(([ca,ba],[cb,bb])=>{const pa=ba>0?(spent[ca]||0)/ba:0,pb=bb>0?(spent[cb]||0)/bb:0;return pb-pa;});
+            .sort(([ca,ba],[cb,bb])=>{
+              const pa=ba>0?(spent[ca]||0)/ba:0, pb=bb>0?(spent[cb]||0)/bb:0;
+              if (Math.abs(pa-pb) > 0.0001) return pb-pa;
+              return (prevSpent[cb]||0)-(prevSpent[ca]||0);
+            });
           if (allEntries.length===0) return (
           <div className={`${card} p-5`}>
             <div className={`flex flex-col items-center justify-center py-12 text-center ${dk?'text-slate-500':'text-slate-400'}`}>
@@ -6294,14 +6430,25 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
             </div>
           </div>
           );
-          const regularEntries = allEntries.filter(([cat])=>!isIrregular(cat));
-          const irregularEntries = allEntries.filter(([cat])=>isIrregular(cat));
+          // A category with no budget has nothing to be over or under, so a full
+          // card spends the same space as a real one to report that there is
+          // nothing to report. They fold into one line at the bottom, where they
+          // can still be found and given a budget.
+          const unsetEntries = allEntries.filter(([,b])=>!(b>0));
+          const budgeted     = allEntries.filter(([,b])=>b>0);
+          const regularEntries = budgeted.filter(([cat])=>!isIrregular(cat));
+          const irregularEntries = budgeted.filter(([cat])=>isIrregular(cat));
           const regularTotal = regularEntries.reduce((s,[cat])=>s+(spent[cat]||0),0);
           const irregularTotal = irregularEntries.reduce((s,[cat])=>s+(spent[cat]||0),0);
 
           const renderCard = ([cat,bgt]) => {
             const s=spent[cat]||0, p=bgt>0?Math.min(s/bgt*100,100):0;
             const rawPct=bgt>0?s/bgt*100:0;
+            // Where an even spend would have reached by today, and where last
+            // month actually finished. Both as a share of this budget, so they
+            // sit on the same track as the fill.
+            const pacePct = daysInMonth>0 ? Math.min(daysPassed/daysInMonth*100, 100) : 0;
+            const prevPct = bgt>0 ? Math.min((prevSpent[cat]||0)/bgt*100, 100) : 0;
             const over=s>bgt, warn=rawPct>=80&&!over;
             // Three states, and each one visibly a different colour.
             //
@@ -6428,8 +6575,32 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                       {/* 8px, not 6. The bar carries the state on a card with
                           nothing else large on it, and at 6px a colour has too
                           little area to register before the eye moves on. */}
-                      <div className={`h-2 rounded-full overflow-hidden mb-1.5 ${dk?'bg-white/10':'bg-slate-100'}`}>
+                      {/* Two marks on the track, because "฿0 of ฿16,000" says
+                          nothing on the first of the month and the question
+                          being asked is never how much has gone — it is whether
+                          it is going too fast.
+
+                          The pace mark is where an even spend would have reached
+                          by today. Fill short of it is ahead, fill past it is
+                          behind, and the distance between them is the answer at
+                          a glance without reading a number.
+
+                          The second mark is where last month finished, which is
+                          the only benchmark that is actually Fin's. It was
+                          already on the card as a line of text underneath; on
+                          the track it compares itself. */}
+                      <div className={`relative h-2 rounded-full overflow-hidden mb-1.5 ${dk?'bg-white/10':'bg-slate-100'}`}>
                         <div className="h-full rounded-full transition-all duration-500" style={{width:`${p}%`, background:clr}}/>
+                        {isCurM && bgt>0 && pacePct>0 && pacePct<100 && (
+                          <span aria-hidden="true" title={`จังหวะวันนี้ · ควรใช้ไม่เกิน ${fmt(bgt*pacePct/100)}`}
+                            className={`absolute top-0 bottom-0 w-[2px] ${dk?'bg-white/70':'bg-slate-700/70'}`}
+                            style={{left:`${pacePct}%`}}/>
+                        )}
+                        {prevPct>0 && prevPct<100 && (
+                          <span aria-hidden="true" title={`เดือนที่แล้วจบที่ ${fmt(prevSpent[cat]||0)}`}
+                            className={`absolute top-0 bottom-0 w-px ${dk?'bg-white/35':'bg-slate-900/25'}`}
+                            style={{left:`${prevPct}%`}}/>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         {!isCurM
@@ -6510,6 +6681,30 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {irregularEntries.map(renderCard)}
                   </div>
+                </div>
+              )}
+
+              {/* Categories with no budget, folded into one line. Full cards for
+                  them said "there is nothing to say here" at the same size as a
+                  category running 154% over — and on the first of a month, when
+                  every real card is also at zero, they were indistinguishable
+                  from the ones that matter. */}
+              {unsetEntries.length>0 && (
+                <div className="mt-4">
+                  <button onClick={()=>setUnsetOpen(o=>!o)}
+                    className={`w-full flex items-center justify-between gap-2 px-1 py-2 text-left transition-colors ${dk?'text-slate-500 hover:text-slate-300':'text-slate-400 hover:text-slate-600'}`}>
+                    <span className="text-xs">ยังไม่ได้ตั้งงบ ({unsetEntries.length})</span>
+                    <span className={`text-[10px] transition-transform ${unsetOpen?'rotate-90':''}`}>▶</span>
+                  </button>
+                  {unsetOpen
+                    ? <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mt-2">{unsetEntries.map(renderCard)}</div>
+                    : (
+                      <div className="flex flex-wrap gap-1.5 px-1">
+                        {unsetEntries.map(([cat])=>(
+                          <span key={cat} className={`px-2 py-0.5 rounded-full text-[11px] ${dk?'bg-white/6 text-slate-500':'bg-slate-100 text-slate-500'}`}>{cat}</span>
+                        ))}
+                      </div>
+                    )}
                 </div>
               )}
             </>
@@ -10006,6 +10201,7 @@ const App = () => {
   },[]);
   const [quickOpen,setQuickOpen]       = useState(false);
   const [paletteOpen,setPaletteOpen]   = useState(false);
+  const [healthOpen,setHealthOpen]     = useState(false);
   // Ctrl/Cmd+K, and only when nothing else is capturing the keyboard — opening
   // a palette over a half-typed amount loses the amount.
   useEffect(()=>{
@@ -10041,6 +10237,16 @@ const App = () => {
   const [nwHistory,setNwHistory] = useState(()=>{ try{const s=localStorage.getItem('ft-nw-history');return s?JSON.parse(s):[];}catch{return[];} });
   const nwHistoryRef             = useRef(nwHistory);
   const [debts,setDebts]       = useState(()=>{ try{const s=localStorage.getItem('ft-debts');return s?JSON.parse(s):[];}catch{return[];} });
+  // Placed below every list it reads. It was above debts, which const does not
+  // forgive: the whole app threw "Cannot access before initialization" on load,
+  // and the check meant to catch silent breakage became a loud one.
+  //
+  // Runs on every change rather than on a button, because a check you have to
+  // remember to run is a check that does not get run — which is what the
+  // terminal audit had been for months. Pure array work over data already in
+  // memory; nothing is fetched and nothing is written.
+  const health = useMemo(()=>dataHealth({txs, assets, wallets, debts}), [txs, assets, wallets, debts]);
+  const healthWarn = health.some(f=>f.level==='warn');
   const debtsRef               = useRef(debts);
   const [custodial,setCustodial] = useState(()=>{ try{const s=localStorage.getItem('ft-custodial');return s?JSON.parse(s):[];}catch{return[];} });
   const custodialRef             = useRef(custodial);
@@ -11161,12 +11367,19 @@ const App = () => {
             <button onClick={()=>setAcctOpen(true)} title="บัญชี" className={`p-2 rounded-xl transition-colors ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-700'}`}><Ic n="settings" s={15}/></button>
             {/* Consolidated settings menu */}
             <div className="relative">
+              {/* A dot rather than a toast. Something to look at when the eye
+                  passes, not something that interrupts — nothing this check
+                  finds needs handling in the next minute. */}
+              {healthWarn && !menuOpen && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-400 pointer-events-none"/>
+              )}
               <button onClick={()=>setMenuOpen(o=>!o)} title="เมนู" className={`p-2 rounded-xl transition-colors ${menuOpen?(dk?'bg-white/10 text-white':'bg-slate-100 text-slate-800'):(dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-700')}`}><Ic n="menu" s={16}/></button>
               {menuOpen&&(<>
                 <div className="fixed inset-0 z-40" onClick={()=>setMenuOpen(false)}/>
                 <div className={`absolute right-0 mt-2 w-56 rounded-xl shadow-2xl z-50 py-1.5 ${dk?'bg-[#1a1a19] border border-white/10':'bg-white border border-slate-200'}`}>
                   {[
                     {icon:'💡', label: discover?'ซ่อนคำแนะนำการใช้งาน':'คำแนะนำการใช้งาน', on:()=>setDiscover(d=>!d)},
+                    {icon: healthWarn?'⚠️':'🩺', label:'ตรวจสุขภาพข้อมูล'+(healthWarn?' · พบบางอย่าง':''), on:()=>setHealthOpen(true)},
                     {icon:'📥', label:'นำเข้าข้อมูล', on:()=>setImport(true)},
                     {icon:'💾', label:'Backup & กู้คืน', on:()=>setBackupOpen(true)},
                     {icon:'🗑', label:`ถังขยะ${trash.length?` (${trash.length})`:''}`, on:()=>setTrashOpen(true)},
@@ -11388,6 +11601,8 @@ const App = () => {
         style={{bottom:'calc(4.75rem + env(safe-area-inset-bottom))'}}>
         +
       </button>
+      <DataHealthPanel open={healthOpen} onClose={()=>setHealthOpen(false)} findings={health} dk={dk}
+        onGoTx={r=>{ setHealthOpen(false); if(r&&r.type) openEdit(r); else { setPage('assets'); try{localStorage.setItem('ft-page','assets');}catch{} } }}/>
       <CommandPalette open={paletteOpen} onClose={()=>setPaletteOpen(false)}
         actions={paletteActions} txs={txs} dk={dk}
         onPick={r=>{ if(r.run) r.run(); else if(r.tx) openEdit(r.tx); }}/>
