@@ -6146,10 +6146,10 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
   const toggleIrregular = (cat) => {
     const toIrregular = !isIrregular(cat);
     askConfirm(
-      toIrregular ? 'ย้ายไปหมวดไม่ประจำ?' : 'ย้ายกลับไปหมวดประจำ?',
+      toIrregular ? 'ย้ายไป Non-fixed expenses?' : 'ย้ายกลับไป Fixed Cost?',
       toIrregular
-        ? `ย้าย "${cat}" ไปกลุ่ม "ไม่ประจำ (นานๆ ที)" ใช่ไหมคะ?\nยอดที่บันทึกไว้ไม่เปลี่ยน เปลี่ยนแค่กลุ่มที่แสดงผลค่ะ`
-        : `ย้าย "${cat}" กลับไปกลุ่ม "ประจำ (รายวัน)" ใช่ไหมคะ?\nยอดที่บันทึกไว้ไม่เปลี่ยน เปลี่ยนแค่กลุ่มที่แสดงผลค่ะ`,
+        ? `ย้าย "${cat}" ไปกลุ่ม "Non-fixed expenses" ใช่ไหมคะ?\nยอดที่บันทึกไว้ไม่เปลี่ยน เปลี่ยนแค่กลุ่มที่แสดงผลค่ะ`
+        : `ย้าย "${cat}" กลับไปกลุ่ม "Fixed Cost" ใช่ไหมคะ?\nยอดที่บันทึกไว้ไม่เปลี่ยน เปลี่ยนแค่กลุ่มที่แสดงผลค่ะ`,
       // Was the default "ลบ" in red, on a dialog whose own words say the
       // amounts do not change and only the display group moves. The button is
       // the last thing read before committing, so it, not the paragraph above
@@ -6249,6 +6249,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
   // the repair that may not happen at all. Both parts and the total come out of
   // one pass so the caption cannot end up disagreeing with the figure above it.
   const bSplit    = splitBudget(viewBudgets, isIrregular, NON_SPEND_CATS);
+  const nonSpendBudget = NON_SPEND_CATS.reduce((t,c)=>t+(Number((viewBudgets||{})[c])||0),0);
   const totBudget = bSplit.total;
   const totSpent  = txs.filter(t=>t.type==='expense'&&t.date.startsWith(viewM)&&isRealSpend(t)).reduce((s,t)=>s+t.amount,0);
   // what the line above leaves out — exactly the gap against the Transactions page total
@@ -6326,7 +6327,16 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
           : <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${dk?'bg-white/8 text-slate-400':'bg-slate-100 text-slate-500'}`}>ดูย้อนหลัง · แก้ไขไม่ได้</span>}</>}/>
       <div className="grid grid-cols-3 gap-x-8 gap-y-6">
         {[{l:'Budget รวม',v:fmt(totBudget),c:dk?'tg-gold':'text-gold-600',
-           note: bSplit.irregular>0 ? `ประจำ ${fmt(bSplit.regular)} · ไม่ประจำ ${fmt(bSplit.irregular)}` : null},
+           // Three figures, but only two of them add up to the total directly
+           // above — so ลงทุน goes on its own line behind a "+" and says that it
+           // is not counted, in the same words as the section header further
+           // down. Sitting inline with the other two it would read as a third
+           // term of a sum that does not come out.
+           note: (bSplit.irregular>0||nonSpendBudget>0)
+             ? `Fixed Cost ${fmt(bSplit.regular)}
+Non-fixed expenses ${fmt(bSplit.irregular)}`
+               + (nonSpendBudget>0 ? `\n+ Invest ${fmt(nonSpendBudget)} (ไม่นับในยอดรวม)` : '')
+             : null},
           // money moved into investments is excluded on purpose — it is still yours.
           // Say so, or this total silently disagrees with the one on Transactions
           // and there is no way to tell which is wrong.
@@ -6343,7 +6353,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
           <div key={l} className="stat-rule">
             <div className={`text-[10px] font-medium mb-2 uppercase ${dk?'text-slate-400':'text-slate-500'}`} style={{letterSpacing:'0.16em'}}>{l}</div>
             <div className={`text-lg sm:text-xl font-semibold leading-tight break-words tabular-nums ${c}`}>{v}</div>
-            {note&&<div className={`text-[10px] mt-1 ${dk?'text-slate-500':'text-slate-400'}`}>{note}</div>}
+            {note&&<div className={`text-[10px] mt-1 whitespace-pre-line leading-relaxed ${dk?'text-slate-500':'text-slate-400'}`}>{note}</div>}
           </div>))}
       </div>
       {/* What survived of the "ภาพรวมเดือนนี้" card. The card held five things
@@ -6459,6 +6469,10 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
           const irregularEntries = counted.filter(([cat])=>isIrregular(cat));
           const sumSpent  = es => es.reduce((t,[cat])=>t+(spent[cat]||0),0);
           const sumBudget = es => es.reduce((t,[,b])=>t+(Number(b)||0),0);
+          // The denominator is every budgeted baht, investment included. Budget รวม
+          // leaves investment out on purpose, but a share of "the whole budget" that
+          // silently omits a third of it is not a share of anything the reader can see.
+          const grandBudget = sumBudget(budgeted);
 
           const renderCard = ([cat,bgt]) => {
             const s=spent[cat]||0, p=bgt>0?Math.min(s/bgt*100,100):0;
@@ -6517,7 +6531,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 <div className="absolute top-1.5 right-1.5 z-10 flex items-center card-actions">
                   <CardMenu dk={dk} items={[
                     { icon: isIrregular(cat)?'📦':'🔁',
-                      label: isIrregular(cat)?'เปลี่ยนเป็นประจำ':'เปลี่ยนเป็นไม่ประจำ',
+                      label: isIrregular(cat)?'ย้ายไป Fixed Cost':'ย้ายไป Non-fixed expenses',
                       run: ()=>toggleIrregular(cat) },
                     { icon: '✏', label: 'แก้ชื่อหมวด',
                       run: ()=>{ setRenamingCat(cat); setRenameVal(cat); } },
@@ -6688,9 +6702,14 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                   <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>{icon} {label}</span>
                   {note&&<p className={`text-[11px] mt-0.5 ${sub}`}>{note}</p>}
                 </div>
-                <span className={`text-xs font-semibold tabular-nums whitespace-nowrap flex-shrink-0 ${dk?'text-slate-300':'text-slate-600'}`}>
-                  {fmt(sumSpent(entries))} <span className="opacity-50">/ {fmtNW(sumBudget(entries))}</span>
-                </span>
+                <div className="text-right flex-shrink-0">
+                  <div className={`text-sm font-semibold tabular-nums leading-none ${dk?'text-gold-300':'text-gold-700'}`}>
+                    {grandBudget>0?Math.round(sumBudget(entries)/grandBudget*100):0}%
+                  </div>
+                  <div className={`text-[11px] tabular-nums whitespace-nowrap mt-1 ${dk?'text-slate-400':'text-slate-500'}`}>
+                    {fmt(sumSpent(entries))} <span className="opacity-60">/ {fmtNW(sumBudget(entries))}</span>
+                  </div>
+                </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {entries.map(renderCard)}
@@ -6700,9 +6719,9 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
 
           return (
             <>
-              {regularEntries.length>0   && groupSection('🔁','ประจำ (รายวัน)',regularEntries)}
-              {irregularEntries.length>0 && groupSection('📦','ไม่ประจำ (นานๆ ที)',irregularEntries)}
-              {nonSpendEntries.length>0  && groupSection('💠','ไม่นับในยอดรวม',nonSpendEntries,
+              {regularEntries.length>0   && groupSection('🔁','Fixed Cost',regularEntries,'ประจำ · เกิดทุกเดือน')}
+              {irregularEntries.length>0 && groupSection('📦','Non-fixed expenses',irregularEntries,'ไม่ประจำ · นานๆ ที ไม่นับในค่าเฉลี่ยรายวัน')}
+              {nonSpendEntries.length>0  && groupSection('💠','Invest',nonSpendEntries,
                 'เงินลงทุนย้ายไปอยู่ในสินทรัพย์ ไม่ได้ใช้หายไป จึงไม่รวมใน Budget รวม')}
 
               {/* Categories with no budget, folded into one line. Full cards for
@@ -6791,14 +6810,14 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 <div className={`inline-flex w-full p-1 rounded-full ${dk?'bg-white/5':'bg-slate-100'}`}>
                   <button onClick={()=>setNewIrregular(false)}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-sm font-medium transition-all ${!newIrregular?'bg-orange-400 text-orange-950 shadow-sm':(dk?'text-slate-400 hover:text-slate-200':'text-slate-500 hover:text-slate-700')}`}>
-                    🔁 ประจำ
+                    🔁 Fixed Cost
                   </button>
                   <button onClick={()=>setNewIrregular(true)}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-sm font-medium transition-all ${newIrregular?'bg-orange-400 text-orange-950 shadow-sm':(dk?'text-slate-400 hover:text-slate-200':'text-slate-500 hover:text-slate-700')}`}>
-                    📦 ไม่ประจำ
+                    📦 Non-fixed expenses
                   </button>
                 </div>
-                <p className={`text-[11px] mt-1.5 ${sub}`}>ไม่ประจำ = นานๆ ที เช่น ค่าซ่อมรถ (จะไม่นับในค่าเฉลี่ยรายวัน)</p>
+                <p className={`text-[11px] mt-1.5 ${sub}`}>Non-fixed expenses = นานๆ ที เช่น ค่าซ่อมรถ (จะไม่นับในค่าเฉลี่ยรายวัน)</p>
               </div>
             </div>
             <div className="flex gap-2 mt-5">
