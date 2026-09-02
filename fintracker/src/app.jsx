@@ -66,6 +66,23 @@ const fmtNW = n => (_privacy||_hideAmt) ? '฿ •••••' : '฿' + Math.a
 // are baht and the sign would otherwise appear a couple of dozen times on one
 // screen. Masking follows fmt exactly — a bare number must still hide.
 const fmtBare = n => (_privacy||_hideAmt) ? '•••••' : Math.abs(n).toLocaleString('th-TH',{minimumFractionDigits:0,maximumFractionDigits:0});
+// Rounds an axis maximum up to a step worth printing, so the top label reads
+// 15K rather than 14,283.
+const niceCeil = v => {
+  if (!(v > 0)) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(v)));
+  const n = v / mag;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
+};
+// Axis ticks and the figure riding the plotted point, where the column is
+// about forty pixels and "138,000.00" was never going to fit. Masking follows
+// fmt — a shortened number must still hide.
+const fmtAxis = n => {
+  if (_privacy || _hideAmt) return '•';
+  const v = Math.abs(n);
+  if (v >= 1000) return (v/1000).toFixed(v >= 10000 ? 0 : 1).replace(/.0$/, '') + 'K';
+  return String(Math.round(v));
+};
 const fmtSigned = n => (n<0?'-':'') + fmt(n);
 // Stamped in by the build. The typeof guard keeps the source runnable outside
 // the bundler; a "+" on the hash means that build had uncommitted changes.
@@ -1292,71 +1309,90 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[], c
 // arguing with itself about what colour it is; catClr() also honours a
 // user-renamed category, which a literal map here never could.
 
-// Daily spend as a running total against the pace that would land exactly on
-// budget, rather than as one bar per day.
+// Daily spend, two ways, because the two questions want different charts and
+// picking one of them threw the other away.
 //
-// The bars were the honest chart for the data — each day is its own event and a
-// line between them invents values that were never spent — but they answered a
-// question nobody was asking. Nobody opens this to compare the 8th with the
-// 14th; they open it to find out whether the month is going too fast. As bars
-// that took counting, and on the 2nd of the month it was a 112px box holding two
-// stubs at the 2px floor, which is what a chart looks like when it has nothing
-// to say yet.
+// รายวัน is the plain function graph: x is the day, y is what was spent on it,
+// one plotted point per day joined to the next, read against the daily
+// allowance. That is where the peaks and troughs live.
 //
-// Cumulative has something to say from day one, because the pace line is drawn
-// whether or not anything has been spent, and the gap between the two lines is
-// the whole answer without reading a number.
+// สะสม is the running total against the pace that lands exactly on budget. It
+// has something to say from day one — the pace line is drawn whether or not
+// anything has been spent, and the gap between the lines is the whole answer
+// without reading a number. What it cannot show is which day was heavy: the
+// curve only ever rises, so a ฿12,000 Saturday is a steeper stretch and nothing
+// more. Which is why both are here rather than one of them.
 const DailySpendTrend = ({ days, budget, dk }) => {
   const [hov, setHov] = useState(null);
+  const [mode, setMode] = useState('cum');
+  const isCum = mode==='cum';
   const [yr, mo] = days[0].date.split('-').map(Number);
   const monthLen = new Date(yr, mo, 0).getDate();
 
-  const cum = [];
+  const pts = [];
   let run = 0;
-  for (const d of days) { run += d.amt; cum.push({ day:Number(d.date.slice(8,10)), total:run, amt:d.amt }); }
-  const last = cum[cum.length-1];
+  for (const d of days) { run += d.amt; pts.push({ day:Number(d.date.slice(8,10)), total:run, amt:d.amt }); }
+  const last = pts[pts.length-1];
+  const peak = pts.reduce((a,b)=>b.amt>a.amt?b:a, pts[0]);
 
-  // Headroom above whichever line ends higher, so neither is drawn along the
-  // very top edge of the box.
-  const yMax = Math.max(budget, run, 1) * 1.06;
+  const val   = p   => isCum ? p.total : p.amt;
+  // Cumulative compares against where an even spend would have reached by that
+  // day; daily compares against the allowance for one day. Same line, same job.
+  const refAt = day => isCum ? budget*day/monthLen : budget/monthLen;
+
+  // The scale follows what has actually happened, not the whole month's budget.
+  // Reaching for ฿138,000 on the 2nd left the real figures crushed along the
+  // bottom of a box that was mostly empty. The reference is included only as far
+  // as it has got by today, which is the part of it being compared against
+  // anything; the rest of the dashed line runs off the top and is clipped, which
+  // is the correct thing for it to do when you are that far under pace.
+  const seriesMax = pts.reduce((m,p)=>Math.max(m,val(p)),0);
+  const refSoFar  = isCum ? refAt(last.day) : refAt(1);
+  const yMax = niceCeil(Math.max(seriesMax, refSoFar, 1) * 1.02);
   const X = day => (day-1) / Math.max(monthLen-1,1) * 300;
   const Y = v   => 100 - v / yMax * 100;
-  const pt = p => `${X(p.day).toFixed(2)},${Y(p.total).toFixed(2)}`;
 
-  const line  = cum.map(pt).join(' ');
-  const area  = `${X(1).toFixed(2)},100 ${line} ${X(last.day).toFixed(2)},100`;
-  const paceAt = day => budget * day / monthLen;
-  const pace  = `${X(1).toFixed(2)},${Y(paceAt(1)).toFixed(2)} ${X(monthLen).toFixed(2)},${Y(paceAt(monthLen)).toFixed(2)}`;
+  const line = pts.map(p=>`${X(p.day).toFixed(2)},${Y(val(p)).toFixed(2)}`).join(' ');
+  const area = `${X(1).toFixed(2)},100 ${line} ${X(last.day).toFixed(2)},100`;
+  const ref  = `${X(1).toFixed(2)},${Y(refAt(1)).toFixed(2)} ${X(monthLen).toFixed(2)},${Y(refAt(monthLen)).toFixed(2)}`;
 
-  const mark = hov!=null ? cum[hov] : last;
-  // The dot's position as percentages, so the label can hang off the same point.
-  // It flips below when the line has climbed near the top of the box, and stops
-  // centring near either edge, where half of it would otherwise sit outside the
-  // card.
-  const mx = X(mark.day)/3, my = Y(mark.total);
+  // Cumulative rests on where the month stands; daily rests on the day worth
+  // naming, since the last point of a daily series is often just today's zero.
+  const mark = hov!=null ? pts[hov] : (isCum ? last : peak);
+  const gap  = budget>0 ? last.total - budget*last.day/monthLen : 0;
+  const ahead = gap > 0;
+
+  // The label takes the side of the point the reference line is not on, so the
+  // figure and the dashed line never land on the same few pixels. Within a step
+  // of either edge it flips back regardless — clipped is worse than close.
+  const mx = X(mark.day)/3, my = Y(val(mark));
   const tx = mx<9 ? '0%' : mx>91 ? '-100%' : '-50%';
-  // The label takes the side of the dot the pace line is not on, so the figure
-  // and the dashed line never land on the same few pixels. Under pace the dot
-  // sits below the line and the label hangs beneath it; over pace it goes above.
-  // Within a step of either edge it flips back regardless — being clipped by the
-  // box is worse than being close to the line.
-  const paceY = budget>0 ? Y(paceAt(mark.day)) : 100;
-  let ty = my > paceY ? '65%' : '-165%';
+  const refY = budget>0 ? Y(refAt(mark.day)) : 100;
+  let ty = my > refY ? '65%' : '-165%';
   if (ty === '65%'   && my > 84) ty = '-165%';
   if (ty === '-165%' && my < 18) ty = '65%';
-  const gap  = budget>0 ? mark.total - paceAt(mark.day) : 0;
-  const ahead = gap > 0;                                   // ahead of pace = spending too fast
-  const tick = d => d===1 || d===10 || d===20 || d===monthLen;
+
+  // Which days survive on a narrow screen, where all thirty-one will not fit.
+  const tick = d => d===1 || d===monthLen || d%5===0;
+  const tabBase = 'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors';
+  const tab = on => on
+    ? `${tabBase} ${dk?'bg-gold-500/20 text-gold-200':'bg-gold-100 text-gold-700'}`
+    : `${tabBase} ${dk?'text-slate-500 hover:text-slate-300':'text-slate-400 hover:text-slate-600'}`;
+  const grid = dk?'rgba(255,255,255,0.06)':'rgba(15,23,42,0.06)';
 
   return (
     <div>
-      <div className="flex items-baseline justify-between gap-2 mb-2 min-h-[20px]">
-        <span className={`text-[11px] ${dk?'text-slate-400':'text-slate-500'}`}>
-          {hov!=null ? `วันที่ ${mark.day} · สะสม` : 'ใช้ไปแล้ว'}
-        </span>
-        <span className="flex items-baseline gap-2">
-          <span className={`text-sm font-semibold tabular-nums ${dk?'text-gold-300':'text-gold-700'}`}>{fmt(mark.total)}</span>
-          {budget>0 && Math.abs(gap) >= 1 && (
+      <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+        <div className={`inline-flex p-0.5 rounded-full ${dk?'bg-white/5':'bg-slate-100'}`}>
+          <button onClick={()=>{setMode('cum');setHov(null);}} className={tab(isCum)}>สะสม</button>
+          <button onClick={()=>{setMode('day');setHov(null);}} className={tab(!isCum)}>รายวัน</button>
+        </div>
+        <span className="flex items-baseline gap-2 min-w-0">
+          <span className={`text-[11px] whitespace-nowrap ${dk?'text-slate-400':'text-slate-500'}`}>
+            {hov!=null ? `วันที่ ${mark.day}` : isCum ? 'ใช้ไปแล้ว' : `ใช้มากสุด · วันที่ ${mark.day}`}
+          </span>
+          <span className={`text-sm font-semibold tabular-nums ${dk?'text-gold-300':'text-gold-700'}`}>{fmt(val(mark))}</span>
+          {isCum && budget>0 && Math.abs(gap) >= 1 && (
             <span className="text-[11px] font-medium tabular-nums whitespace-nowrap"
               style={{color: ahead ? '#d4574a' : '#7aab8a'}}>
               {ahead ? 'เร็วกว่าจังหวะ' : 'ช้ากว่าจังหวะ'} {fmt(Math.abs(gap))}
@@ -1364,48 +1400,76 @@ const DailySpendTrend = ({ days, budget, dk }) => {
           )}
         </span>
       </div>
-      <div className="relative h-28">
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 100"
-          preserveAspectRatio="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="ftspendfill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stopColor="#d9af2b" stopOpacity="0.28"/>
-              <stop offset="100%" stopColor="#d9af2b" stopOpacity="0.02"/>
-            </linearGradient>
-          </defs>
-          {budget>0 && (
-            <polyline points={pace} fill="none" strokeWidth="1" strokeDasharray="3 3"
-              stroke={dk?'rgba(255,255,255,0.28)':'rgba(15,23,42,0.22)'} vectorEffect="non-scaling-stroke"/>
-          )}
-          <polygon points={area} fill="url(#ftspendfill)"/>
-          <polyline points={line} fill="none" stroke="#d9af2b" strokeWidth="1.75"
-            strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
-        </svg>
-        {/* Drawn as an element rather than an SVG circle: the viewBox is stretched
-            to the card's width, so a circle inside it comes out an ellipse. */}
-        <span className="absolute w-2 h-2 rounded-full pointer-events-none transition-all duration-150"
-          style={{ left:`${mx}%`, top:`${my}%`,
-                   background:'#e6c85c', transform:'translate(-50%,-50%)',
-                   boxShadow:'0 0 0 3px rgba(217,175,43,0.18)' }}/>
-        <span className="absolute text-[10px] font-semibold tabular-nums whitespace-nowrap pointer-events-none transition-all duration-150"
-          style={{ left:`${mx}%`, top:`${my}%`, transform:`translate(${tx},${ty})`,
-                   color: dk?'#e9d892':'#84660f' }}>
-          {fmtNW(mark.total)}
-        </span>
-        <div className="absolute inset-0 flex" onMouseLeave={()=>setHov(null)}>
-          {Array.from({length:monthLen},(_,i)=>(
-            <div key={i} className="flex-1 h-full cursor-default"
-              title={i<cum.length?`วันที่ ${cum[i].day} · สะสม ${fmt(cum[i].total)}`:undefined}
-              onMouseEnter={()=>setHov(i<cum.length?i:null)}/>
-          ))}
+      <div className="relative h-28 pl-10">
+        {/* y axis. The scale is rounded up to a readable step rather than to the
+            series maximum, so the top label is a number worth reading. */}
+        <div className={`absolute left-0 top-0 bottom-0 w-9 flex flex-col justify-between items-end pr-1.5 text-[9px] tabular-nums ${dk?'text-slate-600':'text-slate-400'}`}>
+          <span className="leading-none">{fmtAxis(yMax)}</span>
+          <span className="leading-none">{fmtAxis(yMax/2)}</span>
+          <span className="leading-none">0</span>
+        </div>
+        <div className="relative h-full">
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 100"
+            preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="ftspendfill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stopColor="#d9af2b" stopOpacity="0.26"/>
+                <stop offset="100%" stopColor="#d9af2b" stopOpacity="0.02"/>
+              </linearGradient>
+            </defs>
+            {[0,50,100].map(y=>(
+              <line key={y} x1="0" y1={y} x2="300" y2={y} stroke={grid}
+                strokeWidth="1" vectorEffect="non-scaling-stroke"/>
+            ))}
+            {budget>0 && (
+              <polyline points={ref} fill="none" strokeWidth="1" strokeDasharray="3 3"
+                stroke={dk?'rgba(255,255,255,0.28)':'rgba(15,23,42,0.22)'} vectorEffect="non-scaling-stroke"/>
+            )}
+            {isCum && <polygon points={area} fill="url(#ftspendfill)"/>}
+            <polyline points={line} fill="none" stroke="#d9af2b" strokeWidth="1.75"
+              strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
+          </svg>
+          {/* Plotted as elements rather than SVG circles: the viewBox is stretched
+              to the card's width, so a circle inside it comes out an ellipse. */}
+          {pts.map(p=>{
+            const on = p.day===mark.day;
+            return (
+              <span key={p.day} className="absolute rounded-full pointer-events-none transition-all duration-150"
+                style={{ left:`${X(p.day)/3}%`, top:`${Y(val(p))}%`, transform:'translate(-50%,-50%)',
+                         width:on?'8px':'4px', height:on?'8px':'4px',
+                         background:on?'#e6c85c':'#d9af2b',
+                         opacity:on?1:0.55,
+                         boxShadow:on?'0 0 0 3px rgba(217,175,43,0.18)':'none' }}/>
+            );
+          })}
+          <span className="absolute text-[10px] font-semibold tabular-nums whitespace-nowrap pointer-events-none transition-all duration-150"
+            style={{ left:`${mx}%`, top:`${my}%`, transform:`translate(${tx},${ty})`,
+                     color: dk?'#e9d892':'#84660f' }}>
+            {fmtAxis(val(mark))}
+          </span>
+          <div className="absolute inset-0 flex" onMouseLeave={()=>setHov(null)}>
+            {Array.from({length:monthLen},(_,i)=>(
+              <div key={i} className="flex-1 h-full cursor-default"
+                title={i<pts.length?`วันที่ ${pts[i].day} · ${fmt(val(pts[i]))}`:undefined}
+                onMouseEnter={()=>setHov(i<pts.length?i:null)}/>
+            ))}
+          </div>
         </div>
       </div>
-      <div className="flex mt-1.5">
-        {Array.from({length:monthLen},(_,i)=>(
-          <span key={i} className={`flex-1 text-center text-[9px] tabular-nums ${dk?'text-slate-600':'text-slate-400'}`}>
-            {tick(i+1) ? i+1 : ''}
-          </span>
-        ))}
+      {/* Every day of the month, so a point can be read off the axis rather than
+          counted from the nearest label. Thirty-one two-digit numbers need about
+          twelve pixels each, which the card has on a laptop and does not have on
+          a phone — below sm only every fifth survives, and the cells stay in
+          place either way so the columns never shift under the plot. */}
+      <div className="flex mt-1.5 pl-10">
+        {Array.from({length:monthLen},(_,i)=>{
+          const d = i+1;
+          return (
+            <span key={i} className={`flex-1 text-center text-[9px] leading-none tabular-nums ${dk?'text-slate-600':'text-slate-400'}`}>
+              <span className={tick(d) ? '' : 'hidden sm:inline'}>{d}</span>
+            </span>
+          );
+        })}
       </div>
     </div>
   );
