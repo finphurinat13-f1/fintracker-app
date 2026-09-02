@@ -65,6 +65,22 @@ const fmtNW = n => (_privacy||_hideAmt) ? '฿ •••••' : '฿' + Math.a
 // Amounts in a footnote line, where the column above has already said these
 // are baht and the sign would otherwise appear a couple of dozen times on one
 // screen. Masking follows fmt exactly — a bare number must still hide.
+// The category that Budget รวม used to exclude by name. Groups own that now;
+// this survives only so an install that predates them lands in the right one.
+const LEGACY_NON_SPEND = ['ลงทุน/ปันผล'];
+// What a fresh install starts with, and what the migration maps the old flag
+// onto. Ids are fixed strings rather than generated, so the mapping above and
+// any half-synced older device agree on which group is which.
+// Successive steps of the gold ramp, far enough apart to tell two segments of
+// one bar from each other. Deliberately not the card bar's under/near/over
+// scale: those three mean something, and a jar is not a state.
+const JAR_GOLD = ['#dcc35e','#9d7c13','#e9d892','#b7941a','#cbac33','#6b520c'];
+const GROUP_ICONS = ['🔁','📦','💠','🏠','🚗','🍽','🎓','💊','🎁','✈','🐾','🧾'];
+const DEFAULT_GROUPS = [
+  { id:'fixed',    name:'Fixed Cost',         icon:'🔁', counted:true,  daily:true  },
+  { id:'nonfixed', name:'Non-fixed expenses', icon:'📦', counted:true,  daily:false },
+  { id:'invest',   name:'Invest',             icon:'💠', counted:false, daily:false },
+];
 const fmtBare = n => (_privacy||_hideAmt) ? '•••••' : Math.abs(n).toLocaleString('th-TH',{minimumFractionDigits:0,maximumFractionDigits:0});
 // Rounds an axis maximum up to a step worth printing, so the top label reads
 // 15K rather than 14,283.
@@ -6190,23 +6206,83 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
     }catch{}
   },[budgets,curM]);
 
-  // Which categories are "irregular" (ไม่ประจำ — big one-time-ish spends like a car repair, not
-  // daily-ish like food/water/transport). Stored the same shape+sync pattern as budgets: a plain
-  // {catName: true} map, local-authoritative, synced via uploadNow/download exactly like budgets.
-  // "อื่นๆ" is the bucket for whatever did not fit a category, which is the
-  // definition of an irregular expense — filing it under ประจำ by default makes
-  // the daily figure include money that was never going to arrive daily. Only a
-  // starting position: the per-category toggle still decides, and an install
-  // that has already chosen keeps its own answer.
-  const [irregularCats, setIrregularCats] = useState(()=>{try{return JSON.parse(localStorage.getItem('ft-cat-irregular')||'null')||{'อื่นๆ':true};}catch{return {'อื่นๆ':true};}});
-  const irregularMounted = useRef(false);
+// Budget groups. This was a {catName:true} "irregular" flag with three
+  // hard-coded sections built on top of it. The sections are Fin's own now —
+  // nameable, addable, removable — and each carries the two properties that
+  // flag implied but could never state separately:
+  //
+  //   counted : does this group's budget belong to Budget รวม. Invest does not,
+  //             because that money moved into assets rather than being spent.
+  //   daily   : does its spending belong in the daily average. A car repair was
+  //             never going to arrive daily, which is what ไม่ประจำ meant.
+  //
+  // One key, one shape, carried through the same local-authoritative sync path
+  // that budgets and the old flag already use.
+  const [groupData, setGroupData] = useState(()=>{
+    try {
+      const saved = JSON.parse(localStorage.getItem('ft-budget-groups')||'null');
+      if (saved && Array.isArray(saved.groups) && saved.groups.length) return saved;
+    } catch {}
+    // Migration. The old flag decided ประจำ vs ไม่ประจำ and one hard-coded name
+    // was the excluded group; read both, so nobody's existing arrangement moves.
+    // "อื่นๆ" defaulted to irregular — it is the bucket for whatever did not fit
+    // a category, which is the definition of an irregular expense.
+    let old;
+    try { old = JSON.parse(localStorage.getItem('ft-cat-irregular')||'null') || {'อื่นๆ':true}; }
+    catch { old = {'อื่นๆ':true}; }
+    const of = {};
+    Object.keys(old).forEach(c=>{ if (old[c]) of[c]='nonfixed'; });
+    LEGACY_NON_SPEND.forEach(c=>{ of[c]='invest'; });
+    return { groups: DEFAULT_GROUPS.map(g=>({...g})), of };
+  });
+  const groupsMounted = useRef(false);
   useEffect(()=>{
-    localStorage.setItem('ft-cat-irregular', JSON.stringify(irregularCats));
-    if (!irregularMounted.current) { irregularMounted.current = true; return; }
+    localStorage.setItem('ft-budget-groups', JSON.stringify(groupData));
+    if (!groupsMounted.current) { groupsMounted.current = true; return; }
     window.dispatchEvent(new Event('ft-sync'));
-  },[irregularCats]);
-  const isIrregular = (cat) => !!irregularCats[cat];
-  const setIrregular = (cat) => setIrregularCats(m => { const nm={...m}; if(nm[cat]) delete nm[cat]; else nm[cat]=true; return nm; });
+  },[groupData]);
+
+  const groups  = groupData.groups;
+  // Anything unassigned belongs to the first group rather than to nowhere: a
+  // category with no home would vanish off the page entirely.
+  const grpOf   = cat => groups.find(g=>g.id===groupData.of[cat]) || groups[0];
+  const setGrp  = (cat, gid) => setGroupData(d=>({ ...d, of:{...d.of, [cat]:gid} }));
+  // The two questions the rest of the page actually asks.
+  const isCounted   = cat => !!grpOf(cat).counted;
+  const isIrregular = cat => !grpOf(cat).daily;
+
+  const [groupEdit, setGroupEdit] = useState(null);
+  const saveGroup = () => {
+    const name = (groupEdit.name||'').trim();
+    if (!name) return;
+    setGroupData(d=>{
+      if (groupEdit.id) return { ...d, groups: d.groups.map(g=>g.id===groupEdit.id
+        ? {...g, name, icon:groupEdit.icon, counted:groupEdit.counted, daily:groupEdit.daily} : g) };
+      // A timestamp id rather than the name: renaming a group must not orphan
+      // every category sitting in it.
+      const id = 'g'+Date.now().toString(36);
+      return { ...d, groups: [...d.groups, {id, name, icon:groupEdit.icon,
+                                            counted:groupEdit.counted, daily:groupEdit.daily}] };
+    });
+    setGroupEdit(null);
+  };
+  const deleteGroup = (g) => {
+    // The last group has nowhere to send its categories, and a page with no
+    // sections has nowhere to show them.
+    if (groups.length <= 1) return;
+    const home = groups.find(x=>x.id!==g.id);
+    const moving = Object.keys(budgets).filter(c=>grpOf(c).id===g.id).length;
+    askConfirm('ลบกลุ่มนี้?',
+      `ลบกลุ่ม "${g.name}" ใช่ไหมคะ?` + (moving>0
+        ? `
+หมวด ${moving} หมวดในกลุ่มนี้จะย้ายไป "${home.name}" ยอดที่บันทึกไว้ไม่หายค่ะ`
+        : ''),
+      () => setGroupData(d=>{
+        const of = {...d.of};
+        Object.keys(of).forEach(c=>{ if (of[c]===g.id) of[c]=home.id; });
+        return { groups: d.groups.filter(x=>x.id!==g.id), of };
+      }));
+  };
 
   const [editing, setEditing] = useState(null);
   const [expandedCat, setExpandedCat] = useState(null);
@@ -6215,12 +6291,12 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
   const [newAmt, setNewAmt] = useState('');
   const [newIcon, setNewIcon] = useState('📌');
   const [newClr, setNewClr] = useState(CAT_PALETTE[0]);
-  const [newIrregular, setNewIrregular] = useState(false);
+  const [newGroup, setNewGroup] = useState(null);   // null = whichever group is first
   const [renamingCat, setRenamingCat] = useState(null);
   const [renameVal, setRenameVal] = useState('');
   const [confirmEl, askConfirm] = useConfirm(dk);
 
-  const resetAdd = () => { setNewName(''); setNewAmt(''); setNewIcon('📌'); setNewClr(CAT_PALETTE[0]); setNewIrregular(false); setAddOpen(false); };
+  const resetAdd = () => { setNewName(''); setNewAmt(''); setNewIcon('📌'); setNewClr(CAT_PALETTE[0]); setNewGroup(null); setAddOpen(false); };
 
   const addCat = () => {
     const n = newName.trim();
@@ -6228,7 +6304,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
     if (!n || budgets[n] !== undefined) return;
     setCatMeta(n, {icon:newIcon, clr:newClr});
     setBudgets(b => ({...b, [n]: a}));
-    if (newIrregular) setIrregularCats(m => ({...m, [n]: true}));
+    setGroupData(d=>({ ...d, of:{...d.of, [n]: newGroup || groups[0].id} }));
     resetAdd();
   };
 
@@ -6237,18 +6313,17 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
   // so a misclick did not just do the wrong thing, it made the card vanish from
   // where the eye was looking, which reads as having deleted something. The
   // action is trivially reversible; being unable to tell what happened is not.
-  const toggleIrregular = (cat) => {
-    const toIrregular = !isIrregular(cat);
+  const moveCatToGroup = (cat, g) => {
+    if (grpOf(cat).id === g.id) return;
     askConfirm(
-      toIrregular ? 'ย้ายไป Non-fixed expenses?' : 'ย้ายกลับไป Fixed Cost?',
-      toIrregular
-        ? `ย้าย "${cat}" ไปกลุ่ม "Non-fixed expenses" ใช่ไหมคะ?\nยอดที่บันทึกไว้ไม่เปลี่ยน เปลี่ยนแค่กลุ่มที่แสดงผลค่ะ`
-        : `ย้าย "${cat}" กลับไปกลุ่ม "Fixed Cost" ใช่ไหมคะ?\nยอดที่บันทึกไว้ไม่เปลี่ยน เปลี่ยนแค่กลุ่มที่แสดงผลค่ะ`,
+      `ย้ายไป ${g.name}?`,
+      `ย้าย "${cat}" ไปกลุ่ม "${g.name}" ใช่ไหมคะ?
+ยอดที่บันทึกไว้ไม่เปลี่ยน เปลี่ยนแค่กลุ่มที่แสดงผลค่ะ`,
       // Was the default "ลบ" in red, on a dialog whose own words say the
       // amounts do not change and only the display group moves. The button is
       // the last thing read before committing, so it, not the paragraph above
       // it, is what the action gets remembered as.
-      () => setIrregular(cat),
+      () => setGrp(cat, g.id),
       { confirmLabel: 'ย้าย', destructive: false }
     );
   };
@@ -6257,6 +6332,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
     askConfirm('ลบหมวดนี้?', `ต้องการลบหมวด "${cat}" ออกจาก Budget ใช่ไหมคะ? (รายการที่บันทึกไว้ในหมวดนี้จะยังอยู่)`, () => {
       delCatMeta(cat);
       setBudgets(b => { const nb = {...b}; delete nb[cat]; return nb; });
+      setGroupData(d => { const of = {...d.of}; delete of[cat]; return {...d, of}; });
       if (expandedCat === cat) setExpandedCat(null);
     });
   };
@@ -6287,7 +6363,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
     setBudgets(b => { const nb = {}; Object.entries(b).forEach(([k,v]) => { nb[k===oldName?n:k] = v; }); return nb; });
     // held in React state as well, so rename the live copy too or the effect
     // that persists it writes the old key straight back
-    setIrregularCats(m => { const nm = {}; Object.entries(m).forEach(([k,v]) => { nm[k===oldName?n:k] = v; }); return nm; });
+    setGroupData(d => { const of = {}; Object.entries(d.of).forEach(([k,v]) => { of[k===oldName?n:k] = v; }); return {...d, of}; });
     onRenameCategory && onRenameCategory(oldName, n);
     if (expandedCat === oldName) setExpandedCat(n);
     setRenamingCat(null);
@@ -6332,8 +6408,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
   // Investment contributions move money into an asset, they aren't consumption — exclude from "real" spending totals.
   // This governs the OVERALL month totals (Budget รวม/ใช้ไปแล้ว/คงเหลือ), so it stays consistent with the sum of
   // the category cards below (regular + irregular together).
-  const NON_SPEND_CATS = ['ลงทุน/ปันผล'];
-  const isRealSpend = t => !NON_SPEND_CATS.includes(t.category);
+  const isRealSpend = t => isCounted(t.category);
   // Daily-specific views (ใช้จ่ายวันนี้/รายจ่ายรายวัน) additionally exclude "irregular" (ไม่ประจำ) categories —
   // a once-in-a-while car repair shouldn't make the daily spending pattern look like a blown budget. This does NOT
   // touch totBudget/totSpent above, so those still equal the full regular+irregular total shown in the cards.
@@ -6342,7 +6417,10 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
   // One total over two kinds of money — the rent that arrives every month and
   // the repair that may not happen at all. Both parts and the total come out of
   // one pass so the caption cannot end up disagreeing with the figure above it.
-  const bSplit    = splitBudget(viewBudgets, isIrregular, NON_SPEND_CATS);
+  // splitBudget takes the categories to leave out; that used to be one hard-coded
+  // name and is now every category whose group is not counted.
+  const bSplit    = splitBudget(viewBudgets, isIrregular,
+                                Object.keys(viewBudgets||{}).filter(c=>!isCounted(c)));
   const totBudget = bSplit.total;
   const totSpent  = txs.filter(t=>t.type==='expense'&&t.date.startsWith(viewM)&&isRealSpend(t)).reduce((s,t)=>s+t.amount,0);
   // what the line above leaves out — exactly the gap against the Transactions page total
@@ -6552,10 +6630,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
           // gone. It gets a section of its own, so every header is the exact sum
           // of the cards underneath it and the split note above still reconciles:
           // ประจำ + ไม่ประจำ = Budget รวม, with the excluded group standing apart.
-          const nonSpendEntries  = budgeted.filter(([cat])=>NON_SPEND_CATS.includes(cat));
-          const counted          = budgeted.filter(([cat])=>!NON_SPEND_CATS.includes(cat));
-          const regularEntries   = counted.filter(([cat])=>!isIrregular(cat));
-          const irregularEntries = counted.filter(([cat])=>isIrregular(cat));
+          const byGroup = groups.map(g=>({ g, entries: budgeted.filter(([cat])=>grpOf(cat).id===g.id) }));
           const sumSpent  = es => es.reduce((t,[cat])=>t+(spent[cat]||0),0);
           const sumBudget = es => es.reduce((t,[,b])=>t+(Number(b)||0),0);
           // The denominator is every budgeted baht, investment included. Budget รวม
@@ -6619,9 +6694,8 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 {isCurM&&(
                 <div className="absolute top-1.5 right-1.5 z-10 flex items-center card-actions">
                   <CardMenu dk={dk} items={[
-                    { icon: isIrregular(cat)?'📦':'🔁',
-                      label: isIrregular(cat)?'ย้ายไป Fixed Cost':'ย้ายไป Non-fixed expenses',
-                      run: ()=>toggleIrregular(cat) },
+                    ...groups.filter(g=>g.id!==grpOf(cat).id).map(g=>(
+                      { icon: g.icon, label: `ย้ายไป ${g.name}`, run: ()=>moveCatToGroup(cat, g) })),
                     { icon: '✏', label: 'แก้ชื่อหมวด',
                       run: ()=>{ setRenamingCat(cat); setRenameVal(cat); } },
                     { icon: '🗑', label: 'ลบหมวด', danger: true,
@@ -6784,12 +6858,31 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
           // Three near-identical blocks is two too many to keep in step. The
           // header carries spent over the group's own budget, because a lone
           // figure in that corner reads as the budget and was in fact the spend.
-          const groupSection = (icon, label, entries, note) => (
-            <div className={`${card} p-5`}>
+          // Derived rather than stored: a note Fin typed would go stale the
+          // moment he flipped one of the switches, and a group he made himself
+          // would have none at all.
+          const groupNote = g => !g.counted ? 'ไม่รวมใน Budget รวม'
+                               : !g.daily   ? 'ไม่นับในค่าเฉลี่ยรายวัน'
+                               : null;
+          const groupSection = (g, entries) => (
+            <div key={g.id} className={`group ${card} p-5`}>
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="min-w-0">
-                  <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>{icon} {label}</span>
-                  {note&&<p className={`text-[11px] mt-0.5 ${sub}`}>{note}</p>}
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <span className={`text-sm font-semibold truncate ${dk?'text-gold-300':'text-gold-700'}`}>{g.icon} {g.name}</span>
+                    {isCurM&&(
+                      <span className="card-actions flex-shrink-0">
+                        <CardMenu dk={dk} items={[
+                          { icon:'✏', label:'แก้ไขกลุ่ม',
+                            run: ()=>setGroupEdit({ id:g.id, name:g.name, icon:g.icon,
+                                                    counted:!!g.counted, daily:!!g.daily }) },
+                          ...(groups.length>1 ? [{ icon:'🗑', label:'ลบกลุ่ม', danger:true,
+                            run: ()=>deleteGroup(g) }] : []),
+                        ]}/>
+                      </span>
+                    )}
+                  </span>
+                  {groupNote(g)&&<p className={`text-[11px] mt-0.5 ${sub}`}>{groupNote(g)}</p>}
                 </div>
                 <div className="text-right flex-shrink-0">
                   <div className={`text-sm font-semibold tabular-nums leading-none ${dk?'text-gold-300':'text-gold-700'}`}>
@@ -6815,11 +6908,16 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
           // sage segment here would read as "this one is fine". Two steps of the
           // gold ramp carry the two spending jars, and Invest takes a muted slate
           // because it is the one that is not spending at all.
-          const jars = [
-            { label:'Fixed Cost',         total:sumBudget(regularEntries),   clr:'#dcc35e' },
-            { label:'Non-fixed expenses', total:sumBudget(irregularEntries), clr:'#9d7c13' },
-            { label:'Invest',             total:sumBudget(nonSpendEntries),  clr:'#6d8299' },
-          ].filter(j=>j.total>0);
+          let goldStep = 0;
+          const jars = byGroup.map(({g,entries})=>({
+            label: g.name,
+            total: sumBudget(entries),
+            // Groups that are spending walk down the gold ramp in page order;
+            // groups that are not take the slate, which is the whole point of
+            // the colour here — Invest is a different kind of thing, not a
+            // different amount of the same thing.
+            clr: g.counted ? JAR_GOLD[goldStep++ % JAR_GOLD.length] : '#6d8299',
+          })).filter(j=>j.total>0);
           const allocation = grandBudget>0 && jars.length>1 && (
             <div>
               <div className={`flex h-2.5 rounded-full overflow-hidden gap-px ${dk?'bg-white/5':'bg-slate-100'}`}>
@@ -6846,10 +6944,16 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
           return (
             <>
               {allocation}
-              {regularEntries.length>0   && groupSection('🔁','Fixed Cost',regularEntries,'ประจำ · เกิดทุกเดือน')}
-              {irregularEntries.length>0 && groupSection('📦','Non-fixed expenses',irregularEntries,'ไม่ประจำ · นานๆ ที ไม่นับในค่าเฉลี่ยรายวัน')}
-              {nonSpendEntries.length>0  && groupSection('💠','Invest',nonSpendEntries,
-                'เงินลงทุนย้ายไปอยู่ในสินทรัพย์ ไม่ได้ใช้หายไป จึงไม่รวมใน Budget รวม')}
+              {byGroup.map(({g,entries})=> entries.length>0 ? groupSection(g, entries) : null)}
+              {/* Sits under the sections rather than in the page header, which
+                  already carries the month and "+ เพิ่มหมวด". Making a group is
+                  something you do once in a while, not every visit. */}
+              {isCurM&&(
+                <button onClick={()=>setGroupEdit({ id:null, name:'', icon:'🧾', counted:true, daily:false })}
+                  className={`w-full py-2.5 rounded-xl border border-dashed text-xs font-medium transition-colors ${dk?'border-white/12 text-slate-500 hover:text-gold-300 hover:border-gold-400/40':'border-slate-200 text-slate-400 hover:text-gold-600 hover:border-gold-300'}`}>
+                  + เพิ่มกลุ่ม
+                </button>
+              )}
 
               {/* Categories with no budget, folded into one line. Full cards for
                   them said "there is nothing to say here" at the same size as a
@@ -6879,6 +6983,73 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
         })()}
 
       {/* Add Category Modal */}
+      {groupEdit&&(
+        <div style={{position:'fixed',inset:0,zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}}
+          className={`p-4 ${dk?'bg-black/60':'bg-black/30'} backdrop-blur-sm`}
+          onClick={()=>setGroupEdit(null)}>
+          <div className={`w-80 max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl p-6 ${dk?'bg-[#0f1117] border border-white/10':'bg-white'}`}
+            onClick={e=>e.stopPropagation()}>
+            <h3 className={`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-800'}`}>
+              {groupEdit.id ? 'แก้ไขกลุ่ม' : 'เพิ่มกลุ่มใหม่'}
+            </h3>
+            <div className="space-y-3">
+              <div className={`flex items-center gap-2 p-2.5 rounded-xl ${dk?'bg-white/5':'bg-slate-50'}`}>
+                <span className="text-lg leading-none">{groupEdit.icon}</span>
+                <span className={`text-sm font-semibold truncate ${dk?'text-gold-300':'text-gold-700'}`}>
+                  {groupEdit.name.trim()||'ชื่อกลุ่ม'}
+                </span>
+              </div>
+              <div>
+                <label className={`text-xs font-medium mb-1.5 block ${dk?'text-slate-300':'text-slate-600'}`}>ชื่อกลุ่ม</label>
+                <input autoFocus type="text" value={groupEdit.name} maxLength={40}
+                  onChange={e=>setGroupEdit(g=>({...g,name:e.target.value}))}
+                  onKeyDown={e=>{if(e.key==='Enter')saveGroup();if(e.key==='Escape')setGroupEdit(null);}}
+                  className={`w-full px-3 py-2 text-sm rounded-xl border outline-none ${dk?'bg-white/10 border-white/20 text-white':'bg-white border-slate-200 text-slate-700'}`}/>
+              </div>
+              <div>
+                <label className={`text-xs font-medium mb-1.5 block ${dk?'text-slate-300':'text-slate-600'}`}>ไอคอน</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {GROUP_ICONS.map(ic=>(
+                    <button key={ic} onClick={()=>setGroupEdit(g=>({...g,icon:ic}))}
+                      className={`w-9 h-9 rounded-lg text-lg leading-none transition-all ${groupEdit.icon===ic?'bg-orange-400 shadow-sm':(dk?'bg-white/5 hover:bg-white/10':'bg-slate-100 hover:bg-slate-200')}`}>
+                      {ic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* The two things a group actually decides. Both were implied by
+                  the old ประจำ / ไม่ประจำ flag and neither could be set on its
+                  own, which is why Invest had to be a hard-coded name. */}
+              <label className={`flex items-start gap-2.5 p-2.5 rounded-xl cursor-pointer ${dk?'bg-white/5':'bg-slate-50'}`}>
+                <input type="checkbox" checked={groupEdit.counted} className="mt-0.5"
+                  onChange={e=>setGroupEdit(g=>({...g,counted:e.target.checked}))}/>
+                <span className="min-w-0">
+                  <span className={`block text-xs font-medium ${dk?'text-slate-200':'text-slate-700'}`}>นับใน Budget รวม</span>
+                  <span className={`block text-[11px] mt-0.5 ${sub}`}>ปิดไว้สำหรับเงินที่ย้ายไปที่อื่นมากกว่าใช้หมดไป เช่น เงินลงทุน</span>
+                </span>
+              </label>
+              <label className={`flex items-start gap-2.5 p-2.5 rounded-xl cursor-pointer ${dk?'bg-white/5':'bg-slate-50'}`}>
+                <input type="checkbox" checked={groupEdit.daily} className="mt-0.5"
+                  onChange={e=>setGroupEdit(g=>({...g,daily:e.target.checked}))}/>
+                <span className="min-w-0">
+                  <span className={`block text-xs font-medium ${dk?'text-slate-200':'text-slate-700'}`}>นับในค่าเฉลี่ยรายวัน</span>
+                  <span className={`block text-[11px] mt-0.5 ${sub}`}>ปิดไว้สำหรับของที่นานๆ ที เช่น ค่าซ่อมรถ ไม่งั้นยอดต่อวันจะเพี้ยน</span>
+                </span>
+              </label>
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button onClick={()=>setGroupEdit(null)}
+                className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${dk?'bg-white/5 text-slate-300 hover:bg-white/10':'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                ยกเลิก
+              </button>
+              <button onClick={saveGroup} disabled={!groupEdit.name.trim()}
+                className="flex-1 py-2 rounded-xl bg-orange-400 hover:bg-orange-300 disabled:opacity-40 text-orange-950 text-sm font-semibold transition-colors">
+                บันทึก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {addOpen&&(
         <div style={{position:'fixed',inset:0,zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}}
           className={`p-4 ${dk?'bg-black/60':'bg-black/30'} backdrop-blur-sm`}
@@ -6934,17 +7105,19 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
               </div>
               <div>
                 <label className={`text-xs font-medium mb-1.5 block ${dk?'text-slate-300':'text-slate-600'}`}>ประเภท</label>
-                <div className={`inline-flex w-full p-1 rounded-full ${dk?'bg-white/5':'bg-slate-100'}`}>
-                  <button onClick={()=>setNewIrregular(false)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-sm font-medium transition-all ${!newIrregular?'bg-orange-400 text-orange-950 shadow-sm':(dk?'text-slate-400 hover:text-slate-200':'text-slate-500 hover:text-slate-700')}`}>
-                    🔁 Fixed Cost
-                  </button>
-                  <button onClick={()=>setNewIrregular(true)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-sm font-medium transition-all ${newIrregular?'bg-orange-400 text-orange-950 shadow-sm':(dk?'text-slate-400 hover:text-slate-200':'text-slate-500 hover:text-slate-700')}`}>
-                    📦 Non-fixed expenses
-                  </button>
+                {/* Two buttons only worked while there were exactly two groups. Wrapping
+                    chips scale to however many Fin has made. */}
+                <div className="flex flex-wrap gap-1.5">
+                  {groups.map(g=>{
+                    const on = (newGroup||groups[0].id)===g.id;
+                    return (
+                      <button key={g.id} onClick={()=>setNewGroup(g.id)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${on?'bg-orange-400 text-orange-950 shadow-sm':(dk?'bg-white/5 text-slate-400 hover:text-slate-200':'bg-slate-100 text-slate-500 hover:text-slate-700')}`}>
+                        {g.icon} {g.name}
+                      </button>
+                    );
+                  })}
                 </div>
-                <p className={`text-[11px] mt-1.5 ${sub}`}>Non-fixed expenses = นานๆ ที เช่น ค่าซ่อมรถ (จะไม่นับในค่าเฉลี่ยรายวัน)</p>
               </div>
             </div>
             <div className="flex gap-2 mt-5">
@@ -9324,6 +9497,7 @@ const BackupModal = ({open, onClose, onRestore, theme, txs, assets, wallets, deb
       catMeta:         JSON.parse(localStorage.getItem('ft-cat-meta')           || 'null') || {},
       importCatMemory: JSON.parse(localStorage.getItem('ft-import-cat-memory')  || 'null') || {},
       irregularCats: JSON.parse(localStorage.getItem('ft-cat-irregular')  || 'null') || {},
+      budgetGroups:  JSON.parse(localStorage.getItem('ft-budget-groups')   || 'null') || null,
       recurring:  JSON.parse(localStorage.getItem('ft-recurring')     || 'null') || [],
       walletOrder:JSON.parse(localStorage.getItem('ft-wallet-order')  || 'null') || [],
       usdrate:    parseFloat(localStorage.getItem('ft-usdrate')       || '35'),
@@ -10592,6 +10766,12 @@ const App = () => {
       if (d.irregularCats && !pendingSync.current) {
         localStorage.setItem('ft-cat-irregular', JSON.stringify(d.irregularCats));
       }
+      // Groups carry both the list and each category's membership, and follow
+      // budgets exactly: local wins, and a remote copy is not applied while a
+      // local edit is still on its way up.
+      if (d.budgetGroups && Array.isArray(d.budgetGroups.groups) && !pendingSync.current) {
+        localStorage.setItem('ft-budget-groups', JSON.stringify(d.budgetGroups));
+      }
       // per-month budget snapshots — merged, never replaced, so a month this device
       // recorded is not dropped by a cloud copy that never saw it
       const mergeDown = (key, remote) => {
@@ -10657,6 +10837,7 @@ const App = () => {
     };
     const localBudgetsNow = (()=>{try{return JSON.parse(localStorage.getItem('ft-budgets')||'null')||{};}catch{return {};}})();
     const localIrregularNow = (()=>{try{return JSON.parse(localStorage.getItem('ft-cat-irregular')||'null')||{};}catch{return {};}})();
+    const localGroupsNow = (()=>{try{return JSON.parse(localStorage.getItem('ft-budget-groups')||'null')||null;}catch{return null;}})();
     const localHistoryNow = (()=>{try{return JSON.parse(localStorage.getItem('ft-budget-history')||'null')||{};}catch{return {};}})();
     const localCatMetaNow = (()=>{try{return JSON.parse(localStorage.getItem('ft-cat-meta')||'null')||{};}catch{return {};}})();
     const localImportMemNow = (()=>{try{return JSON.parse(localStorage.getItem('ft-import-cat-memory')||'null')||{};}catch{return {};}})();
@@ -10683,6 +10864,10 @@ const App = () => {
           // budgets, so it defers rather than wiping the cloud. See chooseBudgets.
           budgets: keepRemoteBudgets ? r.budgets : localBudgetsNow,
           irregularCats: keepRemoteBudgets ? (r.irregularCats||{}) : localIrregularNow,
+          // Falls back to the local copy rather than to {} when deferring: an
+          // empty object has no groups array, and the next load would read that
+          // as "never migrated" and rebuild the default three over Fin's own.
+          budgetGroups: keepRemoteBudgets ? (r.budgetGroups||localGroupsNow) : localGroupsNow,
         };
         // Firestore's set(...,{merge:true}) recursively DEEP-merges nested MAP fields, so a deleted key
         // would survive server-side. Dot-notation field paths only delete under update(), NOT set() — set() treats
@@ -10690,10 +10875,15 @@ const App = () => {
         // Fix: write everything else via set-merge, then REPLACE these two maps wholesale via update() (which
         // overwrites the field entirely, dropping deleted keys). update() needs the doc to exist — on a brand-new
         // doc the set-merge above creates it first, so guard on snap.exists and fall back to set-merge when fresh.
-        const { budgets: _b, irregularCats: _i, ...mRest } = m;
+        const { budgets: _b, irregularCats: _i, budgetGroups: _g, ...mRest } = m;
         t.set(userRef, {...settings, ...mRest}, {merge:true});
-        if (snap.exists) t.update(userRef, { budgets: m.budgets, irregularCats: m.irregularCats });
-        else t.set(userRef, { budgets: m.budgets, irregularCats: m.irregularCats }, {merge:true});
+        // budgetGroups holds a nested map of category memberships, so it needs
+        // the same wholesale replace — a deep merge would resurrect a category
+        // that was moved out of a group or deleted outright.
+        const wholesale = { budgets: m.budgets, irregularCats: m.irregularCats };
+        if (m.budgetGroups) wholesale.budgetGroups = m.budgetGroups;
+        if (snap.exists) t.update(userRef, wholesale);
+        else t.set(userRef, wholesale, {merge:true});
         return m;
       });
       lastUploadedAt.current = updatedAt;
@@ -10702,6 +10892,7 @@ const App = () => {
       if (merged.budgets && JSON.stringify(merged.budgets)!==JSON.stringify(localBudgetsNow)) {
         localStorage.setItem('ft-budgets', JSON.stringify(merged.budgets));
         localStorage.setItem('ft-cat-irregular', JSON.stringify(merged.irregularCats||{}));
+        if (merged.budgetGroups) localStorage.setItem('ft-budget-groups', JSON.stringify(merged.budgetGroups));
         addToast('☁️ ดึงงบประมาณจากคลาวด์มาใช้ (เครื่องนี้ยังเป็นค่าเริ่มต้น)');
       }
       if (merged.budgetHistory)   localStorage.setItem('ft-budget-history',    JSON.stringify(merged.budgetHistory));
@@ -11342,6 +11533,7 @@ const App = () => {
     if(data.catMeta)         localStorage.setItem('ft-cat-meta',          JSON.stringify(data.catMeta));
     if(data.importCatMemory) localStorage.setItem('ft-import-cat-memory', JSON.stringify(data.importCatMemory));
     if(data.irregularCats) localStorage.setItem('ft-cat-irregular',  JSON.stringify(data.irregularCats));
+    if(data.budgetGroups)  localStorage.setItem('ft-budget-groups',   JSON.stringify(data.budgetGroups));
     if(data.recurring)  localStorage.setItem('ft-recurring',   JSON.stringify(data.recurring));
     if(data.walletOrder)localStorage.setItem('ft-wallet-order',JSON.stringify(data.walletOrder));
     if(data.usdrate)    localStorage.setItem('ft-usdrate',     String(data.usdrate));
