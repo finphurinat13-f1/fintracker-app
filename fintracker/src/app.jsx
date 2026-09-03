@@ -8486,7 +8486,7 @@ const PageHeader = ({ lead, accent, sub, theme, right=null }) => {
   // the padding, the title, and the gaps between the three lines. It still
   // opens the page; it no longer takes a fifth of the fold to do it.
   return (
-    <div className="relative overflow-hidden rounded-2xl px-5 py-3.5 -mx-1 mb-4">
+    <div className="relative overflow-hidden rounded-2xl px-5 py-2.5 -mx-1 mb-3">
       {/* The depth the net worth hero has, given to every page. Not the same
           device though: that line is real data — net worth month by month — and
           no other page has a series behind it. Repeating the shape with nothing
@@ -8528,14 +8528,21 @@ const PageHeader = ({ lead, accent, sub, theme, right=null }) => {
             you press. A heading is not pressable, and spending the action colour
             on it made every page open by pointing at something inert. Gold is
             the material the page is made of, which is what a heading is. */}
-        <div className="min-w-0">
-          <div className={`text-[10px] font-semibold uppercase mb-1 ${dk?'text-slate-500':'text-slate-400'}`}
-            style={{letterSpacing:'0.18em'}}>{lead}</div>
-          <h1 className={`text-xl sm:text-2xl font-bold ${dk?'text-slate-100':'text-slate-800'}`}
-            style={{textWrap:'balance', letterSpacing:'-0.015em'}}>
+        {/* One line. Three stacked — eyebrow, title, gloss — is the shape a
+            landing page uses, where the header is the first thing anyone has
+            ever seen. This header is seen several times a day by somebody who
+            knows what the page is, and ninety pixels of introduction ahead of
+            the figures is ninety pixels of the fold spent saying so.
+            The eyebrow survives as a prefix rather than a line of its own, and
+            the gloss sits on the same baseline. It wraps on a phone and stays
+            one line everywhere the page has room. */}
+        <div className="min-w-0 flex items-baseline gap-x-3 gap-y-0.5 flex-wrap">
+          <h1 className={`text-lg font-bold ${dk?'text-slate-100':'text-slate-800'}`}
+            style={{letterSpacing:'-0.015em'}}>
+            <span className="uppercase opacity-45 mr-2" style={{fontSize:'0.6em', letterSpacing:'0.16em'}}>{lead}</span>
             <span className={dk?'text-gold-300':'text-gold-700'}>{accent}</span>
           </h1>
-          {sub && <p className={`text-xs mt-1 ${dk?'text-slate-400':'text-slate-500'}`}>{sub}</p>}
+          {sub && <span className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{sub}</span>}
         </div>
         {right && <div className="flex items-center gap-2 flex-wrap">{right}</div>}
       </div>
