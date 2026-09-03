@@ -238,18 +238,21 @@ const CAT_ICON_KEYS = Object.keys(CAT_SVG);
 // spending category.
 const TYPE_SVG = {
   bank:    <><path d="M4.2 10.4h15.6v8.2H4.2z" opacity=".3"/><path d="M11.5 2.6a1 1 0 0 1 1 0l9 4.9a1 1 0 0 1-.48 1.88H2.98A1 1 0 0 1 2.5 7.5z"/><rect x="5.6" y="11" width="2.2" height="6.4" rx="1"/><rect x="10.9" y="11" width="2.2" height="6.4" rx="1"/><rect x="16.2" y="11" width="2.2" height="6.4" rx="1"/><rect x="3" y="18.8" width="18" height="2.4" rx="1.2"/></>,
-  // A ฿ on a disc, rather than a drawn banknote. The note was 19.6 × 12 in a
-  // 24-box — half the height, all of the width — so it read as a bar, and its
-  // r=1 corner dots vanished at the 22px this is actually drawn at. One glyph
-  // beats a picture at small sizes, the same reason the app logo is a letter.
+  // A stack of coins. Two earlier attempts failed for opposite reasons: a drawn
+  // banknote was 19.6 x 12 in a 24-box, half the height and all of the width, so
+  // it read as a bar; and a ฿ on a disc read as a currency symbol rather than as
+  // money — Fin could not tell what it was meant to be.
   //
-  // Drawn as paths, not as the ฿ character in a <text> element: a glyph would
-  // depend on the loaded font rendering it identically everywhere, and this has
-  // to look the same on a phone that has never seen Noto.
+  // Coins have a silhouette nothing else in this set shares. bank is a building,
+  // credit is a rounded rectangle with a stripe, and a banknote would have been
+  // a third rectangle competing with the card. Three discs seen slightly from
+  // above cannot be confused with any of them at 24px, and the shape survives
+  // shrinking because it has no interior detail to lose.
   //
-  // The stem runs past both bowls top and bottom — that overhang is the whole
-  // difference between ฿ and a capital B.
-  cash:    <><circle cx="12" cy="12" r="10" opacity=".3"/><rect x="8.1" y="3.4" width="2.6" height="17.2" rx="1"/><path d="M10.7 6.6h4.1a2.75 2.75 0 0 1 0 5.5h-4.1z"/><path d="M10.7 12.1h4.9a2.9 2.9 0 0 1 0 5.8h-4.9z"/></>,
+  // Drawn back to front so each coin overlaps the one beneath it, with opacity
+  // stepping up toward the top — that is what separates three discs from one
+  // muddy blob when they are all the same colour.
+  cash:    <><path d="M3.6 16.1v2.3c0 1.9 3.76 3.4 8.4 3.4s8.4-1.5 8.4-3.4v-2.3z" opacity=".45"/><ellipse cx="12" cy="16.1" rx="8.4" ry="3.4" opacity=".45"/><path d="M3.6 10.4v2.3c0 1.9 3.76 3.4 8.4 3.4s8.4-1.5 8.4-3.4v-2.3z" opacity=".72"/><ellipse cx="12" cy="10.4" rx="8.4" ry="3.4" opacity=".72"/><path d="M3.6 4.7v2.3c0 1.9 3.76 3.4 8.4 3.4s8.4-1.5 8.4-3.4V4.7z"/><ellipse cx="12" cy="4.7" rx="8.4" ry="3.4"/></>,
   stock:   <><path d="M3 20.2V13l4.6-3.4 4.4 3 4.6-5.2L21 4.8v15.4z" opacity=".3"/><path d="M2.9 14.2a1 1 0 0 1 .2-1.4l4.6-3.4a1 1 0 0 1 1.16-.02l3.62 2.47 4.03-4.55a1 1 0 1 1 1.5 1.32l-4.6 5.2a1 1 0 0 1-1.31.16L8.3 11.44l-4 2.96a1 1 0 0 1-1.4-.2z"/><circle cx="17.4" cy="7.6" r="1.9"/></>,
   credit:  <><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.6" opacity=".3"/><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.6" fill="none" stroke="currentColor" strokeWidth="1.7"/><rect x="2.2" y="8.2" width="19.6" height="2.8"/><rect x="5" y="14" width="5.2" height="2" rx="1"/></>,
   crypto:  <><path d="M12 2.4 20 5.6v6.1c0 4.4-3.1 8.4-8 9.9-4.9-1.5-8-5.5-8-9.9V5.6z" opacity=".3"/><path d="M12 2.4 20 5.6v6.1c0 4.4-3.1 8.4-8 9.9-4.9-1.5-8-5.5-8-9.9V5.6z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M10 8.4h3.1a2.1 2.1 0 0 1 0 4.2H10zm0 4.2h3.4a2.1 2.1 0 0 1 0 4.2H10zm1.1-6.5v2m0 9v2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></>,
@@ -8558,7 +8561,7 @@ const WalletCardFace = ({ w, meta, balanceText, usdText, hidden, accent }) => (
             body colour and came out as a shape you could tell was there but not
             what it was. TYPE_META's colours were already picked to clear 3.0
             against this exact surface; the icon just was not being given one. */}
-        <div className="w-6 h-6 rounded-md flex items-center justify-center text-sm flex-shrink-0 overflow-hidden"
+        <div className="w-7 h-7 rounded-md flex items-center justify-center text-base flex-shrink-0 overflow-hidden"
           style={{color: meta.color || accent}}>
           {w.type==='bank' ? detectBankIcon(w.name,24) : w.type==='crypto' ? detectCryptoWalletIcon(w.name,24) : (meta.icon || w.icon)}
         </div>
@@ -8755,7 +8758,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
     // ramp — dark by design, which works for a bar on a light track and not at
     // all for an icon on a dark chip, where it came out as a shape you could
     // tell was there but not what it was.
-    cash:    { label:'เงินสด',        color:'#e9d892', icon:<TypeIc n="cash" s={20}/> },
+    cash:    { label:'เงินสด',        color:'#e9d892', icon:<TypeIc n="cash" s={24}/> },
     // #584b31 measured 2.19 against the chip it is drawn on — below the 3.0 an
     // icon needs to be identifiable rather than merely present. It was the only
     // one under the line; the rest of the set clears it.
@@ -8793,10 +8796,22 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
     const mDiv         = sumTxMonth(wt,'dividend',curM);
     const mTransfer    = wt.filter(t=>t.type==='transfer'&&t.date.startsWith(curM)).reduce((s,t)=>s+t.amount,0);
     const prevBalance  = balance - mInc + mExp + mTransfer - mAdj - mDiv;
+    // What the holdings cost against what they are worth now. Cash assets are
+    // left out of both sides: they have no cost basis to subtract, so including
+    // them in the denominator would quietly shrink the percentage — a portfolio
+    // sitting half in un-invested cash would report half the loss it actually
+    // has. The old cost basis summed linkedAssets while the value summed only
+    // the non-cash ones, which is exactly that mismatch.
+    const costBasis  = nonCashAssets.reduce((s,a)=>s+(a.qty*a.avgCost*(a.currency==='USD'?usdRate:1)),0);
+    const unrealized = assetValue - costBasis;
+    const unrealizedPct = costBasis>0 ? unrealized/costBasis*100 : 0;
+    // The same figure in dollars, for the wallets whose holdings are priced in
+    // them — that is the number the broker's own screen shows.
+    const usdCost = nonCashAssets.filter(a=>a.currency==='USD').reduce((s,a)=>s+a.qty*a.avgCost,0);
+    const usdVal  = nonCashAssets.filter(a=>a.currency==='USD').reduce((s,a)=>s+a.qty*a.currentPrice,0);
     let trendPct, trendLabel;
     if((w.type==='crypto'||w.type==='stock') && linkedAssets.length>0) {
-      const costBasis = linkedAssets.reduce((s,a)=>s+(a.qty*a.avgCost*(a.currency==='USD'?usdRate:1)),0);
-      trendPct = costBasis>0 ? (assetValue-costBasis)/costBasis*100 : 0;
+      trendPct = unrealizedPct;
       trendLabel = 'pnl';
     } else {
       trendPct = prevBalance!==0 ? (balance-prevBalance)/Math.abs(prevBalance)*100 : 0;
@@ -8809,7 +8824,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
     // with nothing but id deciding, a new id meant the top of the list.
     const allTxs = [...wt].sort(byNewest);
     const recent = allTxs.slice(0,3);
-    return { ...w, balance, cashBalance, walletCashOnly, cashAssetValue, assetValue, linkedAssets, mInc, mExp, txCount:wt.length, recent, allTxs, prevBalance, trendPct, trendLabel };
+    return { ...w, balance, cashBalance, walletCashOnly, cashAssetValue, assetValue, linkedAssets, mInc, mExp, txCount:wt.length, recent, allTxs, prevBalance, trendPct, trendLabel, costBasis, unrealized, unrealizedPct, usdCost, usdVal };
   }),[wallets,txs,assets,curM,usdRate]);
 
   const totalBalance  = useMemo(()=>walletData.reduce((s,w)=>s+w.balance,0),[walletData]);
@@ -9034,6 +9049,26 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                         <span>📈</span>
                         <span>สินทรัพย์ {fmtSigned(w.assetValue)}</span>
                         {w.cashBalance!==0&&<span className={w.cashBalance<0?'text-rose-400 font-medium':(dk?'text-slate-500':'text-slate-400')}>· เงิน {fmtSigned(w.cashBalance)}</span>}
+                      </div>
+                    )}
+                    {/* "How is this portfolio doing" was not answerable from this
+                        page at all: the balance is a total, and สินทรัพย์ is what
+                        it is worth, but nothing said what it cost. Opening the
+                        wallet meant opening the broker to find out. */}
+                    {w.costBasis>0&&(
+                      <div className="flex items-baseline gap-1.5 mt-1 text-xs">
+                        <span className={dk?'text-slate-500':'text-slate-400'}>P/L ที่ยังไม่ขาย</span>
+                        <span className={`font-semibold tabular-nums ${w.unrealized>=0?'text-emerald-400':'text-rose-400'}`}>
+                          {hidden ? '฿ •••••' : (w.unrealized>=0?'+':'−')+fmt(Math.abs(w.unrealized))}
+                        </span>
+                        <span className={`tabular-nums ${w.unrealized>=0?'text-emerald-400':'text-rose-400'}`}>
+                          {w.unrealizedPct>=0?'+':'−'}{Math.abs(w.unrealizedPct).toFixed(2)}%
+                        </span>
+                        {w.usdCost>0 && !hidden && (
+                          <span className={`tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>
+                            ({(w.usdVal-w.usdCost)>=0?'+':'−'}${Math.abs(w.usdVal-w.usdCost).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})})
+                          </span>
+                        )}
                       </div>
                     )}
                     {w.cashAssetValue>0&&(
