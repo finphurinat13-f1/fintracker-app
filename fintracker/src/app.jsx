@@ -2045,6 +2045,8 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
 
           No fade-up class: this block is a direct child of the stagger
           container, which supplies the animation. Both would have run two. */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7 items-stretch">
+        <div className="lg:col-span-3">
       {(
         <div className={`relative overflow-hidden rounded-2xl px-5 py-6 ${dk?'':'glass-light shadow-sm border border-gold-100'}`}>
           {dk && <HeroSpark history={nwHistory}/>}
@@ -2084,6 +2086,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
                   {totalCustodial>0&&<span className={dk?'text-amber-400':'text-amber-600'}>🔒 Custodial {mask(fmtNW(totalCustodial))}</span>}
                 </div>
               )}
+        </div>
               <div className={`text-xs mt-1 ${dk?'text-slate-400':'text-slate-500'}`}>{totalDebtRemaining>0?'Net · ':''}คำนวณจาก {assets.length} สินทรัพย์ + {wallets.length} กระเป๋า · USD/THB = {usdRate}</div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -2101,7 +2104,6 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
                 </div>
               ))}
             </div>
-          </div>
           {nwByType.length>0&&(
             <SegmentedProgress
               segments={nwByType.map(({type,val,label})=>({type,val,label}))}
@@ -2111,8 +2113,16 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           )}
         </div>
       )}
+        </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
+        {/* Four figures beside the total rather than under it. Stacked, the
+            hero used the page's full width to print one number and left the
+            right two thirds of that band empty, then took a whole band of its
+            own for four short cards. Side by side they fill one band, and the
+            reading order is the one that was always intended: the total, then
+            what it is made of. */}
+        <div className="lg:col-span-2">
+        <div className="grid grid-cols-2 gap-x-7 gap-y-6 content-start">
         {/* Income vs expense used to be stated five ways on one card: figure
             colour, glyph colour, glyph backing, border tint, outer halo. The
             label already says which is which, and these four are read as a row
@@ -2141,6 +2151,8 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
         <StatCard label="อัตราออม" val={hideAmt?'••%':`${savRate.toFixed(1)}%`}
           sub={savRate>=20?'✓ ดีมาก':'↑ เพิ่มได้อีก'}
           icon={<Ic n="chart" s={14} cls="text-gold-400"/>} valCls={dk?'tg-gold':'text-slate-800'}/>
+      </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
