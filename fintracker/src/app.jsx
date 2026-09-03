@@ -12484,19 +12484,33 @@ const App = () => {
   return (
     <div className="min-h-screen transition-colors duration-300" style={bgStyle} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
 
+      {/* ── DESKTOP: Left rail (lg+) ── */}
+      {/* Seven destinations in a horizontal strip meant each one got a two-word
+          label and an icon the width of a fingernail, and the strip took the
+          space the page had for saying where you were. Down the side they get
+          their names at a readable size, the current page is a filled row
+          rather than a slightly different grey, and the top bar is left holding
+          only the controls that act on what is on screen. */}
+      <aside className={`hidden lg:flex flex-col fixed inset-y-0 left-0 w-56 z-40 border-r no-print ${dk?'bg-[#0e0e11] border-gold-500/12':'bg-white border-slate-200'}`}>
+        <div className="flex items-center gap-2.5 px-5 h-[61px] flex-shrink-0">
+          <LogoSvg size={30}/>
+          <span className={`font-bold text-base ${dk?'text-white':'text-slate-800'}`}>FinTracker</span>
+        </div>
+        <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
+          {nav.map(({k,l,i})=>(
+            <button key={k} onClick={()=>{setPage(k);localStorage.setItem('ft-page',k);}}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${page===k
+                ? (dk?'bg-gold-500/15 text-gold-200':'bg-gold-50 text-gold-700')
+                : (dk?'text-slate-400 hover:bg-white/5 hover:text-slate-200':'text-slate-500 hover:bg-slate-50 hover:text-slate-700')}`}>
+              <Ic n={i} s={16}/><span>{l}</span>
+            </button>))}
+        </div>
+      </aside>
+
       {/* ── DESKTOP: Top Navbar (lg+) ── */}
-      <nav className={`hidden lg:block sticky top-0 z-40 border-b no-print ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-[#faf9f7]/88 border-gold-100 backdrop-blur-xl'}`}>
+      <nav className={`hidden lg:block sticky top-0 z-30 lg:pl-56 border-b no-print ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-[#faf9f7]/88 border-gold-100 backdrop-blur-xl'}`}>
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-          <div className="flex items-center gap-2.5 flex-shrink-0">
-            <LogoSvg size={34}/>
-            <span className={`font-bold text-sm ${dk?'text-white':'text-slate-800'}`}>FinTracker</span>
-          </div>
-          <div className={`flex flex-1 rounded-xl p-1 gap-0.5 overflow-x-auto ${dk?'bg-white/5':'bg-slate-100'}`}>
-            {nav.map(({k,l,i})=>(
-              <button key={k} onClick={()=>{setPage(k);localStorage.setItem('ft-page',k);}} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap flex-shrink-0 ${page===k?(dk?'nav-active-dk text-white':'nav-active-lt text-slate-700'):(dk?'text-slate-400 hover:text-white':'text-slate-500 hover:text-slate-800')}`}>
-                <Ic n={i} s={12}/><span>{l}</span>
-              </button>))}
-          </div>
+          <div className="flex-1"/>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span title={syncTip} className={`inline-flex items-center px-1 ${syncStatus==='err'?'text-rose-400':syncStatus==='saving'?'text-yellow-400':'text-emerald-400'}`}><Ic n={syncStatus==='err'?'alert':'sync'} s={15} cls={syncStatus==='saving'?'animate-spin':''}/></span>
             <button onClick={togglePrivacy} title={privacy?'ปลดล็อกตัวเลข':'ล็อกตัวเลข'} className={`p-2 rounded-xl transition-colors ${privacy?(dk?'bg-gold-500/20 text-gold-300':'bg-gold-50 text-gold-500'):(dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-700')}`}>
@@ -12675,6 +12689,7 @@ const App = () => {
       )}
 
       {/* Content */}
+      <div className="lg:pl-56">
       <main className="max-w-7xl mx-auto px-4 py-6 lg:pb-6 pb-24">
         {showChecklist && (
           <div className={`mb-4 rounded-2xl border p-5 no-print ${dk?'card-solid':'glass-light shadow-sm'}`}>
@@ -12731,6 +12746,7 @@ const App = () => {
         {page==='admin'        && isAdmin && <AdminPage theme={theme}/>}
         </>)}
       </main>
+      </div>
 
       {/* ── Floating Add Button (Mobile) — context-aware per page ── */}
       {/* gone while locked: a + hovering over a lock screen invites a tap that
