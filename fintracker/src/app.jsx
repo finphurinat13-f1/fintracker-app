@@ -10986,6 +10986,16 @@ const AdminPage = ({ theme }) => {
 // browser is already holding, and only a forced refresh goes and fetches one
 // that has it. Skipping that left the admin looking like a pending user until
 // the token happened to expire an hour later.
+// Asked on every sign-in, not only at sign-up: an address verified later, or a
+// slot that opened up since last time, both turn a no into a yes without the
+// person having to do anything but come back. Nothing on screen waits for it —
+// the registry watcher already redraws the moment the status changes.
+const tryAutoApprove = (u) => {
+  u.getIdToken()
+    .then(t => fetch('/api/autoapprove', { method:'POST', body:'', headers:{ Authorization:'Bearer '+t } }))
+    .catch(()=>{});
+};
+
 const resolveAdmin = async (u) => {
   try {
     const first = await u.getIdTokenResult();
@@ -11307,6 +11317,7 @@ const App = () => {
       setUser(u); setAuthL(false);
       if (!u) { setDataL(false); setUserStatus(null); clearInterval(sessionTimer.current); if(regUnsub.current){ regUnsub.current(); regUnsub.current=null; } }
       else {
+        tryAutoApprove(u);
         const admin = await resolveAdmin(u);
         setIsAdmin(admin);
         if (admin) {

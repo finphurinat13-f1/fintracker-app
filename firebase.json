@@ -22,6 +22,11 @@
         "source": "/api/claimadmin",
         "function": "claimadmin",
         "region": "us-central1"
+      },
+      {
+        "source": "/api/autoapprove",
+        "function": "autoapprove",
+        "region": "us-central1"
       }
     ],
     "headers": [

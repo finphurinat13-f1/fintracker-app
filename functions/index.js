@@ -332,6 +332,61 @@ exports.claimadmin = onRequest(
   }
 );
 
+// How many accounts let themselves in before a queue forms.
+//
+// The gate this replaces made every new account wait for a human, which is the
+// slowest possible first impression — but it was not there for no reason. It
+// kept the Firebase bill bounded, and the trial credit on this project runs out
+// in November. Removing it outright would trade a slow first impression for an
+// unbounded one, so the waiting starts at a number instead of at zero.
+//
+// Raising it is a one-line edit and a functions deploy.
+const AUTO_APPROVE_CAP = 50;
+
+// Approval has to happen here rather than in the browser. The Firestore rules
+// let an account create its own registry entry as 'pending' and nothing more —
+// deliberately, so that nobody can self-approve by talking to the API directly.
+// That rule stays exactly as it is; this is the only thing allowed to move the
+// status, and it will only do it while there is room.
+exports.autoapprove = onRequest(
+  { region: 'us-central1', maxInstances: 5, memory: '256MiB', timeoutSeconds: 20 },
+  async (req, res) => {
+    const header = req.get('Authorization') || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    if (!token) return res.status(401).json({ error: 'unauthorized' });
+    try {
+      const decoded = await admin.auth().verifyIdToken(token);
+      const gate = allow('auto:' + decoded.uid, 10, 60_000);
+      if (!gate.ok) {
+        res.set('Retry-After', String(gate.retryAfter));
+        return res.status(429).json({ error: 'rate limited', retryAfter: gate.retryAfter });
+      }
+      // The rules require a verified address alongside an approved status, so
+      // approving an unverified account would write a document that still
+      // cannot let anybody in — a yes that behaves like a no.
+      if (decoded.email_verified !== true) return res.json({ status: 'unverified' });
+
+      const reg = admin.firestore().collection('registry');
+      const mine = await reg.doc(decoded.uid).get();
+      const d = mine.exists ? mine.data() : null;
+      if (d && d.status === 'approved') return res.json({ status: 'approved' });
+      // A rejection is a decision somebody made. Nothing here may undo it.
+      if (d && d.status === 'rejected') return res.json({ status: 'rejected' });
+
+      const count = (await reg.where('status', '==', 'approved').count().get()).data().count;
+      if (count >= AUTO_APPROVE_CAP) return res.json({ status: 'pending', full: true });
+
+      await reg.doc(decoded.uid).set({
+        email: decoded.email || '',
+        status: 'approved',
+        ...(d && d.createdAt ? {} : { createdAt: new Date() }),
+      }, { merge: true });
+      console.log(`autoapprove: ${decoded.uid} admitted (${count + 1}/${AUTO_APPROVE_CAP})`);
+      return res.json({ status: 'approved' });
+    } catch { return res.status(401).json({ error: 'unauthorized' }); }
+  }
+);
+
 exports.search = onRequest(
   { region: 'us-central1', maxInstances: 5, memory: '256MiB', timeoutSeconds: 20 },
   async (req, res) => {
