@@ -58,7 +58,13 @@ export const THEMES = [
     // grey with a trace of the accent in it, and the glow cut to a third of its
     // strength. Neutral does not mean cold — it means the ground stops having
     // an opinion so the gold can.
-    light: 'radial-gradient(ellipse 60% 55% at 15% 10%,rgba(212,160,23,.03) 0%,transparent 65%),#e7e6e3',
+    // Neutral, and flat. The warm grey with a gold wash across one corner was
+    // the light half of the same idea the dark cards had — accent applied to the
+    // ground itself — and it left every page faintly beige before a single card
+    // was drawn on it. The ground's whole job here is to sit below white cards
+    // far enough that they read as raised, and #f4f5f6 does that at 1.10 while
+    // having no opinion of its own.
+    light: '#f4f5f6',
     // Lifted from #0c0c0b. Against the old pure-black page that was a ratio of
     // 1.07 — the cards were a slightly different black, not a raised surface,
     // and no amount of edge treatment fixes a step that is not there.

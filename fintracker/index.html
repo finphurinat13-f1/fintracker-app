@@ -85,10 +85,14 @@ const db   = firebase.firestore();
 
      The border warms with it: a blue-grey hairline was the same mistake the
      dark theme's ground had, spread across every card edge on the page. */
+  /* White, not warm off-white, and the line around it neutral rather than brown.
+     Same move as the dark cards: the frame stops carrying the accent so the
+     contents can. A page of twelve cards each outlined in the brand colour is a
+     page with no brand colour left over for a figure that means something. */
   .glass-light {
-    background: #faf9f7;
-    border: 1px solid rgba(64,60,54,0.14);
-    box-shadow: none;
+    background: #ffffff;
+    border: 1px solid rgba(15,23,42,0.08);
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
   }
 
   /* The card colour follows the theme. It used to be one fixed blue-black,
@@ -170,7 +174,7 @@ const db   = firebase.firestore();
   .card-solid:hover {
     border-color: rgba(255,255,255,0.13);
   }
-  .glass-light:hover  { border-color: rgba(201,169,75,0.35); }
+  .glass-light:hover  { border-color: rgba(15,23,42,0.16); }
 
   /* Corners opened up for the new look — 18px where cards were 12px. The
      earlier 12px was a reaction to 16px-on-everything, which read as a pile of
