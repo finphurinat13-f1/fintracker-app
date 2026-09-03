@@ -2155,7 +2155,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
                     from two different alphabets — and that seam is the first
                     thing the eye lands on in a figure this large. */}
                 <div className="font-bold tracking-wide tabular-nums metal-gold"
-                  style={{fontSize:'clamp(2.1rem, 5.5vw, 3.4rem)', lineHeight:1.05}}>
+                  style={{fontSize:'clamp(1.85rem, 4.8vw, 2.95rem)', lineHeight:1.05}}>
                   {mask(fmtNW(animNetWorth))}
                 </div>
                 <Ic n={hideAmt?'eyeoff':'eye'} s={14} className={`mt-1 opacity-40 group-hover:opacity-80 transition-opacity ${dk?'text-slate-400':'text-slate-400'}`}/>
