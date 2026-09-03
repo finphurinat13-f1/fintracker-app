@@ -10450,11 +10450,15 @@ const DemoTreemap = ({ dk, theme }) => (
         The whole portfolio, in one picture
       </h2>
       <p className={`mt-4 mx-auto max-w-xl text-sm leading-relaxed ${dk?'text-slate-400':'text-slate-500'}`}>
-        Size is what a holding is worth, colour is whether it is up or down.
-        This one is real and running — filter it, hover it.
+        Ranked by value, coloured by gain or loss. This is the real component
+        running on example data — filter it, hover it.
       </p>
     </div>
     <div className={`mt-10 rounded-2xl border p-5 ${dk?'border-white/10 bg-white/[0.03]':'border-slate-200 bg-white shadow-sm'}`}>
+      <div className="flex items-baseline gap-2.5 flex-wrap mb-4">
+        <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>Portfolio map</h3>
+        <p className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>ranked by value · colour = gain/loss · hover for detail</p>
+      </div>
       <PortfolioTreemap assets={DEMO_ASSETS} txs={[]} usdRate={33} theme={theme} hide={false}/>
       <p className={`mt-4 text-[11px] text-center ${dk?'text-slate-600':'text-slate-400'}`}>
         Example holdings — not anyone’s real portfolio
