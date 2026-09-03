@@ -1688,55 +1688,6 @@ const SegmentedProgress = ({ segments, total, theme }) => {
   );
 };
 
-// ── MINI AREA CARD ─────────────────────────────────────────
-const MiniAreaCard = ({ label, ticker, value, sub, positive, data, labels, color, theme }) => {
-  const ref = useRef(); const ch = useRef();
-  const dk = theme === 'dark';
-  useEffect(() => {
-    if (!ref.current || !data) return;
-    if (ch.current) ch.current.destroy();
-    ch.current = new Chart(ref.current, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          data,
-          borderColor: color,
-          backgroundColor: color + '22',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 0,
-          borderWidth: 1.5,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        scales: { x: { display: false }, y: { display: false, grace: '15%' } },
-        animation: { duration: 500 },
-      }
-    });
-    return () => ch.current?.destroy();
-  }, [data, color]);
-  return (
-    <div className={`rounded-2xl overflow-hidden fade-up ${dk?'card-solid':'glass-light shadow-sm'}`}>
-      <div className="px-4 pt-4 pb-2">
-        <div className="flex items-center gap-1.5">
-          <span className={`text-xs font-medium ${dk?'text-slate-200':'text-slate-700'}`}>{label}</span>
-          {ticker&&<span className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>({ticker})</span>}
-        </div>
-        <div className="flex items-baseline justify-between mt-1.5">
-          <div className="text-lg font-bold tabular-nums" style={{color}}>{value}</div>
-          <div className={`text-xs font-medium ${dk?'text-slate-400':'text-slate-500'}`}>{sub}</div>
-        </div>
-      </div>
-      <div style={{height:'64px',overflow:'hidden'}}>
-        <canvas ref={ref}/>
-      </div>
-    </div>
-  );
-};
 
 const Portal = ({children}) => ReactDOM.createPortal(children, document.body);
 
@@ -2019,7 +1970,6 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
     { text: "Rule No.1: Never lose money. Rule No.2: Never forget Rule No.1.", author: "Warren Buffett" },
   ];
   const dayOfYear = Math.floor((now - new Date(now.getFullYear(),0,1)) / 86400000);
-  const todayQ = QUOTES[dayOfYear % QUOTES.length];
 
   // Four boxes became four columns under one rule. A card is a container you
   // reach for when content needs separating from its neighbours; these four
@@ -2072,51 +2022,12 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           So it keeps a gradient, in the app's own accent instead of against it
           — gold into orange, fading to the card colour before the right edge.
           Distinct because it is warm, not because it is foreign. */}
-      <div className={`rounded-2xl px-5 py-3.5 fade-up ${dk?'card-solid':'glass-light shadow-sm'}`}
-        style={dk
-          ? {background:'linear-gradient(115deg,rgba(230,200,92,0.16) 0%,rgba(217,175,43,0.10) 42%,#141418 88%)',
-             border:'1px solid rgba(217,175,43,0.34)'}
-          : {background:'linear-gradient(115deg,#faf3e6 0%,#f6efe3 45%,#ffffff 90%)',border:'1px solid rgba(212,175,69,0.30)'}}>
-        <div className="flex items-center gap-3">
-
-          {/* Left: Logo + Name */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <LogoSvg size={40}/>
-            <div>
-              <div className={`text-sm font-bold tracking-wide ${dk?'text-white':'text-slate-800'}`}>FinTracker</div>
-              {/* Signing up with an email address sets no displayName, so the
-                  fallback here was every user's name — and it was 'Fin'. The
-                  address is the only name the account actually has; the +alias
-                  suffix comes off because it is routing, not identity. */}
-              <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>{greeting}{whoAmI(user) ? `, ${whoAmI(user)}` : ''} 👋</div>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className={`hidden sm:block w-px h-7 flex-shrink-0 ${dk?'bg-white/10':'bg-slate-200'}`}/>
-
-          {/* Center: Quote */}
-          <div className="hidden sm:flex items-center gap-2 flex-1 min-w-0 px-1">
-            <span className="text-sm leading-none flex-shrink-0 select-none">💡</span>
-            <div className="min-w-0">
-              <p className={`text-xs font-medium truncate ${dk?'text-slate-300':'text-slate-600'}`}>"{todayQ.text}"</p>
-              <p className={`text-[11px] mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>— {todayQ.author}</p>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className={`hidden sm:block w-px h-7 flex-shrink-0 ${dk?'bg-white/10':'bg-slate-200'}`}/>
-
-          {/* Right: Date + Settings */}
-          <div className="flex items-center gap-2.5 flex-shrink-0 ml-auto">
-            <div className="text-right hidden sm:block">
-              <div className={`text-sm font-semibold ${dk?'text-slate-200':'text-slate-700'}`}>{dateStr}</div>
-              <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>Personal Finance Dashboard</div>
-            </div>
-          </div>
-
-        </div>
-      </div>
+      {/* The greeting strip is gone. It carried a logo the rail already shows,
+          a name the account menu already shows, and a quote that has never
+          changed a decision — ninety pixels of introduction on a page opened
+          several times a day by one person who knows what it is. The date it
+          also held moves into the corner of the net worth card, where a figure
+          that changes daily is worth dating. */}
 
 
 {/* ── Net Worth Hero Card ──
@@ -2138,6 +2049,13 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
         <div className={`relative overflow-hidden rounded-2xl px-5 py-6 ${dk?'':'glass-light shadow-sm border border-gold-100'}`}>
           {dk && <HeroSpark history={nwHistory}/>}
           <div className="relative flex flex-wrap items-start justify-between gap-4">
+            {/* The date, in the corner. It came off the greeting strip, and it is
+                the one thing that strip carried which this figure actually wants:
+                a net worth without a date is a number with no idea how old it is. */}
+            <div className="absolute top-0 right-0 text-right hidden sm:block">
+              <div className={`text-xs font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>{dateStr}</div>
+              <div className={`text-[11px] mt-0.5 ${dk?'text-slate-500':'text-slate-400'}`}>{greeting}{whoAmI(user) ? `, ${whoAmI(user)}` : ''}</div>
+            </div>
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <div className={`text-xs font-medium uppercase tracking-widest ${dk?'text-slate-400':'text-slate-500'}`}>Net Worth · มูลค่าทรัพย์สินสุทธิ <button onClick={()=>setNwOpen(true)} title="ดูว่าตัวเลขนี้มาจากไหน" style={{cursor:'pointer',opacity:.7}}>ⓘ</button></div>
@@ -2201,16 +2119,28 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
             — a green figure beside a red one turns a row of related numbers
             into a scoreboard. The glyph keeps the distinction; the figures are
             one colour so the row reads as one thing. */}
-        <StatCard label="ยอดคงเหลือ"  val={mask(fmt(balance))}     sub={balance>=0?null:'⚠ ติดลบ'}  icon={<Ic n="wallet" s={14} cls="text-gold-400"/>}/>
-        <StatCard label="รายรับรวม"   val={mask(fmt(income))}      sub={`${txs.filter(t=>t.type==='income').length} รายการ`}  icon={<Ic n="up" s={14} cls="text-gold-400"/>}/>
-        <StatCard label="รายจ่ายรวม"  val={mask(fmt(expense))}     sub={`${txs.filter(t=>t.type==='expense').length} รายการ`} icon={<Ic n="down" s={14} cls="text-gold-400"/>}/>
-        <StatCard label="อัตราออม"    val={hideAmt?'••%':`${savRate.toFixed(1)}%`} sub={savRate>=20?'✓ ดีมาก':'↑ เพิ่มได้อีก'} icon={<Ic n="chart" s={14} cls="text-gold-400"/>} valCls={dk?'tg-gold':'text-slate-800'}/>
-      </div>
+        {/* Two rows became one. They were the same four figures at two scopes —
+            all-time above, this month below — and a page that spends two full
+            bands showing income and expense twice is describing one thing twice
+            rather than two things once.
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <MiniAreaCard label="รายรับเดือนนี้" ticker="INCOME" value={mask(fmt(statsCards.ci))} sub={`${statsCards.momI>=0?'+':''}${statsCards.momI.toFixed(1)}% vs เดือนก่อน`} positive={statsCards.momI>=0} data={barData.income} labels={barData.labels} color="#c9a94b" theme={theme}/>
-        <MiniAreaCard label="รายจ่ายเดือนนี้" ticker="EXPENSE" value={mask(fmt(statsCards.ce))} sub={`${statsCards.momE>=0?'+':''}${statsCards.momE.toFixed(1)}% vs เดือนก่อน`} positive={statsCards.momE<=0} data={barData.expense} labels={barData.labels} color="#c9726a" theme={theme}/>
-        <MiniAreaCard label="คงเหลือเดือนนี้" ticker="NET" value={mask(fmt(statsCards.cn))} sub={`${statsCards.momN>=0?'+':''}${statsCards.momN.toFixed(1)}% vs เดือนก่อน`} positive={statsCards.cn>=0} data={statsCards.netD} labels={barData.labels} color="#7aab8a" theme={theme}/>
+            This month leads because that is the question the page is opened
+            with; the running total goes underneath in the line that was already
+            there for context. The month sparklines go with the band that held
+            them: three charts of a figure printed directly above them, at a size
+            that showed the shape and not the numbers. */}
+        <StatCard label="ยอดคงเหลือ" val={mask(fmt(balance))}
+          sub={<>{balance<0&&<span className="text-rose-400">⚠ ติดลบ · </span>}เดือนนี้ {mask(fmt(statsCards.cn))}</>}
+          icon={<Ic n="wallet" s={14} cls="text-gold-400"/>}/>
+        <StatCard label="รายรับ" val={mask(fmt(statsCards.ci))}
+          sub={<>ตลอด {mask(fmt(income))} · {txs.filter(t=>t.type==='income').length} รายการ</>}
+          icon={<Ic n="up" s={14} cls="text-gold-400"/>}/>
+        <StatCard label="รายจ่าย" val={mask(fmt(statsCards.ce))}
+          sub={<>ตลอด {mask(fmt(expense))} · {txs.filter(t=>t.type==='expense').length} รายการ</>}
+          icon={<Ic n="down" s={14} cls="text-gold-400"/>}/>
+        <StatCard label="อัตราออม" val={hideAmt?'••%':`${savRate.toFixed(1)}%`}
+          sub={savRate>=20?'✓ ดีมาก':'↑ เพิ่มได้อีก'}
+          icon={<Ic n="chart" s={14} cls="text-gold-400"/>} valCls={dk?'tg-gold':'text-slate-800'}/>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
