@@ -2054,6 +2054,17 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
       {(
         <div className={`relative overflow-hidden rounded-2xl px-5 py-6 ${dk?'':'glass-light shadow-sm border border-gold-100'}`}>
           {dk && <HeroSpark history={nwHistory}/>}
+          {/* The same mark the holdings hero carries, fainter here because this
+              card already has something behind it. The sparkline is real data
+              and keeps the emphasis; the mark sits under it at the right edge,
+              bleeding off the card so it reads as texture rather than as a
+              second thing to look at. In light mode the sparkline does not
+              render at all and this is the only thing back there. */}
+          <div aria-hidden="true" className="pointer-events-none select-none"
+            style={{position:'absolute', right:'-22px', top:'50%', transform:'translateY(-50%)',
+                    opacity:dk?0.06:0.05}}>
+            <LogoSvg size={165}/>
+          </div>
           <div className="relative flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
