@@ -2146,8 +2146,14 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className={card}>
+      {/* Two columns of equal width for two charts that want nothing like the
+          same amount. Twelve months of bars want every pixel; a ring with two
+          categories beside it wanted about a third of what it had, and spent
+          the rest as a rectangle of empty card. Two to one, and the ring drops
+          into its own narrow layout — stacked over a two-column legend — which
+          is what that mode was written for. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className={card+' lg:col-span-2'}>
           {/* The range control every financial chart has, and the reason the
               heading no longer states a fixed number: it would have gone stale
               the moment the window changed. */}
