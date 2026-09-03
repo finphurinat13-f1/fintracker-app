@@ -4650,11 +4650,15 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7 items-stretch">
         {wallets.length>0&&(
           <div className={`${card} card-hero p-5 lg:col-span-3 flex flex-col justify-center`}>
-            <div>
+            <div className="absolute pointer-events-none select-none" aria-hidden="true"
+              style={{right:'-14px', top:'50%', transform:'translateY(-50%)', opacity:dk?0.09:0.05}}>
+              <LogoSvg size={200}/>
+            </div>
+            <div className="relative">
               <div className={`text-xs font-medium uppercase tracking-wide mb-1 ${dk?'text-slate-400':'text-slate-500'}`}>มูลค่าสินทรัพย์รวม</div>
               <div className={`text-3xl font-bold tracking-tight ${dk?'tg-white':'text-slate-800'}`}>{fmtNW(heroPortfolioVal+heroWalletVal+otherAssetsTotal)}</div>
             </div>
-            <div className="flex flex-wrap gap-2 mt-4">
+            <div className="relative flex flex-wrap gap-2 mt-4">
               {[
                 {key:'cash',   icon:'💵', label:'เงินสด', val:heroBuckets.cash},
                 {key:'crypto', icon:'🔐', label:'Crypto', val:heroBuckets.crypto},
@@ -4665,7 +4669,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                 const grand = heroPortfolioVal+heroWalletVal+otherAssetsTotal;
                 const pct = grand>0 ? (c.val/grand*100) : 0;
                 return (
-                  <div key={c.key} className={`flex items-center gap-2 px-3 py-2 rounded-xl ${dk?'bg-white/5 border border-white/10':'bg-slate-50 border border-slate-200'}`}>
+                  <div key={c.key} className={`flex items-center gap-2 flex-1 basis-36 min-w-0 px-3 py-2 rounded-xl ${dk?'bg-white/5 border border-white/10':'bg-slate-50 border border-slate-200'}`}>
                     <span className="text-base leading-none">{c.icon}</span>
                     <div className="min-w-0">
                       <div className={`text-xs font-bold ${dk?'text-slate-100':'text-slate-700'}`}>{fmt(c.val)}</div>
