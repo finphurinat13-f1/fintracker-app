@@ -7467,6 +7467,54 @@ const DebtModal = ({ open, onClose, onSave, editData, theme }) => {
 };
 
 // ── DEBT PAGE ───────────────────────────────────────────────
+// ── DEBT PAYOFF ───────────────────────────────────────────
+// What is owed, month by month, until it is not. The page had the balance today,
+// the instalments left and the payoff month as three separate figures and never
+// the shape they describe — which is the one thing about a loan worth looking at,
+// because it is the only part that says how far along you are without arithmetic.
+//
+// Past solid and filled, future dashed, the same language the savings goal uses.
+// The seam between them is today; a loan does not need a marker for now when the
+// line changes texture there.
+const DebtPayoffChart = ({ series, theme }) => {
+  const ref = useRef(); const ch = useRef();
+  useEffect(()=>{
+    if(!ref.current || !series || !series.labels.length) return;
+    if(ch.current) ch.current.destroy();
+    const dk = theme==='dark';
+    ch.current = new Chart(ref.current, { type:'line',
+      data:{ labels:series.labels, datasets:[
+        { label:'จ่ายมาแล้ว', data:series.past, borderColor:'#c9726a', borderWidth:2,
+          backgroundColor:dk?'rgba(201,114,106,0.14)':'rgba(201,114,106,0.10)',
+          fill:true, tension:0.25, pointRadius:0, pointHoverRadius:4 },
+        { label:'ตามแผน', data:series.future, borderColor:dk?'#8b8985':'#a5a29c', borderWidth:2,
+          borderDash:[5,4], fill:false, tension:0.25, pointRadius:0, pointHoverRadius:4 },
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{ labels:{ color:dk?'#8b8985':'#6f6d6a', usePointStyle:true, pointStyle:'circle', padding:16, font:{size:11,family:"'Noto Sans Thai',sans-serif"} } },
+          tooltip:{
+            backgroundColor:dk?'rgba(13,27,46,0.95)':'rgba(255,255,255,0.97)',
+            titleColor:dk?'#d5d3d0':'#302f2d', bodyColor:dk?'#8b8985':'#6f6d6a',
+            borderColor:dk?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)',
+            borderWidth:1, padding:10, cornerRadius:10,
+            callbacks:{ label:ctx=>ctx.parsed.y==null?null:` ค้างอยู่ ${fmt(ctx.parsed.y)}` }
+          }
+        },
+        scales:{
+          x:{ grid:{display:false}, border:{display:false},
+              ticks:{color:dk?'#8b8985':'#6f6d6a', font:{size:11,family:"'Noto Sans Thai',sans-serif"}, maxTicksLimit:10, maxRotation:0} },
+          y:{ beginAtZero:true, grid:{color:dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)'}, border:{display:false},
+              ticks:{color:dk?'#8b8985':'#6f6d6a', font:{size:11,family:"'Noto Sans Thai',sans-serif"},
+                     callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1000?Math.round(v/1000)+'k':v} },
+        }
+      }
+    });
+    return ()=>ch.current?.destroy();
+  },[series,theme]);
+  return <canvas ref={ref}/>;
+};
+
 const DebtPage = ({ theme, debts, setDebts }) => {
   const dk = theme==='dark';
   const [dModal,setDModal] = useState({open:false,editData:null});
@@ -7487,7 +7535,8 @@ const DebtPage = ({ theme, debts, setDebts }) => {
     const totalInterest = Math.max(totalPayable - d.totalLoan, 0);
     const start = new Date(d.startDate);
     const now = new Date();
-    const monthsPaid = Math.max(0, (now.getFullYear()-start.getFullYear())*12 + (now.getMonth()-start.getMonth()));
+    const elapsed = Math.max(0, (now.getFullYear()-start.getFullYear())*12 + (now.getMonth()-start.getMonth()));
+    const monthsPaid = Math.min(elapsed, d.totalMonths);
     const amountPaid = Math.min(monthsPaid*d.monthlyPayment, totalPayable);
     const remaining = Math.max(totalPayable - amountPaid, 0);
     const monthsRemaining = Math.max(d.totalMonths - monthsPaid, 0);
@@ -7504,8 +7553,34 @@ const DebtPage = ({ theme, debts, setDebts }) => {
     const c=calcDebt(d);
     const vp=parseFloat(d.vehiclePrice)||0;
     const down=vp>d.totalLoan?vp-d.totalLoan:0;
-    acc.remaining+=c.remaining; acc.paid+=c.amountPaid+down; acc.interest+=c.interestPaid; return acc;
-  },{remaining:0,paid:0,interest:0}),[debts]);
+    acc.remaining+=c.remaining; acc.paid+=c.amountPaid+down; acc.interest+=c.interestPaid;
+    acc.monthly += c.remaining>0 ? (Number(d.monthlyPayment)||0) : 0; return acc;
+  },{remaining:0,paid:0,interest:0,monthly:0}),[debts]);
+
+  // Everything owed, month by month, from the first start date to the last
+  // payoff. A loan contributes nothing before it starts and nothing after it
+  // ends, so the line steps up when one is taken on and reaches zero on its own.
+  const payoffSeries = useMemo(()=>{
+    const rows = debts.map(d=>{
+      const s = new Date(d.startDate);
+      const sIdx = s.getFullYear()*12 + s.getMonth();
+      const n = Number(d.totalMonths)||0, pay = Number(d.monthlyPayment)||0;
+      return { sIdx, end:sIdx+n, pay, total:pay*n };
+    }).filter(r=>isFinite(r.sIdx) && r.total>0);
+    if(!rows.length) return null;
+    const lo = Math.min(...rows.map(r=>r.sIdx)), hi = Math.max(...rows.map(r=>r.end));
+    const now = new Date(), cur = now.getFullYear()*12 + now.getMonth();
+    const labels=[], past=[], future=[];
+    for(let m=lo; m<=hi; m++){
+      const owed = rows.reduce((s,r)=> m<r.sIdx ? s : s + Math.max(0, r.total - r.pay*(m-r.sIdx)), 0);
+      labels.push(MONTHS_TH[((m%12)+12)%12] + ' ' + Math.floor(m/12));
+      // The month they meet belongs to both, or the solid line and the dashed
+      // one stop a gap apart at today.
+      past.push(m<=cur ? owed : null);
+      future.push(m>=cur ? owed : null);
+    }
+    return { labels, past, future };
+  },[debts]);
 
   const saveDebt = (data) => {
     if(dModal.editData) setDebts(ds=>ds.map(d=>d.id===dModal.editData.id?{...data,id:d.id}:d));
@@ -7516,11 +7591,22 @@ const DebtPage = ({ theme, debts, setDebts }) => {
 
   return (
     <div className="space-y-7 fade-up">
+      {/* The button had a full-width card to itself, carrying a heading that
+          repeated the page title and a count of the rows listed directly under
+          it. Both were already on screen; the button was the only part of that
+          card that did anything. */}
       <PageHeader theme={theme} lead="Outstanding" accent="Debt"
-        sub="ยอดค้าง ดอกเบี้ย และแผนการผ่อน"/>
+        sub={debts.length>0 ? `${debts.length} รายการ · ยอดค้าง ดอกเบี้ย และแผนการผ่อน` : 'ยอดค้าง ดอกเบี้ย และแผนการผ่อน'}
+        right={
+              <button onClick={()=>setDModal({open:true,editData:null})}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${dk?'border-white/15 text-slate-300 hover:bg-white/8':'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                <Ic n="plus" s={14}/> เพิ่มหนี้
+              </button>
+        }/>
       {debts.length>0&&(
-        <div className="grid grid-cols-3 gap-x-8 gap-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
           {[{l:'หนี้คงเหลือ',v:fmt(totals.remaining),c:dk?'tg-red':'text-rose-500'},
+            {l:'ผ่อนรวม/เดือน',v:fmt(totals.monthly),c:dk?'text-slate-100':'text-slate-800'},
             {l:'จ่ายไปแล้ว',v:fmt(totals.paid),c:dk?'tg-emerald':'text-emerald-600'},
             {l:'ดอกเบี้ยรวม',v:fmt(totals.interest),c:dk?'tg-gold':'text-amber-500'}].map(({l,v,c})=>(
             <div key={l} className="stat-rule">
@@ -7530,18 +7616,21 @@ const DebtPage = ({ theme, debts, setDebts }) => {
         </div>
       )}
 
-      <div className={`${card} p-5`}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>รายการหนี้สิน</h2>
-            <p className={`text-xs mt-0.5 ${sub}`}>{debts.length} รายการ</p>
+      {/* The shape of the thing, which the page never drew. It had the balance
+          today, the instalments left and the payoff month as three separate
+          figures, and a loan is the one kind of number where the line between
+          those points is the whole story. */}
+      {payoffSeries && (
+        <div className={`${card} p-5`}>
+          <div className="flex items-baseline gap-2.5 flex-wrap mb-3">
+            <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>หนี้คงเหลือตามเวลา</h3>
+            <p className={`text-xs ${sub}`}>เส้นทึบ = ที่ผ่านมา · เส้นประ = ที่เหลือตามแผน · รอยต่อคือเดือนนี้</p>
           </div>
-          <button onClick={()=>setDModal({open:true,editData:null})}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${dk?'border-white/15 text-slate-300 hover:bg-white/8':'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
-            <Ic n="plus" s={14}/> เพิ่มหนี้
-          </button>
+          <div style={{height:'240px'}}>
+            <DebtPayoffChart series={payoffSeries} theme={theme}/>
+          </div>
         </div>
-      </div>
+      )}
 
       {debts.length===0&&(
         <div className={`${card} p-10 text-center`}>
@@ -7552,6 +7641,7 @@ const DebtPage = ({ theme, debts, setDebts }) => {
         </div>
       )}
 
+      <div className={debts.length>1 ? 'grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-7 items-start' : 'space-y-7'}>
       {debts.map(debt=>{
         const c=calcDebt(debt);
         const clr=c.pct>=100?'#7aab8a':dk?'#585654':'#8b8985';
@@ -7597,7 +7687,7 @@ const DebtPage = ({ theme, debts, setDebts }) => {
                 <div className="h-full rounded-full transition-all duration-700" style={{width:`${Math.min(c.pct,100)}%`,background:clr}}/>
               </div>
               <div className="flex justify-between mb-4">
-                <span className={sub}>จ่ายแล้ว {fmt(c.amountPaid)}</span>
+                <span className={sub}>จ่ายแล้ว {fmt(c.amountPaid)} · {c.monthsPaid}/{debt.totalMonths} งวด</span>
                 <span className={`text-xs font-semibold ${dk?(c.pct>=100?'tg-emerald':'glow-num'):''}`} style={!dk?{color:clr}:{}}>{c.pct.toFixed(1)}%</span>
               </div>
 
@@ -7634,6 +7724,7 @@ const DebtPage = ({ theme, debts, setDebts }) => {
           </div>
         );
       })}
+      </div>
 
       <DebtModal open={dModal.open} onClose={()=>setDModal({open:false,editData:null})} onSave={saveDebt} editData={dModal.editData} theme={theme}/>
       {confirmEl}
