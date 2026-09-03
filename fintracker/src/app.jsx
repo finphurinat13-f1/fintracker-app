@@ -3703,11 +3703,31 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
                 className={`${inp}${(iTot.count>0||qtyLocked)?' opacity-60 cursor-not-allowed':''}`}
                 placeholder="0" value={f.qty} onChange={e=>set('qty',e.target.value)}/>
             </div>
-            <div><label className={lbl}>สกุลเงิน</label>
+            {/* Not the currency of the holding — the currency the two price
+                fields below are typed in. On a US stock those are the same
+                thing and the distinction never surfaces. They come apart the
+                moment something is held in one currency and quoted in another:
+                5,000 dollars in a broker account is 5,000 units whose price
+                today is 32.87 baht, and picking USD there takes a baht figure
+                and multiplies it by the rate a second time — five million
+                instead of a hundred and sixty thousand.
+
+                Quoting in baht is also the only way the exchange rate shows as
+                gain or loss at all: costTHB and valTHB are scaled by the same
+                live rate, so on a USD-quoted asset a move lifts cost and value
+                together and nets to nothing. Quote it in baht and the rate is
+                the price, which is what it actually is. */}
+            <div><label className={lbl}>สกุลเงินของราคา</label>
               <select className={inp} value={f.currency} onChange={e=>set('currency',e.target.value)}>
                 <option value="THB">🇹🇭 THB (บาท)</option>
                 <option value="USD">🇺🇸 USD (ดอลลาร์)</option>
               </select>
+              <p className={`text-[11px] mt-1.5 px-0.5 leading-snug ${dk?'text-slate-500':'text-slate-400'}`}>
+                สกุลของ <b>สองช่องราคาด้านล่าง</b> ไม่ใช่สกุลของสิ่งที่ถือ
+                {f.currency==='THB'
+                  ? <> · ถือ USD อยู่ก็เลือกช่องนี้ได้ กรอกราคาเป็น <b>บาทต่อ 1 USD</b> แล้วจะเห็นกำไร/ขาดทุนจากค่าเงินด้วย</>
+                  : <> · ราคาที่กรอกจะถูกคูณเรท USD/THB อีกชั้นตอนคิดมูลค่า</>}
+              </p>
             </div>
           </div>
           {/* For a collection both figures are stated for the whole thing: per
