@@ -10591,7 +10591,10 @@ const LoginPage = ({ theme }) => {
         </nav>
 
         {/* Hero */}
-        <div className="text-center pt-16 sm:pt-24">
+        {/* Was pt-16/24. The bar carries the app's name and the badge under it
+            says what the app is — two halves of one introduction, and ninety-six
+            pixels of nothing between them read as the page having started twice. */}
+        <div className="text-center pt-9 sm:pt-12">
           <span className={`inline-block text-[11px] font-semibold uppercase px-4 py-1.5 rounded-full border ${dk?'border-gold-500/30 text-gold-300':'border-gold-300 text-gold-700'}`}
             style={{letterSpacing:'0.16em'}}>
             Net Worth &amp; Portfolio Tracker
