@@ -816,14 +816,14 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
         title: prefill.title||'', amount: String(Math.abs(prefill.amount||0)),
         category: prefill.category||'อาหาร', date: today(),
         type: prefill.type||'expense', notes: prefill.notes||'',
-        walletId: prefill.walletId||null, targetAssetId: null, fxAssetId: null, fxRate: '',
+        walletId: prefill.walletId||null, targetAssetId: null, fxAssetId: null, fxCur: 'THB', fxRate: '',
         fromWalletId:null, toWalletId:null, fromAssetId:null, toAssetId:null,
         fromSource:'', toSource:'',
       });
     }
     else {
       const fs = defaultWalletId?`w-${defaultWalletId}`:'';
-      setF({ title:'', amount:'', category:'อาหาร', date:today(), type:'expense', notes:'', fxAssetId:null, fxRate:'', walletId:defaultWalletId, fromWalletId:null, toWalletId:null, fromAssetId:null, toAssetId:null, targetAssetId:null, fromSource:fs, toSource:'' });
+      setF({ title:'', amount:'', category:'อาหาร', date:today(), type:'expense', notes:'', fxAssetId:null, fxCur:'THB', fxRate:'', walletId:defaultWalletId, fromWalletId:null, toWalletId:null, fromAssetId:null, toAssetId:null, targetAssetId:null, fromSource:fs, toSource:'' });
     }
   }, [editData, prefill, open, defaultWalletId]);
   // Guessed from the rows already recorded, not from a lookup table. There are
@@ -909,6 +909,10 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
     if (f.type==='income'&&amt<0) return;
     if (f.type==='transfer'&&(!f.fromSource||!f.toSource||f.fromSource===f.toSource)) return;
     if (overDraw) return;   // nothing can send away more than it holds
+    // A dollar row with no holding named cannot be written: the baht are kept
+    // out of the wallet on the understanding that the units went somewhere, and
+    // without a holding there is nowhere for them to have gone.
+    if (f.fxCur==='USD' && (!fxAsset || !(fxRateN>0))) return;
     // The picker offers only the wallet, so routing has to decide which of its
     // pools the money leaves from: loose cash while it covers the amount, then
     // the linked cash asset. Without this, choosing the wallet drives its loose
@@ -958,7 +962,7 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
         const {fxAssetId:_a, ...rest} = f;
         onSave({...rest, amount: parseFloat((amt*fxRateN).toFixed(2)),
           walletId: fxAsset.walletId, targetAssetId: fxAsset.id,
-          fxCur: fxAsset.name, fxRate: fxRateN, fxUnits: amt});
+          fxCur: 'USD', fxRate: fxRateN, fxUnits: amt});
       } else {
         const {fxAssetId:_a, fxRate:_r, ...rest} = f;
         onSave({...rest, amount:finalAmt, walletId:f.walletId||null});
@@ -978,13 +982,14 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
   // the units it arrived in and the rate that turns them into the baht figure
   // every report in this app reads.
   //
-  // Crypto and cash only, and only where the holding names a wallet. Shares of
-  // a fund are not something anyone is paid in, and the wallet must be the one
-  // holding the units — otherwise the row puts baht in one account and units in
-  // another, which is the mixing this exists to prevent.
   const fxAssets = assets.filter(a=>(a.type==='crypto'||a.type==='cash') && a.walletId);
   const fxAsset  = f.fxAssetId ? fxAssets.find(a=>String(a.id)===String(f.fxAssetId)) : null;
+  const fxWallet = fxAsset ? wallets.find(w=>String(w.id)===String(fxAsset.walletId)) : null;
   const fxRateN  = parseFloat(f.fxRate)||0;
+  // The rate the app already keeps and applies to every dollar-priced holding.
+  // Read rather than passed: it is one number under one key, and a prop for it
+  // would be a second place for the same figure to live.
+  const usdRateNow = parseFloat(localStorage.getItem('ft-usdrate')||'35') || 35;
   // What the chosen source can actually send. Editing an existing transfer must
   // not be measured against a balance that already has that transfer taken out,
   // so its own legs are removed before counting.
@@ -1055,35 +1060,42 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
             {f.title===''&&f.amount&&<p className="mt-1 text-xs text-rose-400">กรุณากรอกชื่อรายการค่ะ</p>}
           </div>
           <div>
-            <label className={lbl}>{fxAsset ? `จำนวน (${fxAsset.name})` : 'จำนวน (฿)'}</label>
+            <label className={lbl}>{f.fxCur==='USD' ? 'จำนวน ($)' : 'จำนวน (฿)'}</label>
             <input type="text" inputMode="decimal" className={`${inp} ${f.amount&&isNaN(parseFloat(f.amount))?'border-rose-500/50':''}`} placeholder="0" value={fmtNumInput(f.amount)} onChange={e=>set('amount',e.target.value.replace(/,/g,''))}/>
             {f.amount&&isNaN(parseFloat(f.amount))&&<p className="mt-1 text-xs text-rose-400">กรุณากรอกจำนวนที่ถูกต้องค่ะ</p>}
             {f.type==='expense'&&parseFloat(f.amount)<0&&(
               <p className="mt-1.5 text-xs text-emerald-400 flex items-center gap-1">↩ บันทึกเป็น Refund / เงินคืน — จะหักออกจากรายจ่ายเดือนนี้</p>
             )}
           </div>
-          {/* Money that did not arrive in baht. The box above then counts units
-              and this pair says what they are and what one of them was worth, so
-              the row can carry both the figure the reports add up and the number
-              of units the holding actually gained. */}
+          {/* Currency, then who it belongs to. The list is two currencies and
+              not a list of holdings: USDT ONEKEY and BTC 2 : OK are not
+              currencies, they are things owned, and offering them here asked the
+              question in the wrong order.
+
+              The holding is the second question and it is the one that matters,
+              because a holding is a person and a wallet is a house several
+              people live in. Naming the wallet says the money went to the house
+              and leaves it unsaid whose it was; naming the holding says whose,
+              and the house follows from it — a holding already knows the wallet
+              it sits in. So the wallet is shown, not chosen. */}
           {f.type!=='transfer' && !editData && fxAssets.length>0 && (
             <div className="grid grid-cols-2 gap-3">
               <div><label className={lbl}>สกุลเงิน</label>
-                <select className={inp} value={f.fxAssetId||''} onChange={e=>{
-                  const id = e.target.value||null;
-                  const a  = fxAssets.find(x=>String(x.id)===String(id));
-                  // Seeded with the price already on the holding, which is the
-                  // rate it was last valued at and almost always the right answer.
-                  setF(prev=>({...prev, fxAssetId:id,
-                    walletId: a ? a.walletId : prev.walletId,
-                    fxRate: a ? String(a.currentPrice||'') : ''}));
+                <select className={inp} value={f.fxCur||'THB'} onChange={e=>{
+                  const cur = e.target.value;
+                  setF(prev=>({...prev, fxCur:cur,
+                    fxAssetId: cur==='THB' ? null : prev.fxAssetId,
+                    // Seeded from the rate the app already keeps and applies to
+                    // every dollar-priced holding, which is the number this
+                    // almost always is.
+                    fxRate: cur==='THB' ? '' : (prev.fxRate || String(usdRateNow||''))}));
                 }}>
-                  <option value="">฿ THB (บาท)</option>
-                  {fxAssets.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
+                  <option value="THB">฿ THB (บาท)</option>
+                  <option value="USD">$ USD (ดอลลาร์)</option>
                 </select>
               </div>
-              {fxAsset && (
-                <div><label className={lbl}>เรท (฿ ต่อ 1 หน่วย)</label>
+              {f.fxCur==='USD' && (
+                <div><label className={lbl}>เรท (฿ ต่อ 1 USD)</label>
                   <input type="text" inputMode="decimal" placeholder="0.00" value={f.fxRate}
                     onChange={e=>set('fxRate',e.target.value)}
                     className={`${inp} ${fxRateN>0?'':'border-amber-500/60'}`}/>
@@ -1091,12 +1103,27 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
               )}
             </div>
           )}
-          {fxAsset && (
-            <p className={`-mt-2 text-xs ${fxRateN>0&&parseFloat(f.amount)>0?(dk?'text-slate-400':'text-slate-500'):'text-amber-400'}`}>
-              {fxRateN>0&&parseFloat(f.amount)>0
-                ? <>{fmtQty(parseFloat(f.amount))} {fxAsset.name} × {fxRateN} = <b>{fmt(parseFloat(f.amount)*fxRateN)}</b> · หน่วยจะไปเพิ่มที่สินทรัพย์นี้</>
-                : <>กรอกจำนวนหน่วยและเรท เพื่อคิดเป็นบาท</>}
-            </p>
+          {f.fxCur==='USD' && (
+            <div>
+              <label className={lbl}>เข้าสินทรัพย์</label>
+              <select className={`${inp} ${fxAsset?'':'border-amber-500/60'}`} value={f.fxAssetId||''}
+                onChange={e=>set('fxAssetId', e.target.value||null)}>
+                <option value="">— เลือกสินทรัพย์ที่รับเงินนี้ —</option>
+                {fxAssets.map(a=>{
+                  const w = wallets.find(x=>String(x.id)===String(a.walletId));
+                  return <option key={a.id} value={a.id}>{a.name}{w?` · ${w.name}`:''}</option>;
+                })}
+              </select>
+              <p className={`mt-1.5 text-xs ${fxAsset&&fxRateN>0&&parseFloat(f.amount)>0
+                ? (dk?'text-slate-400':'text-slate-500') : 'text-amber-400'}`}>
+                {!fxAsset
+                  ? <>เลือกก่อนว่าเงินก้อนนี้เข้าสินทรัพย์ตัวไหน — จำนวนหน่วยจะไปเพิ่มที่ตัวนั้น</>
+                  : fxRateN>0&&parseFloat(f.amount)>0
+                    ? <>${fmtQty(parseFloat(f.amount))} × {fxRateN} = <b>{fmt(parseFloat(f.amount)*fxRateN)}</b>
+                        {' · '}เข้า {fxAsset.name}{fxWallet?` ที่ ${fxWallet.name}`:''}</>
+                    : <>กรอกจำนวนและเรท เพื่อคิดเป็นบาท</>}
+              </p>
+            </div>
           )}
           {f.type!=='transfer'?(
             <div className="grid grid-cols-2 gap-3">
@@ -10445,122 +10472,303 @@ const ScrambleText = ({ text, className = '' }) => {
 // Drawn at a fixed 1000x620 and scaled by the container, so the proportions
 // hold at any width rather than reflowing into something the app never looks
 // like. Everything inside is absolutely sized against that box.
+// The picture of the app, and it answers when you press it. A screenshot of a
+// product with a navigation rail down its side is an invitation with nothing
+// behind it: the menu is the one thing everybody tries, and a menu that does not
+// move is a worse impression than no menu at all.
+//
+// Seven views, each a sketch rather than a copy. They are built from the tokens
+// the real screens use — the gold, the card fill, the cream ink at four
+// opacities — so the shapes read as this app rather than as a generic dashboard.
+// None of them pretends to be data: every figure is invented, and the caption
+// under the frame says so.
 const DashboardMock = () => {
   const cream = 'rgba(240,230,205,';
+  const [view, setView] = useState('ภาพรวม');
   const Bar = ({w, o=0.1, h=6}) => (
     <div className="rounded-full" style={{width:w, height:h, background:`rgba(255,255,255,${o})`}}/>
   );
-  const nav = [
-    ['ภาพรวม', 1], ['รายการ', 0], ['สินทรัพย์', 0], ['กระเป๋าเงิน', 0],
-    ['Budget', 0], ['หนี้สิน', 0], ['สรุป', 0],
-  ];
-  const stats = [
-    ['เงินสด', '฿539,490', '42%'],
-    ['หุ้น',    '฿449,575', '35%'],
-    ['ทองคำ',  '฿192,675', '15%'],
-    ['อื่นๆ',   '฿102,760', '8%'],
-  ];
-  return (
-    <div className="rounded-2xl overflow-hidden shadow-2xl select-none" aria-hidden="true"
-      style={{background:'#0b0b0e', border:'1px solid rgba(217,175,43,0.18)'}}>
-      {/* window chrome */}
-      <div className="flex items-center gap-2 px-4 py-3" style={{background:'#141416'}}>
-        {['#3a3a3f','#3a3a3f','#3a3a3f'].map((c,i)=>(
-          <span key={i} className="w-2.5 h-2.5 rounded-full" style={{background:c}}/>
-        ))}
-        <div className="flex-1 flex justify-center">
-          <div className="px-3 py-1 rounded-md text-[10px]"
-            style={{background:'#0e0e11', color:`${cream}0.3)`}}>f1-tracker.web.app</div>
+  const card = {background:'#141418', border:'1px solid rgba(255,255,255,0.05)'};
+  const line = {borderColor:'rgba(255,255,255,0.04)'};
+  const nav = ['ภาพรวม','รายการ','สินทรัพย์','กระเป๋าเงิน','Budget','หนี้สิน','สรุป'];
+
+  const Eyebrow = ({children}) => (
+    <div className="text-[9px] tracking-[0.2em] uppercase" style={{color:`${cream}0.38)`}}>{children}</div>
+  );
+  const Big = ({v, chg}) => (
+    <div className="flex items-baseline gap-3 mt-1">
+      <span className="text-2xl sm:text-3xl font-bold tracking-wide metal-gold">{v}</span>
+      {chg ? <span className="text-[11px] font-semibold"
+        style={{color: chg[0]==='-' ? '#c9726a' : '#7aab8a'}}>{chg}</span> : null}
+    </div>
+  );
+  const Stats = ({rows}) => (
+    <div className="grid grid-cols-4 gap-2 mt-4">
+      {rows.map(([l,v,pc])=>(
+        <div key={l} className="rounded-lg px-2.5 py-2" style={card}>
+          <div className="text-[8px]" style={{color:`${cream}0.38)`}}>{l}</div>
+          <div className="text-[11px] font-semibold mt-0.5" style={{color:`${cream}0.88)`}}>{v}</div>
+          <div className="text-[8px] mt-0.5" style={{color:'#d9af2b'}}>{pc}</div>
         </div>
+      ))}
+    </div>
+  );
+  // One svg for both curves. Net worth climbs and a loan falls; the shape is the
+  // only difference between them, and a shape is a list of points.
+  const Curve = ({pts, id}) => (
+    <svg viewBox="0 0 400 90" className="w-full" preserveAspectRatio="none" style={{height:'92px'}}>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#d9af2b" stopOpacity="0.28"/>
+          <stop offset="100%" stopColor="#d9af2b" stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      {[22,45,68].map(y=>(
+        <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1"/>
+      ))}
+      <polygon fill={`url(#${id})`} points={`0,90 ${pts} 400,90`}/>
+      <polyline fill="none" stroke="#d9af2b" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
+        vectorEffect="non-scaling-stroke" points={pts}/>
+    </svg>
+  );
+  const Panel = ({title, right, children}) => (
+    <div className="rounded-xl mt-4 p-3" style={card}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[9px]" style={{color:`${cream}0.5)`}}>{title}</span>
+        {right}
       </div>
+      {children}
+    </div>
+  );
+  const ranges = (
+    <div className="flex gap-1">
+      {['6M','1Y','All'].map((t,i)=>(
+        <span key={t} className="text-[8px] px-1.5 py-0.5 rounded"
+          style={{background: i===1?'rgba(217,175,43,0.15)':'transparent',
+                  color: i===1?'#e9d892':`${cream}0.35)`}}>{t}</span>
+      ))}
+    </div>
+  );
 
-      <div className="flex" style={{minHeight:'380px'}}>
-        {/* sidebar */}
-        <div className="w-40 shrink-0 p-3.5 hidden sm:block" style={{background:'#0e0e11', borderRight:'1px solid rgba(255,255,255,0.05)'}}>
-          <div className="flex items-center gap-2 mb-5 px-1">
-            <div className="w-5 h-5 rounded" style={{background:'rgba(217,175,43,0.5)'}}/>
-            <span className="text-[11px] font-bold" style={{color:`${cream}0.85)`}}>FinTracker</span>
-          </div>
-          <div className="space-y-1">
-            {nav.map(([label,on])=>(
-              <div key={label} className="flex items-center gap-2 px-2 py-1.5 rounded-lg"
-                style={{background: on ? 'rgba(217,175,43,0.12)' : 'transparent'}}>
-                <span className="w-1.5 h-1.5 rounded-sm shrink-0"
-                  style={{background: on ? '#d9af2b' : 'rgba(255,255,255,0.16)'}}/>
-                <span className="text-[10px]" style={{color: on ? '#e9d892' : `${cream}0.42)`}}>{label}</span>
+  const views = {
+    'ภาพรวม': (
+      <>
+        <Eyebrow>Net Worth</Eyebrow>
+        <Big v="฿1,284,500" chg="+2.4%"/>
+        <Stats rows={[['เงินสด','฿539,490','42%'],['หุ้น','฿449,575','35%'],['ทองคำ','฿192,675','15%'],['อื่นๆ','฿102,760','8%']]}/>
+        <Panel title="มูลค่าสุทธิ 12 เดือน" right={ranges}>
+          <Curve id="ftmockup" pts="0,72 40,66 80,70 120,54 160,58 200,44 240,47 280,32 320,25 360,18 400,10"/>
+        </Panel>
+        <div className="grid grid-cols-2 gap-2 mt-3">
+          {[['กระเป๋าเงิน','8 บัญชี'],['Budget เดือนนี้','63%']].map(([t,v])=>(
+            <div key={t} className="rounded-xl p-3 space-y-2" style={card}>
+              <div className="flex items-center justify-between">
+                <span className="text-[9px]" style={{color:`${cream}0.5)`}}>{t}</span>
+                <span className="text-[9px] font-semibold" style={{color:'#e9d892'}}>{v}</span>
               </div>
-            ))}
-          </div>
+              <Bar w="86%"/><Bar w="62%" o={0.07}/><Bar w="71%" o={0.07}/>
+            </div>
+          ))}
         </div>
+      </>
+    ),
 
-        {/* main */}
-        <div className="flex-1 min-w-0 p-4 sm:p-5">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="flex-1 rounded-lg px-2.5 py-1.5 text-[10px]"
-              style={{background:'#141418', color:`${cream}0.25)`}}>ค้นหารายการ…</div>
-            <div className="w-6 h-6 rounded-lg" style={{background:'#141418'}}/>
-            <div className="w-6 h-6 rounded-full" style={{background:'rgba(217,175,43,0.35)'}}/>
-          </div>
-
-          <div className="text-[9px] tracking-[0.2em] uppercase" style={{color:`${cream}0.38)`}}>Net Worth</div>
-          <div className="flex items-baseline gap-3 mt-1">
-            <span className="text-2xl sm:text-3xl font-bold tracking-wide metal-gold">฿1,284,500</span>
-            <span className="text-[11px] font-semibold" style={{color:'#7aab8a'}}>+2.4%</span>
-          </div>
-
-          <div className="grid grid-cols-4 gap-2 mt-4">
-            {stats.map(([l,v,pc])=>(
-              <div key={l} className="rounded-lg px-2.5 py-2"
-                style={{background:'#141418', border:'1px solid rgba(255,255,255,0.05)'}}>
-                <div className="text-[8px]" style={{color:`${cream}0.38)`}}>{l}</div>
-                <div className="text-[11px] font-semibold mt-0.5" style={{color:`${cream}0.88)`}}>{v}</div>
-                <div className="text-[8px] mt-0.5" style={{color:'#d9af2b'}}>{pc}</div>
+    'รายการ': (
+      <>
+        <Eyebrow>ใช้ไปเดือนนี้</Eyebrow>
+        <Big v="฿48,320" chg="-12.5%"/>
+        <div className="flex gap-1.5 mt-4">
+          {['ทั้งหมด','รับ','จ่าย','โยก'].map((t,i)=>(
+            <span key={t} className="text-[9px] px-2.5 py-1 rounded-full"
+              style={{background: i===0?'rgba(217,175,43,0.15)':'rgba(255,255,255,0.04)',
+                      color: i===0?'#e9d892':`${cream}0.4)`}}>{t}</span>
+          ))}
+        </div>
+        <div className="rounded-xl mt-3 px-3 py-1" style={card}>
+          {[['เงินเดือน','15 ก.ย. · รายรับ','+฿62,000','#7aab8a'],
+            ['ค่าเช่าคอนโด','12 ก.ย. · ที่อยู่อาศัย','-฿18,000','#c9726a'],
+            ['ซื้อ NVDA','10 ก.ย. · ลงทุน','-฿12,400','#c9726a'],
+            ['ปันผลกองทุน','8 ก.ย. · เงินปันผล','+฿1,240','#7aab8a'],
+            ['ค่าอาหาร','7 ก.ย. · อาหาร','-฿860','#c9726a'],
+            ['โยกเข้าพอร์ตคริปโต','5 ก.ย. · โยกเงิน','฿20,000',`${cream}0.6)`]].map(([l,s,r,c])=>(
+            <div key={l} className="flex items-center justify-between gap-3 py-1.5 border-b last:border-0" style={line}>
+              <div className="min-w-0">
+                <div className="text-[10px] truncate" style={{color:`${cream}0.8)`}}>{l}</div>
+                <div className="text-[8px] truncate" style={{color:`${cream}0.32)`}}>{s}</div>
               </div>
-            ))}
-          </div>
+              <span className="text-[10px] font-semibold shrink-0 tabular-nums" style={{color:c}}>{r}</span>
+            </div>
+          ))}
+        </div>
+      </>
+    ),
 
-          <div className="rounded-xl mt-4 p-3" style={{background:'#141418', border:'1px solid rgba(255,255,255,0.05)'}}>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[9px]" style={{color:`${cream}0.5)`}}>มูลค่าสุทธิ 12 เดือน</span>
-              <div className="flex gap-1">
-                {['6M','1Y','All'].map((t,i)=>(
-                  <span key={t} className="text-[8px] px-1.5 py-0.5 rounded"
-                    style={{background: i===1?'rgba(217,175,43,0.15)':'transparent', color: i===1?'#e9d892':`${cream}0.3)`}}>{t}</span>
-                ))}
+    'สินทรัพย์': (
+      <>
+        <Eyebrow>มูลค่าสินทรัพย์รวม</Eyebrow>
+        <Big v="฿744,930" chg="+8.1%"/>
+        <Stats rows={[['หุ้น','฿449,575','60%'],['คริปโต','฿102,680','14%'],['ทองคำ','฿192,675','26%'],['เงินสด','฿0','0%']]}/>
+        <div className="rounded-xl mt-4 px-3 py-1" style={card}>
+          {[['NVIDIA','12 หุ้น · NVDA','฿186,400','+24.7%'],
+            ['TSMC','40 หุ้น · TSM','฿142,180','+12.3%'],
+            ['ทองคำ 96.5%','5 บาท','฿192,675','+31.5%'],
+            ['Bitcoin','0.042 BTC','฿102,680','-6.2%'],
+            ['ASML','3 หุ้น · ASML','฿120,995','+8.9%']].map(([l,s,r,pl])=>(
+            <div key={l} className="flex items-center justify-between gap-3 py-1.5 border-b last:border-0" style={line}>
+              <div className="min-w-0">
+                <div className="text-[10px] truncate" style={{color:`${cream}0.8)`}}>{l}</div>
+                <div className="text-[8px] truncate" style={{color:`${cream}0.32)`}}>{s}</div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="text-[10px] font-semibold tabular-nums" style={{color:`${cream}0.88)`}}>{r}</div>
+                <div className="text-[8px] tabular-nums" style={{color: pl[0]==='-' ? '#c9726a' : '#7aab8a'}}>{pl}</div>
               </div>
             </div>
-            <svg viewBox="0 0 400 90" className="w-full" preserveAspectRatio="none" style={{height:'90px'}}>
-              <defs>
-                <linearGradient id="ftmockfill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#d9af2b" stopOpacity="0.28"/>
-                  <stop offset="100%" stopColor="#d9af2b" stopOpacity="0"/>
-                </linearGradient>
-              </defs>
-              {[22,45,68].map(y=>(
-                <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" vectorEffect="non-scaling-stroke"/>
+          ))}
+        </div>
+      </>
+    ),
+
+    'กระเป๋าเงิน': (
+      <>
+        <Eyebrow>ยอดรวมทุกกระเป๋า</Eyebrow>
+        <Big v="฿539,490" chg="+1.2%"/>
+        <div className="grid grid-cols-2 gap-2 mt-4">
+          {[['🏦','ธนาคารหลัก','฿284,300'],['🏦','บัญชีเงินเก็บ','฿120,000'],
+            ['💵','เงินสด','฿12,400'],['🔐','พอร์ตคริปโต','฿68,120'],
+            ['📈','พอร์ตหุ้น','฿44,670'],['🥇','ทองรูปพรรณ','฿10,000']].map(([ic,n,v])=>(
+            <div key={n} className="rounded-xl p-2.5 flex items-center gap-2.5" style={card}>
+              <span className="w-6 h-6 rounded-lg shrink-0 flex items-center justify-center text-[11px]"
+                style={{background:'rgba(255,255,255,0.05)'}}>{ic}</span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[9px] truncate" style={{color:`${cream}0.5)`}}>{n}</div>
+                <div className="text-[11px] font-semibold tabular-nums" style={{color:`${cream}0.88)`}}>{v}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
+    ),
+
+    'Budget': (
+      <>
+        <Eyebrow>ใช้ไปเดือนนี้</Eyebrow>
+        <Big v="฿31,460" chg="63%"/>
+        <div className="rounded-xl mt-4 p-3 space-y-3" style={card}>
+          {[['ที่อยู่อาศัย','฿18,000 / ฿18,000','100%','#c9726a'],
+            ['อาหาร','฿6,240 / ฿9,000','69%','#d9af2b'],
+            ['เดินทาง','฿2,180 / ฿4,000','55%','#d9af2b'],
+            ['ช้อปปิ้ง','฿3,900 / ฿6,000','65%','#d9af2b'],
+            ['สุขภาพ','฿1,140 / ฿5,000','23%','#7aab8a']].map(([n,v,pc,c])=>(
+            <div key={n}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px]" style={{color:`${cream}0.62)`}}>{n}</span>
+                <span className="text-[8px] tabular-nums" style={{color:`${cream}0.4)`}}>{v}</span>
+              </div>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{background:'rgba(255,255,255,0.06)'}}>
+                <div className="h-full rounded-full" style={{width:pc, background:c}}/>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
+    ),
+
+    'หนี้สิน': (
+      <>
+        <Eyebrow>หนี้คงเหลือ</Eyebrow>
+        <Big v="฿305,428"/>
+        <Stats rows={[['ผ่อนรวม/เดือน','฿10,532','—'],['จ่ายไปแล้ว','฿867,108','—'],['ดอกเบี้ยรวม','฿42,180','—'],['หมดหนี้','ก.พ. 2029','—']]}/>
+        <Panel title="หนี้คงเหลือตามเวลา"
+          right={<span className="text-[8px]" style={{color:`${cream}0.35)`}}>19 / 48 งวด</span>}>
+          <Curve id="ftmockdown" pts="0,14 40,22 80,30 120,37 160,44 200,52 240,59 280,66 320,73 360,81 400,88"/>
+        </Panel>
+      </>
+    ),
+
+    'สรุป': (
+      <>
+        <Eyebrow>คงเหลือสุทธิ</Eyebrow>
+        <Big v="฿1,813,170" chg="68.6%"/>
+        <Stats rows={[['รายรับรวม','฿2,642,702','—'],['รายจ่ายรวม','฿829,531','—'],['เก็บเฉลี่ย/เดือน','฿362,634','—'],['อัตราออม','68.6%','—']]}/>
+        <div className="rounded-xl mt-4 px-3 py-1" style={card}>
+          {[['ก.ย. 2026','+฿620,000','-฿38,447','64.7%'],
+            ['ส.ค. 2026','+฿620,000','-฿219,108','65.9%'],
+            ['ก.ค. 2026','+฿800,167','-฿223,597','72.1%'],
+            ['มิ.ย. 2026','+฿602,535','-฿136,915','77.3%']].map(([m,i,e,r])=>(
+            <div key={m} className="flex items-center justify-between gap-2 py-1.5 border-b last:border-0" style={line}>
+              <span className="text-[9px] shrink-0" style={{color:`${cream}0.62)`}}>{m}</span>
+              <span className="text-[9px] tabular-nums" style={{color:'#7aab8a'}}>{i}</span>
+              <span className="text-[9px] tabular-nums" style={{color:'#c9726a'}}>{e}</span>
+              <span className="text-[9px] font-semibold tabular-nums shrink-0" style={{color:'#e9d892'}}>{r}</span>
+            </div>
+          ))}
+        </div>
+      </>
+    ),
+  };
+
+  return (
+    <>
+      <div className="rounded-2xl overflow-hidden shadow-2xl"
+        style={{background:'#0b0b0e', border:'1px solid rgba(217,175,43,0.18)'}}>
+        <div className="flex items-center gap-2 px-4 py-3" style={{background:'#141416'}}>
+          {[0,1,2].map(i=>(
+            <span key={i} className="w-2.5 h-2.5 rounded-full" style={{background:'#3a3a3f'}}/>
+          ))}
+          <div className="flex-1 flex justify-center">
+            <div className="px-3 py-1 rounded-md text-[10px]"
+              style={{background:'#0e0e11', color:`${cream}0.3)`}}>f1-tracker.web.app</div>
+          </div>
+        </div>
+
+        <div className="flex" style={{minHeight:'380px'}}>
+          {/* Real buttons, because they do something now. */}
+          <div className="w-40 shrink-0 p-3.5 hidden sm:block"
+            style={{background:'#0e0e11', borderRight:'1px solid rgba(255,255,255,0.05)'}}>
+            <div className="flex items-center gap-2 mb-5 px-1">
+              <div className="w-5 h-5 rounded" style={{background:'rgba(217,175,43,0.5)'}}/>
+              <span className="text-[11px] font-bold" style={{color:`${cream}0.85)`}}>FinTracker</span>
+            </div>
+            <div className="space-y-1">
+              {nav.map(label=>(
+                <button key={label} type="button" onClick={()=>setView(label)}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors hover:bg-white/[0.06]"
+                  style={{background: view===label ? 'rgba(217,175,43,0.12)' : 'transparent'}}>
+                  <span className="w-1.5 h-1.5 rounded-sm shrink-0"
+                    style={{background: view===label ? '#d9af2b' : 'rgba(255,255,255,0.16)'}}/>
+                  <span className="text-[10px]"
+                    style={{color: view===label ? '#e9d892' : `${cream}0.42)`}}>{label}</span>
+                </button>
               ))}
-              <polygon fill="url(#ftmockfill)" points="0,90 0,72 40,66 80,70 120,54 160,58 200,44 240,47 280,32 320,25 360,18 400,10 400,90"/>
-              <polyline fill="none" stroke="#d9af2b" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
-                vectorEffect="non-scaling-stroke"
-                points="0,72 40,66 80,70 120,54 160,58 200,44 240,47 280,32 320,25 360,18 400,10"/>
-            </svg>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 mt-3">
-            {[['กระเป๋าเงิน','8 บัญชี'],['Budget เดือนนี้','63%']].map(([t,v])=>(
-              <div key={t} className="rounded-xl p-3 space-y-2"
-                style={{background:'#141418', border:'1px solid rgba(255,255,255,0.05)'}}>
-                <div className="flex items-center justify-between">
-                  <span className="text-[9px]" style={{color:`${cream}0.5)`}}>{t}</span>
-                  <span className="text-[9px] font-semibold" style={{color:'#e9d892'}}>{v}</span>
-                </div>
-                <Bar w="86%"/><Bar w="62%" o={0.07}/><Bar w="71%" o={0.07}/>
-              </div>
-            ))}
+          <div className="flex-1 min-w-0 p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex-1 rounded-lg px-2.5 py-1.5 text-[10px]"
+                style={{background:'#141418', color:`${cream}0.25)`}}>ค้นหารายการ…</div>
+              <div className="w-6 h-6 rounded-lg" style={{background:'#141418'}}/>
+              <div className="w-6 h-6 rounded-full" style={{background:'rgba(217,175,43,0.35)'}}/>
+            </div>
+            {/* The rail is hidden on a phone, so the menu has to be here as well
+                or six of the seven views would have no way to be reached. */}
+            <div className="sm:hidden flex gap-1.5 overflow-x-auto pb-3">
+              {nav.map(label=>(
+                <button key={label} type="button" onClick={()=>setView(label)}
+                  className="text-[9px] px-2.5 py-1 rounded-full whitespace-nowrap shrink-0"
+                  style={{background: view===label ? 'rgba(217,175,43,0.15)' : 'rgba(255,255,255,0.04)',
+                          color: view===label ? '#e9d892' : `${cream}0.4)`}}>{label}</button>
+              ))}
+            </div>
+            {views[view]}
           </div>
         </div>
       </div>
-    </div>
+      <p className="mt-3 text-center text-[11px]" style={{color:`${cream}0.32)`}}>
+        กดเมนูด้านซ้ายเพื่อดูหน้าอื่น · ตัวเลขทั้งหมดเป็นตัวอย่าง
+      </p>
+    </>
   );
 };
 
