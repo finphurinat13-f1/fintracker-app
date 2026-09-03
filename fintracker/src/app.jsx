@@ -8471,12 +8471,12 @@ const PageHeader = ({ lead, accent, sub, theme, right=null }) => {
   // the largest thing on screen should not be the word for what kind of page it
   // is. 23px still reads as the page title against the 14px card headings under
   // it, which is all it needs to do.
+  // Was py-5 around a 30px title with a rule of space above and below each
+  // of three lines — a block that announced the page in more room than some
+  // of the pages spend on their first figure. Everything comes in a step:
+  // the padding, the title, and the gaps between the three lines. It still
+  // opens the page; it no longer takes a fifth of the fold to do it.
   return (
-    {/* Was py-5 around a 30px title with a rule of space above and below each
-        of three lines — a block that announced the page in more room than some
-        of the pages spend on their first figure. Everything comes in a step:
-        the padding, the title, and the gaps between the three lines. It still
-        opens the page; it no longer takes a fifth of the fold to do it. */}
     <div className="relative overflow-hidden rounded-2xl px-5 py-3.5 -mx-1 mb-4">
       {/* The depth the net worth hero has, given to every page. Not the same
           device though: that line is real data — net worth month by month — and
