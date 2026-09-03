@@ -2627,6 +2627,10 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
   const filteredExpense  = useMemo(()=>sumTxType(filtered,'expense'),[filtered]);
   const filteredDividend = useMemo(()=>sumTxType(filtered,'dividend'),[filtered]);
   const filteredBalance  = filteredIncome + filteredDividend - filteredExpense;
+  const fxIn = useMemo(()=>filtered.reduce((s,t)=>{
+    if(t.fxCur==='USD' && t.type!=='expense'){ s.units += Number(t.fxUnits)||0; s.baht += Math.abs(t.amount)||0; }
+    return s;
+  },{units:0,baht:0}),[filtered]);
 
   const toggleSort=f=>{ if(sortBy===f) setSortDir(d=>d==='asc'?'desc':'asc'); else{setSortBy(f);setSortDir('desc');} };
   const toggleSel=id=>setSel(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id]);
@@ -2798,31 +2802,31 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
 
       {/* ── Filtered Summary Bar ── */}
       {filtered.length>0&&(
-        <div className={`rounded-2xl px-5 py-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 ${dk?'card-solid':'glass-light shadow-sm'}`}>
-          {/* Hero: net (the number Fin actually wants) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <span className={`text-[11px] font-medium ${dk?'text-slate-400':'text-slate-500'}`}>สุทธิ · {filtered.length} รายการ</span>
-            <span className={`flex items-baseline gap-1.5 text-2xl sm:text-3xl font-bold tabular-nums leading-none ${filteredBalance>=0?'text-emerald-400':'text-rose-400'}`}>
-              <span className="text-sm font-semibold">{filteredBalance>=0?'▲':'▼'}</span>
-              {filteredBalance>=0?'+':'-'}{fmt(filteredBalance)}
-            </span>
-          </div>
-          {/* Supporting breakdown */}
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <div className="flex flex-col gap-0.5">
-              <span className={`text-[11px] ${dk?'text-slate-400':'text-slate-500'}`}>รายรับ</span>
-              <span className="text-base font-semibold tabular-nums text-gold-400">+{fmt(filteredIncome)}</span>
-            </div>
-            {filteredDividend>0&&(
-              <div className="flex flex-col gap-0.5">
-                <span className={`text-[11px] ${dk?'text-slate-400':'text-slate-500'}`}>ปันผล</span>
-                <span className="text-base font-semibold tabular-nums text-teal-400">+{fmt(filteredDividend)}</span>
+        <div className={`rounded-2xl px-5 py-4 ${dk?'card-solid':'glass-light shadow-sm'}`}>
+          <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-4 items-end">
+            <div className="col-span-2 lg:col-span-1">
+              <div className={`text-[11px] font-medium ${dk?'text-slate-400':'text-slate-500'}`}>สุทธิ · {filtered.length} รายการ</div>
+              <div className={`flex items-baseline gap-1.5 text-2xl font-bold tabular-nums leading-none mt-1 ${filteredBalance>=0?(dk?'tg-emerald':'text-emerald-600'):(dk?'tg-red':'text-rose-500')}`}>
+                <span className="text-sm font-semibold">{filteredBalance>=0?'▲':'▼'}</span>
+                {filteredBalance>=0?'+':'-'}{fmt(Math.abs(filteredBalance))}
               </div>
-            )}
-            <div className="flex flex-col gap-0.5">
-              <span className={`text-[11px] ${dk?'text-slate-400':'text-slate-500'}`}>รายจ่าย</span>
-              <span className="text-base font-semibold tabular-nums text-rose-400">-{fmt(filteredExpense)}</span>
             </div>
+            {[
+              {l:'รายรับ',  v:'+'+fmt(filteredIncome),   c:'text-gold-400',  show:true},
+              {l:'ปันผล',   v:'+'+fmt(filteredDividend), c:'text-teal-400',  show:filteredDividend>0},
+              {l:'รายจ่าย', v:'-'+fmt(filteredExpense),  c:'text-rose-400',  show:true},
+              // Only when there is any. A currency line reading nothing on a list
+              // that never had a foreign row in it is a column of zero pretending
+              // to be information.
+              {l:'รับเป็น USD', v:fxIn.units>0 ? '$'+fmtQty(fxIn.units) : null,
+                sub: fxIn.units>0 ? '≈ '+fmt(fxIn.baht) : null, c:'text-sky-400', show:fxIn.units>0},
+            ].filter(x=>x.show).map(({l,v,sub,c})=>(
+              <div key={l}>
+                <div className={`text-[11px] ${dk?'text-slate-400':'text-slate-500'}`}>{l}</div>
+                <div className={`text-base font-semibold tabular-nums mt-1 ${c}`}>{v}</div>
+                {sub && <div className={`text-[11px] tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{sub}</div>}
+              </div>
+            ))}
           </div>
         </div>
       )}
