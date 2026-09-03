@@ -4677,7 +4677,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
             </div>
           </div>
         )}
-        <div className={`${card} p-4 flex flex-col gap-3 ${wallets.length>0?'lg:col-span-2':'lg:col-span-5'}`}>
+        <div className={`${card} p-4 flex flex-col justify-between gap-3 ${wallets.length>0?'lg:col-span-2':'lg:col-span-5'}`}>
           <div className="flex items-center gap-3 min-w-0">
             {/* "พอร์ตสินทรัพย์ · 35 รายการ" went here. The page header one line
                 above says Holdings and 35 รายการ, so this was a title for the
@@ -4708,44 +4708,41 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
               {(assetSearch||searchTags.length>0)&&<button onClick={()=>{setAssetSearch('');setSearchTags([]);}} className={`text-xs flex-shrink-0 ${dk?'text-slate-500 hover:text-slate-300':'text-slate-400'}`}><Ic n="x" s={11}/></button>}
             </div>
           </div>
-          <div className="flex flex-wrap items-end gap-2">
-            <div data-hint="ปรับเรท USD/THB สำหรับสินทรัพย์สกุลดอลลาร์" className={`px-3 py-1.5 rounded-xl border ${dk?'border-white/10 bg-white/5':'border-slate-200 bg-white'}`}>
-              <div className="flex items-center gap-2">
-                <span className={`text-xs font-medium ${dk?'text-slate-400':'text-slate-500'}`}>USD/THB</span>
-                <input type="number" value={usdRate} onChange={e=>{ setUsdRate(parseFloat(e.target.value)||35); markRateFetched(); }}
-                  className={`w-16 text-sm text-center outline-none bg-transparent font-semibold ${dk?'text-white':'text-slate-700'}`}/>
-                <button onClick={fetchRate} disabled={rateLoading} title="ดึงอัตราแลกเปลี่ยนล่าสุด"
-                  className={`text-xs transition-all ${rateLoading?'animate-spin':'hover:scale-110'} ${dk?'text-slate-500 hover:text-gold-400':'text-slate-400 hover:text-gold-500'}`}>
-                  🔄
-                </button>
-              </div>
+          {/* Was one wrap row: a bordered rate box standing taller than the two
+              buttons beside it, the three packed to the left with the right of
+              the column empty and the bottom empty under that. Stacked now — the
+              rate on a rule of its own, the buttons splitting the width in half
+              — and the column spreads them down the height it is given rather
+              than bunching them against the top. */}
+          <div data-hint="ปรับเรท USD/THB สำหรับสินทรัพย์สกุลดอลลาร์"
+            className={`flex items-baseline justify-between gap-2 pt-3 border-t ${dk?'border-white/8':'border-slate-100'}`}>
+            <span className={`text-xs font-medium ${dk?'text-slate-400':'text-slate-500'}`}>USD/THB</span>
+            <div className="flex items-baseline gap-1.5">
+              <input type="number" value={usdRate} onChange={e=>{ setUsdRate(parseFloat(e.target.value)||35); markRateFetched(); }}
+                className={`w-14 text-sm text-right outline-none bg-transparent font-semibold ${dk?'text-white':'text-slate-700'}`}/>
+              <button onClick={fetchRate} disabled={rateLoading} title="ดึงอัตราแลกเปลี่ยนล่าสุด"
+                className={`text-xs transition-all ${rateLoading?'animate-spin':'hover:scale-110'} ${dk?'text-slate-500 hover:text-gold-400':'text-slate-400 hover:text-gold-500'}`}>
+                🔄
+              </button>
               {(()=>{ // shown, not tooltipped: this rate multiplies every USD holding
                 if(!rateAt) return null;
                 const stale = Date.now()-rateAt > PRICE_STALE_MS;
-                return <div className={`text-[10px] mt-0.5 text-center ${stale?(dk?'text-amber-500/80':'text-amber-600/80'):(dk?'text-slate-500':'text-slate-400')}`}>{priceAge(rateAt)}</div>;
+                return <div className={`text-[10px] ${stale?(dk?'text-amber-500/80':'text-amber-600/80'):(dk?'text-slate-500':'text-slate-400')}`}>{priceAge(rateAt)}</div>;
               })()}
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="flex flex-col items-center gap-0.5">
-                {priceUpdAt&&<span className={`text-[10px] ${dk?'text-slate-500':'text-slate-400'}`}>อัปเดต {priceUpdAt}</span>}
-                <button data-hint="ดึงราคาหุ้น/คริปโตล่าสุดอัตโนมัติ" onClick={()=>fetchAllPrices()} disabled={priceLoading}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-colors ${dk?'border-gold-500/50 text-gold-400 hover:bg-gold-500/15':'border-gold-300 text-gold-600 hover:bg-gold-50'} disabled:opacity-50`}>
-                  <span className={priceLoading?'animate-spin':''}>{priceLoading?'⏳':'📡'}</span>
-                  <span className="hidden sm:inline">{priceLoading?'กำลังดึง...':'อัปเดตราคา'}</span>
-                </button>
-              </div>
+          </div>
+          {/* Equal halves, each filling its cell. At their natural widths the two
+              ended in two different places and the row read as leftovers. */}
+          <div className="grid grid-cols-2 gap-2 items-end">
+            <div className="flex flex-col items-center gap-0.5">
+              {priceUpdAt&&<span className={`text-[10px] ${dk?'text-slate-500':'text-slate-400'}`}>อัปเดต {priceUpdAt}</span>}
+              <button data-hint="ดึงราคาหุ้น/คริปโตล่าสุดอัตโนมัติ" onClick={()=>fetchAllPrices()} disabled={priceLoading}
+                className={`flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-xl text-xs font-semibold border transition-colors ${dk?'border-gold-500/50 text-gold-400 hover:bg-gold-500/15':'border-gold-300 text-gold-600 hover:bg-gold-50'} disabled:opacity-50`}>
+                <span className={priceLoading?'animate-spin':''}>{priceLoading?'⏳':'📡'}</span>
+                <span className="hidden sm:inline">{priceLoading?'กำลังดึง...':'อัปเดตราคา'}</span>
+              </button>
             </div>
-            {/* The "โยกเงิน / ลงทุน" button stood here and opened the transfer
-                modal with nothing preset. The wallets page has a button that
-                opens the same modal with the same empty preset, so this was the
-                second of two doors into one room — and the worse of the two,
-                because a transfer starts from a wallet and that is the page you
-                are on when you think of making one.
-
-                The contextual routes are untouched and are better than either:
-                starting from a specific asset or wallet fills in one side of the
-                transfer instead of presenting two empty pickers. */}
-            <button data-hint="เพิ่มหุ้น/ทอง/คริปโต/เงินสด" onClick={onAdd} className="flex items-center gap-1.5 px-3 py-2 rounded-xl btn-primary text-xs font-semibold">
+            <button data-hint="เพิ่มหุ้น/ทอง/คริปโต/เงินสด" onClick={onAdd} className="flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-xl btn-primary text-xs font-semibold">
               <Ic n="plus" s={13}/> เพิ่มสินทรัพย์
             </button>
           </div>
