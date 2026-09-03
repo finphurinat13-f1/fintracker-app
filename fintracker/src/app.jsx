@@ -8472,7 +8472,12 @@ const PageHeader = ({ lead, accent, sub, theme, right=null }) => {
   // is. 23px still reads as the page title against the 14px card headings under
   // it, which is all it needs to do.
   return (
-    <div className="relative overflow-hidden rounded-2xl px-5 py-5 -mx-1 mb-5">
+    {/* Was py-5 around a 30px title with a rule of space above and below each
+        of three lines — a block that announced the page in more room than some
+        of the pages spend on their first figure. Everything comes in a step:
+        the padding, the title, and the gaps between the three lines. It still
+        opens the page; it no longer takes a fifth of the fold to do it. */}
+    <div className="relative overflow-hidden rounded-2xl px-5 py-3.5 -mx-1 mb-4">
       {/* The depth the net worth hero has, given to every page. Not the same
           device though: that line is real data — net worth month by month — and
           no other page has a series behind it. Repeating the shape with nothing
@@ -8515,13 +8520,13 @@ const PageHeader = ({ lead, accent, sub, theme, right=null }) => {
             on it made every page open by pointing at something inert. Gold is
             the material the page is made of, which is what a heading is. */}
         <div className="min-w-0">
-          <div className={`text-[10px] font-semibold uppercase mb-1.5 ${dk?'text-slate-500':'text-slate-400'}`}
+          <div className={`text-[10px] font-semibold uppercase mb-1 ${dk?'text-slate-500':'text-slate-400'}`}
             style={{letterSpacing:'0.18em'}}>{lead}</div>
-          <h1 className={`text-2xl sm:text-3xl font-bold ${dk?'text-slate-100':'text-slate-800'}`}
+          <h1 className={`text-xl sm:text-2xl font-bold ${dk?'text-slate-100':'text-slate-800'}`}
             style={{textWrap:'balance', letterSpacing:'-0.015em'}}>
             <span className={dk?'text-gold-300':'text-gold-700'}>{accent}</span>
           </h1>
-          {sub && <p className={`text-xs mt-1.5 ${dk?'text-slate-400':'text-slate-500'}`}>{sub}</p>}
+          {sub && <p className={`text-xs mt-1 ${dk?'text-slate-400':'text-slate-500'}`}>{sub}</p>}
         </div>
         {right && <div className="flex items-center gap-2 flex-wrap">{right}</div>}
       </div>
@@ -12534,7 +12539,7 @@ const App = () => {
 
       {/* ── DESKTOP: Top Navbar (lg+) ── */}
       <nav className={`hidden lg:block sticky top-0 z-30 lg:pl-60 border-b no-print ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-white/88 border-gold-100 backdrop-blur-xl'}`}>
-        <div className="px-4 lg:px-7 py-3 flex items-center gap-3">
+        <div className="px-4 lg:px-7 py-2 flex items-center gap-3">
           {/* The date lives here rather than in a corner of the net worth card.
               There it was absolutely positioned over the ground the asset chips
               stand on — invisible until the hero got narrower, then a collision.
