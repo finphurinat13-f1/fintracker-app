@@ -4777,48 +4777,6 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
           </div>
         </div>
       )}
-        {/* Where the holdings are kept, which is the one thing the rest of this
-            page never says. Everything above answers what you own and what it is
-            worth; the table below lists it by name. Neither of them mentions the
-            account holding it, and that is the question the wallets page was
-            built to answer from the other direction.
-
-            It reads the current filter rather than the whole portfolio, so
-            switching to หุ้น narrows this to which accounts hold the stocks —
-            a summary that ignored the filter above it would be describing a
-            different page. */}
-        <div className={`${card} p-5 mt-5`}>
-          <div className="flex items-baseline gap-2.5 flex-wrap mb-3.5">
-            <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>แยกตามกระเป๋า</h3>
-            <p className={`text-xs ${sub}`}>สินทรัพย์ที่กำลังแสดง อยู่ในบัญชีไหนบ้าง</p>
-          </div>
-          {byWallet.length===0
-            ? <p className={`text-xs py-4 text-center ${sub}`}>ไม่มีสินทรัพย์ที่ตรงกับตัวกรอง</p>
-            : (
-            <div className="space-y-2">
-              {byWallet.map(w=>(
-                <div key={w.id} className="flex items-center gap-3">
-                  <span className={`text-xs truncate flex-1 min-w-0 ${w.orphan
-                    ? (dk?'text-amber-400/80':'text-amber-600')
-                    : (dk?'text-slate-300':'text-slate-600')}`}>{w.name}</span>
-                  {/* The bar is the comparison and the figures are the answer, so
-                      the bar gets a fixed share of the row rather than growing
-                      with the longest name. */}
-                  <span className={`hidden sm:block h-1.5 rounded-full overflow-hidden w-32 flex-shrink-0 ${dk?'bg-white/6':'bg-slate-100'}`}>
-                    <span className="block h-full rounded-full"
-                      style={{width:`${w.pct}%`, background: w.orphan ? '#b08f52' : '#d9af2b'}}/>
-                  </span>
-                  <span className={`text-xs font-semibold tabular-nums w-28 text-right flex-shrink-0 ${dk?'text-slate-200':'text-slate-700'}`}>
-                    {fmtNW(w.val)}
-                  </span>
-                  <span className={`text-xs tabular-nums w-12 text-right flex-shrink-0 ${dk?'text-slate-500':'text-slate-400'}`}>
-                    {w.pct.toFixed(1)}%
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
         </div>
 
       {/* Summary Cards */}
@@ -4838,6 +4796,48 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
         ))}
       </div>
         </div>
+      </div>
+      {/* Where the holdings are kept, which is the one thing the rest of this
+          page never says. Everything above answers what you own and what it is
+          worth; the table below lists it by name. Neither of them mentions the
+          account holding it, and that is the question the wallets page was
+          built to answer from the other direction.
+
+          It reads the current filter rather than the whole portfolio, so
+          switching to หุ้น narrows this to which accounts hold the stocks —
+          a summary that ignored the filter above it would be describing a
+          different page. */}
+      <div className={`${card} p-5`}>
+        <div className="flex items-baseline gap-2.5 flex-wrap mb-3.5">
+          <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>แยกตามกระเป๋า</h3>
+          <p className={`text-xs ${sub}`}>สินทรัพย์ที่กำลังแสดง อยู่ในบัญชีไหนบ้าง</p>
+        </div>
+        {byWallet.length===0
+          ? <p className={`text-xs py-4 text-center ${sub}`}>ไม่มีสินทรัพย์ที่ตรงกับตัวกรอง</p>
+          : (
+          <div className="grid sm:grid-cols-2 gap-x-8 gap-y-2">
+            {byWallet.map(w=>(
+              <div key={w.id} className="flex items-center gap-3">
+                <span className={`text-xs truncate flex-1 min-w-0 ${w.orphan
+                  ? (dk?'text-amber-400/80':'text-amber-600')
+                  : (dk?'text-slate-300':'text-slate-600')}`}>{w.name}</span>
+                {/* The bar is the comparison and the figures are the answer, so
+                    the bar gets a fixed share of the row rather than growing
+                    with the longest name. */}
+                <span className={`hidden sm:block h-1.5 rounded-full overflow-hidden w-32 flex-shrink-0 ${dk?'bg-white/6':'bg-slate-100'}`}>
+                  <span className="block h-full rounded-full"
+                    style={{width:`${w.pct}%`, background: w.orphan ? '#b08f52' : '#d9af2b'}}/>
+                </span>
+                <span className={`text-xs font-semibold tabular-nums w-28 text-right flex-shrink-0 ${dk?'text-slate-200':'text-slate-700'}`}>
+                  {fmtNW(w.val)}
+                </span>
+                <span className={`text-xs tabular-nums w-12 text-right flex-shrink-0 ${dk?'text-slate-500':'text-slate-400'}`}>
+                  {w.pct.toFixed(1)}%
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* สัดส่วนตามประเภท used to sit here, with a donut and a per-type table of
