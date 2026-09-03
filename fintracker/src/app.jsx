@@ -10153,6 +10153,26 @@ const VerifyEmail = ({ user, dk, addToast }) => {
 // real ones and a wordmark that jiggles the nav bar around while it settles is
 // worse than no effect at all. And it obeys prefers-reduced-motion — an animated
 // wordmark is decoration, and decoration is exactly what that setting is for.
+// Five tiers so the bar has somewhere to go after "long enough". Length counts
+// twice because it is the only property that actually resists a machine — a
+// short password with a symbol in it is theatre.
+const PW_TIERS = [
+  { l:'Weak',   c:'#d4574a' },
+  { l:'Fair',   c:'#d9af2b' },
+  { l:'Good',   c:'#c3a65f' },
+  { l:'Strong', c:'#7aab8a' },
+  { l:'Strong', c:'#7aab8a' },
+];
+const pwScore = s => {
+  let n = 0;
+  if (s.length >= 8)  n++;
+  if (s.length >= 12) n++;
+  if (/[A-Z]/.test(s) && /[a-z]/.test(s)) n++;
+  if (/d/.test(s)) n++;
+  if (/[^A-Za-z0-9]/.test(s)) n++;
+  return Math.min(n, 4);
+};
+
 const ScrambleText = ({ text, className = '' }) => {
   const [out, setOut] = useState(text);
   const timer = useRef(null);
@@ -10544,29 +10564,77 @@ const LoginPage = ({ theme }) => {
             </span>
           </div>
 
+          {/* Sign in / Sign up as a segmented control rather than a sentence at
+              the bottom of the card. The link was below the button, which is
+              past the point somebody who came to do the other thing has already
+              stopped reading. */}
+          <div className={`flex p-1 rounded-xl mb-5 ${dk?'bg-white/5':'bg-slate-100'}`}>
+            {[['login','Sign In'],['signup','Sign Up']].map(([k,l])=>(
+              <button key={k} onClick={()=>switchMode(k)}
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${mode===k
+                  ? (dk?'bg-white/10 text-white shadow-sm':'bg-white text-slate-800 shadow-sm')
+                  : (dk?'text-slate-400 hover:text-slate-200':'text-slate-500 hover:text-slate-700')}`}>
+                {l}
+              </button>
+            ))}
+          </div>
+
           {/* Form */}
           <div className="space-y-4">
             <div>
               <label className={lbl}>Email</label>
-              <input className={inp} type="email" placeholder="your@email.com" value={email}
-                onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&(mode==='login'?login():signup())}/>
+              <div className="relative">
+                <span className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none ${dk?'text-slate-500':'text-slate-400'}`}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                    <rect x="2.5" y="4.5" width="19" height="15" rx="2.5"/><path d="m3 6.5 9 6.5 9-6.5"/>
+                  </svg>
+                </span>
+                <input className={inp+' pl-10'} type="email" placeholder="your@email.com" value={email}
+                  onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&(mode==='login'?login():signup())}/>
+              </div>
             </div>
             <div>
               <label className={lbl}>Password</label>
               <div className="relative">
-                <input className={inp+' pr-10'} type={showPw?'text':'password'} placeholder="••••••••" value={pw}
+                <span className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none ${dk?'text-slate-500':'text-slate-400'}`}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                    <rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>
+                  </svg>
+                </span>
+                <input className={inp+' pl-10 pr-10'} type={showPw?'text':'password'} placeholder="••••••••" value={pw}
                   onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&(mode==='login'?login():signup())}/>
                 <button type="button" tabIndex={-1} onClick={()=>setShowPw(v=>!v)}
                   className={`absolute right-3 top-1/2 -translate-y-1/2 text-base leading-none transition-colors ${dk?'text-slate-500 hover:text-slate-300':'text-slate-400 hover:text-slate-600'}`}>
                   {showPw?'🙈':'👁️'}
                 </button>
               </div>
+              {/* Only while choosing one. On the way back in the strength of a
+                  password already accepted is not news, and a bar reading WEAK
+                  under a correct password is an accusation with nothing behind
+                  it. */}
+              {mode==='signup'&&pw.length>0&&(
+                <div className="flex items-center gap-2 mt-2">
+                  <div className={`flex-1 h-1 rounded-full overflow-hidden ${dk?'bg-white/8':'bg-slate-200'}`}>
+                    <div className="h-full rounded-full transition-all duration-300"
+                      style={{width:`${(pwScore(pw)+1)*20}%`, background:PW_TIERS[pwScore(pw)].c}}/>
+                  </div>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider"
+                    style={{color:PW_TIERS[pwScore(pw)].c, letterSpacing:'0.1em'}}>
+                    {PW_TIERS[pwScore(pw)].l}
+                  </span>
+                </div>
+              )}
             </div>
             {mode==='signup'&&(
               <div>
                 <label className={lbl}>Confirm Password</label>
                 <div className="relative">
-                  <input className={inp+' pr-10'} type={showConfirmPw?'text':'password'} placeholder="••••••••" value={confirmPw}
+                  <span className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none ${dk?'text-slate-500':'text-slate-400'}`}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                      <rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>
+                    </svg>
+                  </span>
+                  <input className={inp+' pl-10 pr-10'} type={showConfirmPw?'text':'password'} placeholder="••••••••" value={confirmPw}
                     onChange={e=>setConfirmPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&signup()}/>
                   <button type="button" tabIndex={-1} onClick={()=>setShowConfirmPw(v=>!v)}
                     className={`absolute right-3 top-1/2 -translate-y-1/2 text-base leading-none transition-colors ${dk?'text-slate-500 hover:text-slate-300':'text-slate-400 hover:text-slate-600'}`}>
@@ -10578,8 +10646,8 @@ const LoginPage = ({ theme }) => {
             {err && <p className="text-rose-400 text-xs text-center">{err}</p>}
             {resetSent && <p className="text-emerald-400 text-xs text-center">✅ Reset email sent — check your inbox</p>}
             <button onClick={mode==='login'?login:signup} disabled={loading}
-              className="mt-2 w-full py-2.5 rounded-full bg-orange-400 hover:bg-orange-300 active:bg-orange-500 text-orange-950 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-              {loading ? 'Loading...' : mode==='login' ? 'Sign in' : 'Create account'}
+              className="mt-2 w-full py-3 rounded-xl bg-orange-400 hover:bg-orange-300 active:bg-orange-500 text-orange-950 text-sm font-bold disabled:opacity-50 transition-colors">
+              {loading ? 'Loading...' : mode==='login' ? 'Sign in' : 'Create free account'}
             </button>
           </div>
 
@@ -10597,13 +10665,10 @@ const LoginPage = ({ theme }) => {
             </p>
           )}
 
-          {/* Switch mode */}
-          <p className={`text-sm mt-3 ${dk?'text-slate-400':'text-slate-500'}`}>
-            {mode==='login' ? "Don't have an account? " : 'Already have an account? '}
-            <button onClick={()=>switchMode(mode==='login'?'signup':'login')}
-              className="font-medium text-gold-400 hover:text-gold-300 transition-colors">
-              {mode==='login' ? 'Sign up' : 'Sign in'}
-            </button>
+          {/* The segmented control at the top of the card says this now. */}
+          <p className={`flex items-center justify-center gap-1.5 text-[11px] mt-5 ${dk?'text-slate-500':'text-slate-400'}`}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{background:'#7aab8a'}}/>
+            Cloud sync · encrypted in transit
           </p>
         </div>
 
