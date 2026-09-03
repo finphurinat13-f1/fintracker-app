@@ -679,8 +679,8 @@ const DonutChart = ({ data, theme, centerValue, hideAmt=false }) => {
   // have made it grow to match the legend: thirteen categories would have
   // inflated it to a 300px circle to no purpose.
   return (
-    <div ref={containerRef} style={narrow?{display:'flex',flexDirection:'column',gap:'10px'}:{display:'flex',minHeight:'200px',alignItems:'center',gap:'12px'}}>
-      <div style={narrow?{height:'160px',width:'160px',margin:'0 auto',flexShrink:0}:{flex:'0 0 auto',height:'200px',width:'200px'}}>
+    <div ref={containerRef} style={narrow?{display:'flex',flexDirection:'column',gap:'10px'}:{display:'flex',minHeight:'168px',alignItems:'center',gap:'12px'}}>
+      <div style={narrow?{height:'160px',width:'160px',margin:'0 auto',flexShrink:0}:{flex:'0 0 auto',height:'168px',width:'168px'}}>
         <canvas ref={ref} style={{height:'100%',width:'100%'}}/>
       </div>
       <div style={narrow?{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'7px 8px'}:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:'8px',justifyContent:'center'}}>
@@ -2162,7 +2162,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
               ))}
             </div>
           </div>
-          <div className="h-52"><BarChart data={barData} theme={theme} hide={hideAmt||privacy}/></div>
+          <div className="h-44"><BarChart data={barData} theme={theme} hide={hideAmt||privacy}/></div>
         </div>
         <div className={card}>
           <h3 className={`text-sm font-semibold mb-4 ${dk?'text-gold-300':'text-gold-700'}`}>รายจ่ายตามหมวด (เดือนนี้)</h3>
@@ -8247,7 +8247,7 @@ const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
     // into a wall.
     <div>
     {tabs}
-    <div ref={wrapRef} className="relative w-full" style={{aspectRatio:'3/1', minHeight:'260px', maxHeight:'360px'}}>
+    <div ref={wrapRef} className="relative w-full" style={{aspectRatio:'3.4/1', minHeight:'230px', maxHeight:'300px'}}>
       {boxes.map(b=>{
         // A box under roughly 7% of a side has no room for two lines of type;
         // it keeps its colour and gives its name to the tooltip instead of
