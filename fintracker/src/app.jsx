@@ -2152,14 +2152,14 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
         </div>
       </div>
 
-      {/* Two columns of equal width for two charts that want nothing like the
-          same amount. Twelve months of bars want every pixel; a ring with two
-          categories beside it wanted about a third of what it had, and spent
-          the rest as a rectangle of empty card. Two to one, and the ring drops
-          into its own narrow layout — stacked over a two-column legend — which
-          is what that mode was written for. */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className={card+' lg:col-span-2'}>
+      {/* Three fifths and two, on the same seam and the same gap as the band
+          above it and the one below, so a single line runs down the page. The
+          bars gave up the width: twelve of them read fine a little narrower,
+          while the ring was working in about a third of its card and spending
+          the rest as blank. It stays wide enough for the legend beside it —
+          that stacks below 500px, and two fifths here is nowhere near it. */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7">
+        <div className={card+' lg:col-span-3'}>
           {/* The range control every financial chart has, and the reason the
               heading no longer states a fixed number: it would have gone stale
               the moment the window changed. */}
@@ -2176,7 +2176,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           </div>
           <div className="h-44"><BarChart data={barData} theme={theme} hide={hideAmt||privacy}/></div>
         </div>
-        <div className={card}>
+        <div className={card+' lg:col-span-2'}>
           <h3 className={`text-sm font-semibold mb-4 ${dk?'text-gold-300':'text-gold-700'}`}>รายจ่ายตามหมวด (เดือนนี้)</h3>
           <div>
             {donutData.labels.length>0 ? <DonutChart data={donutData} theme={theme} centerValue={fmt(donutData.values.reduce((s,v)=>s+v,0))} hideAmt={hideAmt}/> : <div className={`h-32 flex items-center justify-center text-sm ${subTx}`}>ยังไม่มีรายจ่ายเดือนนี้</div>}
@@ -2199,23 +2199,23 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           what is big, and what is growing — and the answer to the second sat
           three screens below the first, on a page whose whole idea is seeing
           everything at once. */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-        <div className="lg:col-span-2">
-      <div className={card + ' p-5'}>
-        <div className="flex items-baseline gap-2.5 flex-wrap mb-4">
-          <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>แผนผังพอร์ต</h3>
-          <p className={`text-xs ${subTx}`}>เรียงตามมูลค่า · สี = กำไร/ขาดทุน · ชี้เพื่อดูรายละเอียด</p>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7">
+        <div className={card + ' p-5 lg:col-span-3'}>
+          <div className="flex items-baseline gap-2.5 flex-wrap mb-4">
+            <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>แผนผังพอร์ต</h3>
+            <p className={`text-xs ${subTx}`}>เรียงตามมูลค่า · สี = กำไร/ขาดทุน · ชี้เพื่อดูรายละเอียด</p>
+          </div>
+          <PortfolioTreemap assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy}/>
         </div>
-        <PortfolioTreemap assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy}/>
-      </div>
-        </div>
-        <div className={card + ' p-5'}>
-          {/* This card is a third of the row, so its two lines stay stacked —
-              on one baseline the gloss would push the heading off on its own
-              line and read worse than it does above it. Same rule everywhere:
-              one line where there is room for one. */}
-          <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>ผลตอบแทนต่อปี</h3>
-          <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>คิดแบบทบต้น เทียบกันได้ข้ามระยะเวลาถือ</p>
+        {/* No items-start on the row, so this is as tall as the treemap beside
+            it rather than stopping two thirds of the way down and leaving the
+            corner of the page empty. Two fifths is also enough width to put the
+            heading and its gloss on one baseline, matching that card. */}
+        <div className={card + ' p-5 lg:col-span-2 flex flex-col'}>
+          <div className="flex items-baseline gap-2.5 flex-wrap mb-4">
+            <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>ผลตอบแทนต่อปี</h3>
+            <p className={`text-xs ${subTx}`}>คิดแบบทบต้น เทียบกันได้ข้ามระยะเวลาถือ</p>
+          </div>
           <ReturnRanking assets={assets} txs={txs} usdRate={usdRate} theme={theme}/>
         </div>
       </div>
@@ -8387,9 +8387,10 @@ const ReturnRanking = ({ assets, txs, usdRate, theme }) => {
     rows.sort((x,y)=>y.cagr-x.cagr);
     // The two lists only split once there are enough holdings that they cannot
     // overlap; below that the same row would appear in both.
+    const wide = rows.length > 8, split = rows.length > 5;
     return {
-      top:    rows.slice(0, rows.length>5 ? 3 : rows.length),
-      bottom: rows.length>5 ? rows.slice(-2).reverse() : [],
+      top:    rows.slice(0, wide ? 5 : split ? 3 : rows.length),
+      bottom: wide ? rows.slice(-3).reverse() : split ? rows.slice(-2).reverse() : [],
       tooNew: skipped,
     };
   },[assets,txs,usdRate]);
@@ -8415,7 +8416,7 @@ const ReturnRanking = ({ assets, txs, usdRate, theme }) => {
   );
 
   return (
-    <div>
+    <div className="flex-1 flex flex-col">
       {bottom.length>0 && <div className={`text-[10px] uppercase mb-1 ${dk?'text-slate-500':'text-slate-400'}`}>ทำได้ดีที่สุด</div>}
       {top.map(r=><Row key={r.id} r={r}/>)}
       {bottom.length>0 && (
@@ -8425,7 +8426,7 @@ const ReturnRanking = ({ assets, txs, usdRate, theme }) => {
         </>
       )}
       {tooNew>0 && (
-        <div className={`text-[10px] mt-3 pt-2 border-t ${dk?'border-white/5 text-slate-500':'border-slate-100 text-slate-400'}`}
+        <div className={`text-[10px] mt-auto pt-2 border-t ${dk?'border-white/5 text-slate-500':'border-slate-100 text-slate-400'}`}
           title="ถือ 2 สัปดาห์แล้วได้ +5% ถ้าคิดเป็นต่อปีจะกลายเป็น +260% ซึ่งไม่ได้บอกอะไรจริง">
           ถือไม่ถึง 3 เดือน {tooNew} รายการ · ยังไม่คำนวณต่อปี ⓘ
         </div>
