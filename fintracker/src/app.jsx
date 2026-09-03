@@ -2077,8 +2077,8 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
                   {totalCustodial>0&&<span className={dk?'text-amber-400':'text-amber-600'}>🔒 Custodial {mask(fmtNW(totalCustodial))}</span>}
                 </div>
               )}
-        </div>
               <div className={`text-xs mt-1 ${dk?'text-slate-400':'text-slate-500'}`}>{totalDebtRemaining>0?'Net · ':''}คำนวณจาก {assets.length} สินทรัพย์ + {wallets.length} กระเป๋า · USD/THB = {usdRate}</div>
+        </div>
             </div>
             <div className="flex flex-wrap gap-2">
               {nwByType.map(({type,val,pct,icon,label})=>(
