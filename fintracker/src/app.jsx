@@ -9111,7 +9111,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
         </div>
         <div className="flex flex-col gap-3">
           {/* Hero total + breakdown chips (same visual language as the Net Worth card) */}
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className={`text-xs font-medium uppercase tracking-widest mb-1 ${dk?'text-slate-400':'text-slate-500'}`}>ยอดรวมกระเป๋าเงิน</p>
               <div className={`text-2xl lg:text-3xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`}>{fmt(totalBalance)}</div>
@@ -9119,7 +9119,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                   that already said 16 กระเป๋า. The asset count was the only new
                   thing in it, so that moved up and the line went. */}
             </div>
-            <div className="flex-1 flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 justify-end">
               {[
                 // Same colours ASSET_TYPES uses for the same four words. They were an
                 // olive, a raspberry, a cyan and a brown — four hues invented here and
@@ -9146,7 +9146,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                 const grand = totalBalance;
                 const pct = grand>0 ? (c.val/grand*100) : 0;
                 return (
-                  <div key={c.key} className={`flex items-center gap-2 flex-1 basis-32 min-w-0 px-3 py-2 rounded-xl ${dk?'bg-white/5 border border-white/10':'bg-slate-50 border border-slate-200'}`}>
+                  <div key={c.key} className={`flex items-center gap-2 px-3 py-2 rounded-xl ${dk?'bg-white/5 border border-white/10':'bg-slate-50 border border-slate-200'}`}>
                     <span className="text-base leading-none">{c.icon}</span>
                     <div className="min-w-0">
                       <div className={`text-xs font-bold ${dk?'text-slate-100':'text-slate-700'}`}>{fmt(c.val)}</div>
@@ -12582,44 +12582,84 @@ const App = () => {
   if (authLoading || dataLoading) return (
     <div className="min-h-screen" style={bgStyle}>
       {(()=>{ const sk=`rounded-2xl animate-pulse ${dk?'bg-white/[0.06]':'bg-slate-100'}`;
+        // Two columns at three fifths and two, on the same gap, because that is
+        // the seam every page now splits on. A band drawn any other way moves
+        // the moment the real one arrives, which is the one thing a skeleton
+        // exists to prevent.
+        const Band = ({h}) => (
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7">
+            <div className={`${h} lg:col-span-3 ${sk}`}/>
+            <div className={`${h} lg:col-span-2 ${sk}`}/>
+          </div>
+        );
         return (<>
-          <div className={`border-b ${dk?'border-gold-500/18':'border-gold-100'}`}>
-            <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-              <LogoSvg size={30}/>
+          {/* The rail, which the old skeleton did not draw at all — it stood in
+              for a top-bar layout the app stopped having, so the chrome jumped
+              sideways by 240px when the real shell arrived. */}
+          <aside className={`hidden lg:block fixed inset-y-0 left-0 w-60 z-40 border-r ${dk?'bg-[#0e0e11] border-gold-500/12':'bg-white border-slate-200'}`}>
+            <div className="px-5 py-4 flex items-center gap-2.5">
+              <LogoSvg size={26}/>
               <div className={`h-4 w-24 rounded-lg animate-pulse ${dk?'bg-white/[0.06]':'bg-slate-100'}`}/>
+            </div>
+            <div className="px-3 space-y-1.5 mt-3">
+              {[0,1,2,3,4,5,6].map(i=><div key={i} className={`h-8 rounded-xl animate-pulse ${dk?'bg-white/[0.04]':'bg-slate-50'}`}/>)}
+            </div>
+          </aside>
+          <div className={`hidden lg:block lg:pl-60 border-b ${dk?'border-gold-500/18':'border-gold-100'}`}>
+            <div className="px-4 lg:px-7 py-2 flex items-center gap-3">
+              <div className={`h-4 w-40 rounded-lg animate-pulse ${dk?'bg-white/[0.06]':'bg-slate-100'}`}/>
               <div className="flex-1"/>
               <div className={`h-7 w-7 rounded-lg animate-pulse ${dk?'bg-white/[0.06]':'bg-slate-100'}`}/>
             </div>
           </div>
-          <main className="max-w-7xl mx-auto px-4 py-6 space-y-5">
-            <div className={`h-6 w-52 ${sk}`}/>
-            {page==='transactions' ? (
-              <div className="space-y-2.5">
-                <div className={`h-12 ${sk}`}/>
-                {[0,1,2,3,4,5].map(i=><div key={i} className={`h-16 ${sk}`}/>)}
-              </div>
-            ) : page==='assets'||page==='wallet' ? (
-              <>
-                <div className={`h-28 ${sk}`}/>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[0,1,2,3,4,5].map(i=><div key={i} className={`h-52 ${sk}`}/>)}
+          <div className="lg:pl-60">
+            <main className="px-4 lg:px-7 py-6 space-y-7">
+              <div className={`h-7 w-56 ${sk}`}/>
+              {page==='transactions' ? (
+                <div className="space-y-2.5">
+                  <div className={`h-12 ${sk}`}/>
+                  {[0,1,2,3,4,5].map(i=><div key={i} className={`h-16 ${sk}`}/>)}
                 </div>
-              </>
-            ) : (
-              <>
-                <div className={`h-40 ${sk}`}/>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
-                  {[0,1,2,3].map(i=><div key={i} className={`h-24 ${sk}`}/>)}
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  {[0,1,2].map(i=><div key={i} className={`h-28 ${sk}`}/>)}
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className={`h-72 ${sk}`}/><div className={`h-72 ${sk}`}/>
-                </div>
-              </>
-            )}
-          </main>
+              ) : page==='wallet' ? (
+                <>
+                  <div className={`h-56 ${sk}`}/>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[0,1,2,3,4,5].map(i=><div key={i} className={`h-52 ${sk}`}/>)}
+                  </div>
+                </>
+              ) : page==='assets' ? (
+                <>
+                  <Band h="h-44"/>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
+                    {[0,1,2,3].map(i=><div key={i} className={`h-24 ${sk}`}/>)}
+                  </div>
+                  <div className={`h-96 ${sk}`}/>
+                </>
+              ) : page==='debt' ? (
+                <>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
+                    {[0,1,2,3].map(i=><div key={i} className={`h-24 ${sk}`}/>)}
+                  </div>
+                  <div className={`h-72 ${sk}`}/>
+                  <div className={`h-80 ${sk}`}/>
+                </>
+              ) : page==='summary' ? (
+                <>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
+                    {[0,1,2,3].map(i=><div key={i} className={`h-24 ${sk}`}/>)}
+                  </div>
+                  <Band h="h-72"/>
+                  <div className={`h-96 ${sk}`}/>
+                </>
+              ) : (
+                <>
+                  <Band h="h-44"/>
+                  <Band h="h-64"/>
+                  <Band h="h-80"/>
+                </>
+              )}
+            </main>
+          </div>
         </>);
       })()}
     </div>
