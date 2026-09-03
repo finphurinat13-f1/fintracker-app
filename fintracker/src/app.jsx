@@ -3565,20 +3565,29 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
   // working against the person it is filtering for.
   const WALLET_ASSET_TYPE_MAP = { crypto:['crypto'], bank:['cash'], cash:['cash'], credit:['cash'], stock:['stock','gold'], gold:['gold','cash','other'] };
   const allowedAssetTypes = WALLET_ASSET_TYPE_MAP[walletTypeFilter] || null;
-  const unlinked = assets.filter(a=>!a.walletId);
+  // A walletId pointing at a wallet that no longer exists is not a link, it is a
+  // leftover. Deleting a wallet never cleared the ids of what it held, so those
+  // holdings were hidden from every picker — present in the totals, invisible to
+  // the one screen that could have put them somewhere. That is why สร้อยคอ could
+  // not be found: not missing, orphaned.
+  const walletExists = id => !!id && wallets.some(w=>w.id===id);
+  const unlinked = assets.filter(a=>!walletExists(a.walletId));
   const matches = a => {
     if(allowedAssetTypes&&!allowedAssetTypes.includes(a.type)) return false;
     const q=search.toLowerCase();
     return !q||a.name.toLowerCase().includes(q)||(a.note||'').toLowerCase().includes(q);
   };
-  const filtered = assets.filter(a=>!a.walletId && matches(a));
+  const filtered = assets.filter(a=>!walletExists(a.walletId) && matches(a));
   // Holdings that already belong to another wallet. They were hidden outright,
   // which is right for "add" and wrong for what people actually come here to do:
   // Fin made a gold wallet and wanted his ทองรูปพรรณ in it, and the only route
   // was to remember which wallet had it, open that one, unlink there, come back.
   // assignAssetToWallet already overwrites walletId, so moving was one click away
   // the whole time — it just had nothing to click.
-  const movable = assets.filter(a=>a.walletId && a.walletId!==defaultWalletId && matches(a));
+  // Only holdings genuinely sitting in another live wallet. Fin asked for the
+  // list to show what is free rather than what could be taken from somewhere
+  // else, and once orphans are counted as free there is very little left here.
+  const movable = assets.filter(a=>walletExists(a.walletId) && a.walletId!==defaultWalletId && matches(a));
   const walletNameOf = id => (wallets.find(w=>w.id===id)||{}).name || 'กระเป๋าอื่น';
   if(!open) return null;
   const inp = `w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all ${dk?'bg-white/5 border-white/10 text-white placeholder-slate-600 focus:border-gold-500':'bg-slate-50 border-slate-200 text-slate-800 focus:border-gold-400'}`;
@@ -11743,7 +11752,18 @@ const App = () => {
   const addWallet      = useCallback(data=>setWallets(ws=>[...ws,{...data,id:uid()}]),[]);
   const editWallet     = useCallback(data=>setWallets(ws=>ws.map(w=>w.id===data.id?data:w)),[]);
   const saveCashCount  = useCallback((wid,cashCount)=>setWallets(ws=>ws.map(w=>w.id===wid?{...w,cashCount}:w)),[]);
-  const delWallet      = useCallback(id=>setWallets(ws=>ws.filter(w=>w.id!==id)),[]);
+  // Deleting a wallet left its holdings pointing at it. They kept counting toward
+  // net worth — correctly, they still exist — but every picker hides anything
+  // with a walletId, so they became invisible to the one screen that could have
+  // put them somewhere else. Two gold necklaces spent who knows how long in that
+  // state, present in the totals and absent from every list.
+  //
+  // The readers now treat a dangling id as unlinked, which fixes what is already
+  // stored; this stops it being written in the first place.
+  const delWallet      = useCallback(id=>{
+    setWallets(ws=>ws.filter(w=>w.id!==id));
+    setAssets(as=>as.map(a=>a.walletId===id?{...a,walletId:null}:a));
+  },[]);
   const unlinkAsset    = useCallback(id=>setAssets(as=>as.map(a=>a.id===id?{...a,walletId:null}:a)),[]);
   const reorderWallets = useCallback(ids=>{ setWalletOrder(ids); localStorage.setItem('ft-wallet-order',JSON.stringify(ids)); syncToCloud(); },[syncToCloud]);
   const sortedWallets  = useMemo(()=>{
