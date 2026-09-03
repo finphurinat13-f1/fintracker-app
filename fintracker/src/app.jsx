@@ -10415,6 +10415,61 @@ const FeatureSection = ({ dk }) => {
   );
 };
 
+// An example portfolio for the sign-in page, and nothing but an example. It is
+// not Fin's — his total is a different number entirely — and it is not anyone
+// else's either. The repository is public and this is the most screenshotted
+// screen an app has, so the only safe holdings to show are ones nobody owns.
+//
+// The shape is chosen rather than random. Nothing is above a fifth of the whole,
+// so the treemap is a portfolio rather than one slab with crumbs beside it; no
+// two weights are equal, because equal tiles lay out as a grid and stop looking
+// like a treemap at all; and two of the nine are down, because a portfolio where
+// everything is green reads as a brochure.
+//
+// One BTC comes to about $76,400 at the rate below, which is close enough to the
+// real price that somebody who follows it will not stop and squint.
+const DEMO_ASSETS = [
+  { id:'d1', name:'Bitcoin',       type:'crypto', qty:1, value:2520000, pl: 0.184 },
+  { id:'d2', name:'Ethereum',      type:'crypto', qty:5, value: 960000, pl:-0.062 },
+  { id:'d3', name:'NVIDIA',        type:'stock',  qty:1, value:1440000, pl: 0.247 },
+  { id:'d4', name:'TSMC',          type:'stock',  qty:1, value:1200000, pl: 0.123 },
+  { id:'d5', name:'ASML',          type:'stock',  qty:1, value:1080000, pl: 0.089 },
+  { id:'d6', name:'GOOG A',        type:'stock',  qty:1, value: 960000, pl:-0.031 },
+  { id:'d7', name:'ทองคำ 99.99%',  type:'gold',   qty:1, value:1440000, pl: 0.315 },
+  { id:'d8', name:'USDT',          type:'cash',   qty:1, value: 720000, pl: 0.002 },
+  { id:'d9', name:'เงินสด (บาท)',  type:'cash',   qty:1, value:1680000, pl: 0     },
+].map(d => ({
+  id: d.id, name: d.name, type: d.type, currency: 'THB', moves: [],
+  qty: d.qty,
+  currentPrice: d.value / d.qty,
+  // Worked back from the gain rather than stored beside it, so the percentage
+  // the tile prints is the one written above and cannot drift from it.
+  avgCost: (d.value / d.qty) / (1 + d.pl),
+}));
+
+const DemoTreemap = ({ dk, theme }) => (
+  <section className="mt-24 sm:mt-32">
+    <div className="text-center">
+      <span className={`inline-block text-[11px] font-semibold uppercase px-4 py-1.5 rounded-full border ${dk?'border-gold-500/30 text-gold-300':'border-gold-300 text-gold-700'}`}
+        style={{letterSpacing:'0.16em'}}>Live Demo</span>
+      <h2 className={`mt-6 text-3xl sm:text-4xl font-bold ${dk?'text-white':'text-slate-900'}`}
+        style={{textWrap:'balance', letterSpacing:'-0.02em'}}>
+        The whole portfolio, in one picture
+      </h2>
+      <p className={`mt-4 mx-auto max-w-xl text-sm leading-relaxed ${dk?'text-slate-400':'text-slate-500'}`}>
+        Size is what a holding is worth, colour is whether it is up or down.
+        This one is real and running — filter it, hover it.
+      </p>
+    </div>
+    <div className={`mt-10 rounded-2xl border p-5 ${dk?'border-white/10 bg-white/[0.03]':'border-slate-200 bg-white shadow-sm'}`}>
+      <PortfolioTreemap assets={DEMO_ASSETS} txs={[]} usdRate={33} theme={theme} hide={false}/>
+      <p className={`mt-4 text-[11px] text-center ${dk?'text-slate-600':'text-slate-400'}`}>
+        Example holdings — not anyone’s real portfolio
+      </p>
+    </div>
+  </section>
+);
+
 const LoginPage = ({ theme }) => {
   const dk = theme === 'dark';
   const [mode, setMode]   = useState('login'); // 'login' | 'signup'
@@ -10680,6 +10735,7 @@ const LoginPage = ({ theme }) => {
           <DashboardMock/>
         </div>
 
+        <DemoTreemap dk={dk} theme={theme}/>
         <WhySection dk={dk}/>
         <FeatureSection dk={dk}/>
 
