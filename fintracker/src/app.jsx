@@ -10832,7 +10832,7 @@ const LoginPage = ({ theme }) => {
           {authModal && (
             <div className="fixed inset-0 bg-black/85 backdrop-blur-md" onClick={()=>setAuthModal(false)}/>
           )}
-          <div className={`relative w-full max-w-md rounded-2xl border p-7 ${dk?'border-white/10 bg-white/[0.03]':'border-slate-200 bg-white shadow-sm'}`}
+          <div className={`relative w-full max-w-md rounded-2xl border p-7 ${authModal?'my-auto':''} ${dk?'border-white/10 bg-white/[0.03]':'border-slate-200 bg-white shadow-sm'}`}
             style={authModal ? {background:dk?'#15151a':'#ffffff', boxShadow:'0 24px 80px rgba(0,0,0,0.6)'} : undefined}>
             {authModal && (
               <button onClick={()=>setAuthModal(false)} aria-label="ปิด"
