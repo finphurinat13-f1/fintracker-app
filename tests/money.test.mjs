@@ -1083,3 +1083,30 @@ test('dataHealth: clean data reports nothing', () => {
   const txs = [{ id: 1, type: 'expense', amount: 100, walletId: 5 }];
   assert.equal(dataHealth({ txs, assets }).filter(f => f.level === 'warn').length, 0);
 });
+
+// A hand-edit can move the average anywhere, so the entry records what it
+// replaced — otherwise deleting one rolled the quantity back and left the
+// corrected average in place, a pairing that was never true.
+test('revertMove: deleting a hand-edit restores the average it replaced', () => {
+  const manual = { id:'m', date:'2026-08-29', manual:true,
+    qty:-96.98858563, rate:0, newQty:3994.8608, newAvg:20.0257, oldAvg:19.551062, realized:0 };
+  const back = revertMove(manual, 3994.8608, 20.0257);
+  assert.ok(back, 'ต้องย้อนได้ เพราะเป็นรายการล่าสุด');
+  assert.equal(back.qty, 4091.84938563, 'จำนวนต้องย้อนกลับ');
+  assert.equal(back.avgCost, 19.551062, 'ทุนเฉลี่ยต้องย้อนกลับด้วย');
+});
+
+test('revertMove: an old hand-edit with no oldAvg still restores the quantity', () => {
+  const legacy = { id:'m', date:'2026-08-29', manual:true,
+    qty:-96.98858563, rate:0, newQty:3994.8608, newAvg:20.0257, realized:0 };
+  const back = revertMove(legacy, 3994.8608, 20.0257);
+  assert.equal(back.qty, 4091.84938563);
+  assert.equal(back.avgCost, 20.0257, 'ไม่มีค่าเดิมให้ย้อน จึงคงไว้');
+});
+
+test('revertMove: a real เอาออก still leaves the average alone', () => {
+  const sale = { id:'s', date:'2026-08-29', qty:-10, rate:30, newQty:90, newAvg:25 };
+  const back = revertMove(sale, 90, 25);
+  assert.equal(back.qty, 100);
+  assert.equal(back.avgCost, 25, 'ขายบางส่วนไม่กระทบทุนเฉลี่ย');
+});

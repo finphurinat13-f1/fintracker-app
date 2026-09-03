@@ -3518,6 +3518,14 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
           note: `แก้ด้วยมือ · จำนวน ${fmtQty(oldQty)} → ${fmtQty(qty)}${Math.abs(avgCost-oldAvg)>1e-8?` · ทุนเฉลี่ย ${oldAvg} → ${avgCost}`:''}`,
           qty: parseFloat((qty-oldQty).toFixed(8)), rate: 0,
           newQty: parseFloat(qty.toFixed(8)), newAvg: parseFloat(avgCost.toFixed(6)),
+          // The average this correction replaced. Every other kind of entry can
+          // have its average worked back out — a เอาออก does not change it, a
+          // เติม blended a known rate in by weight — but a hand-edit can move it
+          // anywhere, and nothing in the arithmetic remembers where it was. So
+          // it is written down. Without this, deleting a correction rolled the
+          // quantity back and left the corrected average in place: a pairing
+          // that was never true at any point in the holding's life.
+          oldAvg: parseFloat((oldAvg||0).toFixed(6)),
           realized: 0,
         }, ...(f.moves||[])]};
       }
@@ -11547,16 +11555,22 @@ const App = () => {
   // so both places behave identically — see revertMove for why only the most
   // recent entry can be unwound, and why it returns null rather than guessing.
   const deleteAssetMove = useCallback((assetId, moveId)=>{
-    let reverted = false;
+    let reverted = false, avgStuck = false;
     setAssets(as=>as.map(a=>{
       if(a.id!==assetId) return a;
       const m = (a.moves||[]).find(x=>x.id===moveId);
       const back = revertMove(m, a.qty||0, a.avgCost||0);
       reverted = !!back;
+      // Corrections written before this record started keeping the average it
+      // replaced can still have their quantity put back, but not that. Saying so
+      // beats leaving it to be noticed later.
+      avgStuck = !!back && !!m && !!m.manual && typeof m.oldAvg !== 'number';
       const moves = (a.moves||[]).filter(x=>x.id!==moveId);
       return back ? {...a, moves, qty:back.qty, avgCost:back.avgCost} : {...a, moves};
     }));
-    addToast(reverted ? '✓ ลบแล้ว — ย้อนจำนวนกลับให้เรียบร้อย' : '✓ ลบออกจากประวัติแล้ว (จำนวนคงเดิม)');
+    addToast(!reverted ? '✓ ลบออกจากประวัติแล้ว (ตัวเลขคงเดิม)'
+           : avgStuck  ? '✓ ลบแล้ว — ย้อนจำนวนให้ · ทุนเฉลี่ยคงเดิม (รายการเก่าไม่ได้เก็บค่าก่อนแก้ไว้)'
+           :             '✓ ลบแล้ว — ย้อนจำนวนและทุนเฉลี่ยกลับให้เรียบร้อย');
   },[addToast]);
   const renameAssetMove = useCallback((assetId, moveId, note)=>{
     setAssets(as=>as.map(a=>a.id!==assetId?a:{...a, moves:(a.moves||[]).map(m=>m.id===moveId?{...m,note}:m)}));

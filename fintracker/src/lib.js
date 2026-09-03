@@ -671,9 +671,12 @@ export const revertMove = (move, curQty, curAvg) => {
 
   const qty = curQty - move.qty;
   if (qty < -1e-6) return null;
-  // เอาออก leaves the average untouched, so it reverts to itself; เติมเข้า blended
-  // the new rate in by weight and has to be unblended the same way
-  const avg = move.qty < 0 ? curAvg
+  // A hand-edit writes down the average it replaced, because it could have moved
+  // it anywhere and no formula can recover that. Everything else is derivable:
+  // เอาออก leaves the average untouched so it reverts to itself, and เติมเข้า
+  // blended a known rate in by weight and is unblended the same way.
+  const avg = typeof move.oldAvg === 'number' ? move.oldAvg
+            : move.qty < 0 ? curAvg
             : qty > 1e-9 ? (curQty * curAvg - move.qty * (move.rate || 0)) / qty
             : curAvg;
   if (!isFinite(avg) || avg < 0) return null;
