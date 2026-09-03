@@ -10146,6 +10146,101 @@ const VerifyEmail = ({ user, dk, addToast }) => {
 };
 
 // ── LOGIN PAGE ─────────────────────────────────────────────
+// A drawn stand-in for the dashboard, not a screenshot of it. Every figure here
+// is invented: this repository is public and the sign-in page is the most
+// screenshotted surface in any app, so a real balance would be published twice
+// over. It only has to say "this is what the thing looks like" from across a
+// room, which is all anyone reads a hero image for.
+const DashboardMock = () => (
+  <div className="rounded-2xl overflow-hidden shadow-2xl select-none" aria-hidden="true"
+    style={{background:'#0b0b0e', border:'1px solid rgba(217,175,43,0.2)'}}>
+    <div className="flex items-center gap-1.5 px-3 py-2.5" style={{background:'#141416'}}>
+      {['#3a3a3f','#3a3a3f','#3a3a3f'].map((c,i)=>(
+        <span key={i} className="w-2 h-2 rounded-full" style={{background:c}}/>
+      ))}
+    </div>
+    <div className="flex">
+      <div className="w-14 shrink-0 py-3 px-2 space-y-2" style={{background:'#101013'}}>
+        {[1,0,0,0,0].map((on,i)=>(
+          <div key={i} className="h-2 rounded-full"
+            style={{background: on ? 'rgba(217,175,43,0.55)' : 'rgba(255,255,255,0.07)',
+                    width: on ? '100%' : `${55+i*9}%`}}/>
+        ))}
+      </div>
+      <div className="flex-1 min-w-0 p-4">
+        <div className="text-[8px] tracking-[0.2em] uppercase" style={{color:'rgba(240,230,205,0.4)'}}>Net Worth</div>
+        <div className="text-xl font-bold tracking-wide metal-gold">฿1,284,500</div>
+        <div className="grid grid-cols-3 gap-1.5 mt-3">
+          {[['เงินสด','42%'],['หุ้น','35%'],['ทองคำ','23%']].map(([l,v])=>(
+            <div key={l} className="rounded-lg px-2 py-1.5" style={{background:'#17171b', border:'1px solid rgba(255,255,255,0.05)'}}>
+              <div className="text-[7px]" style={{color:'rgba(240,230,205,0.4)'}}>{l}</div>
+              <div className="text-[10px] font-semibold" style={{color:'rgba(240,230,205,0.85)'}}>{v}</div>
+            </div>
+          ))}
+        </div>
+        <svg viewBox="0 0 200 52" className="w-full mt-3" preserveAspectRatio="none" style={{height:'52px'}}>
+          <defs>
+            <linearGradient id="ftmockfill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#d9af2b" stopOpacity="0.3"/>
+              <stop offset="100%" stopColor="#d9af2b" stopOpacity="0"/>
+            </linearGradient>
+          </defs>
+          <polygon fill="url(#ftmockfill)" points="0,52 0,40 28,34 56,37 84,24 112,27 140,16 168,12 200,6 200,52"/>
+          <polyline fill="none" stroke="#d9af2b" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round"
+            vectorEffect="non-scaling-stroke" points="0,40 28,34 56,37 84,24 112,27 140,16 168,12 200,6"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+);
+
+// The half of the sign-in screen that says what this is. Everything on it has to
+// be true of FinTracker rather than true of a landing page: no trial to start, no
+// card to withhold, and no user count, because inventing one is the cheapest lie
+// on the internet and this app's whole subject is figures you can check.
+const LoginHero = ({ dk }) => (
+  <aside className="relative hidden lg:flex flex-col justify-center px-12 xl:px-16 py-12 overflow-hidden">
+    {dk && (
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background:'radial-gradient(ellipse 70% 90% at 20% 15%, rgba(217,175,43,0.10) 0%, transparent 60%),'
+                  +'radial-gradient(ellipse 60% 80% at 85% 85%, rgba(230,200,92,0.06) 0%, transparent 58%)',
+      }}/>
+    )}
+    <div className="relative max-w-lg">
+      <span className={`inline-block text-[11px] font-medium uppercase px-3 py-1 rounded-full border ${dk?'border-gold-500/30 text-gold-300':'border-gold-300 text-gold-700'}`}
+        style={{letterSpacing:'0.16em'}}>
+        สินทรัพย์ · กระเป๋าเงิน · งบประมาณ
+      </span>
+      {/* Fin's own sentence for what the two main pages are for. It was the
+          clearest thing said about this app all year, and a headline written
+          from scratch would only have been a worse version of it. */}
+      <h1 className={`mt-5 text-4xl xl:text-5xl font-bold leading-[1.15] ${dk?'text-white':'text-slate-800'}`}
+        style={{textWrap:'balance'}}>
+        รู้ว่ามีเท่าไหร่<br/>
+        <span className={dk?'text-gold-300':'text-gold-600'}>และอยู่ที่ไหน</span>
+      </h1>
+      <p className={`mt-4 text-sm leading-relaxed ${dk?'text-slate-400':'text-slate-500'}`}>
+        หุ้น คริปโต ทองคำ และเงินสด รวมอยู่ที่เดียว —
+        เห็นทั้งว่ามีอะไรบ้าง และแต่ละอย่างเก็บไว้ตรงไหน
+      </p>
+      <ul className={`mt-6 space-y-2.5 text-sm ${dk?'text-slate-300':'text-slate-600'}`}>
+        {['ซิงก์ทุกเครื่อง · เปิดใช้ได้แม้ไม่มีเน็ต',
+          'งบประมาณรายหมวด จัดกลุ่มเองได้',
+          'ตรวจสุขภาพข้อมูลให้อัตโนมัติ',
+          'ฟรี ไม่มีค่าใช้จ่าย ไม่มีโฆษณา'].map(t=>(
+          <li key={t} className="flex items-start gap-2.5">
+            <span className={`mt-0.5 flex-shrink-0 ${dk?'text-gold-400':'text-gold-600'}`}>✓</span>
+            <span>{t}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-9">
+        <DashboardMock/>
+      </div>
+    </div>
+  </aside>
+);
+
 const LoginPage = ({ theme }) => {
   const dk = theme === 'dark';
   const [mode, setMode]   = useState('login'); // 'login' | 'signup'
@@ -10238,8 +10333,12 @@ const LoginPage = ({ theme }) => {
   const lbl = `text-sm font-medium mb-1.5 block ${dk?'text-slate-200':'text-slate-700'}`;
 
   return (
-    <div className={`flex items-center justify-center min-h-screen ${dk?'bg-app':'bg-slate-50'}`}>
-      <div className="flex flex-1 flex-col justify-center px-6 py-10">
+    <div className={`min-h-screen lg:grid lg:grid-cols-2 ${dk?'bg-app':'bg-slate-50'}`}>
+      <LoginHero dk={dk}/>
+      {/* The form half. Below lg it is the whole screen — on a phone the person
+          holding it has already decided, and a page of reasons to sign up sits
+          between them and the field they came to type in. */}
+      <div className={`flex flex-col justify-center px-6 py-10 min-h-screen lg:min-h-0 ${dk?'lg:bg-white/[0.02]':'lg:bg-white'}`}>
         <div className="mx-auto w-full max-w-sm">
 
           {/* Logo + App name */}
