@@ -8920,7 +8920,6 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
   const hasCrypto        = useMemo(()=>walletData.some(w=>w.type==='crypto'),[walletData]);
   const walletIds     = useMemo(()=>new Set(wallets.map(w=>w.id)),[wallets]);
   const linkedStocks  = useMemo(()=>assets.filter(a=>(a.type==='stock'||a.type==='gold')&&walletIds.has(a.walletId)),[assets,walletIds]);
-  const stockTotal    = useMemo(()=>linkedStocks.reduce((s,a)=>s+assetVal(a,txs,usdRate),0),[linkedStocks,txs,usdRate]);
   const stockCount    = linkedStocks.length;
   const hasStocks     = stockCount>0;
 
@@ -8935,7 +8934,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className={`text-xs font-medium uppercase tracking-widest mb-1 ${dk?'text-slate-400':'text-slate-500'}`}>ยอดรวมกระเป๋าเงิน</p>
-              <div className={`text-2xl lg:text-3xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`}>{fmt(cashTotal+cryptoTotal+stockTotal+otherTotal)}</div>
+              <div className={`text-2xl lg:text-3xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`}>{fmt(totalBalance)}</div>
               <p className={`text-xs mt-1 ${dk?'text-slate-400':'text-slate-500'}`}>{walletData.length} กระเป๋า{hasStocks?` · ${stockCount} สินทรัพย์`:''}</p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -8946,13 +8945,23 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                 // on the assets page. One concept, one colour.
                 {key:'cash',   icon:'💵', label:'เงินสด', val:cashTotal,   color:'#cbac33', show:true},
                 {key:'crypto', icon:'🔐', label:'Crypto', val:cryptoTotal, color:'#e9d892', show:hasCrypto},
-                {key:'stock',  icon:'📈', label:'หุ้น',   val:stockTotal,  color:'#f4ecc6', show:hasStocks},
+                // stockWalletTotal, not stockTotal. The latter sums the holdings
+                // linked to stock wallets and leaves out the loose cash sitting
+                // beside them — ฿60.94 of it on one wallet, which is exactly the
+                // amount by which this page disagreed with the assets page.
+                {key:'stock',  icon:'📈', label:'หุ้น',   val:stockWalletTotal, color:'#f4ecc6', show:hasStocks},
                 {key:'gold',   icon:'🥇', label:'ทองคำ', val:goldTotal,   color:'#d8bb63', show:hasGold},
                 {key:'other',  icon:'👛', label:'อื่นๆ',  val:otherTotal,  color:'#b7941a', show:hasOtherWallets},
               ].filter(c=>c.show).map(c=>{
                 // Must match the headline above, or the chips add up to a
                 // different number than the total they sit beside.
-                const grand = cashTotal+cryptoTotal+stockTotal+otherTotal;
+                // The five buckets partition every wallet exactly once — bank,
+                // cash and credit, then crypto, stock, gold, and everything
+                // CLAIMED_TYPES does not name — so their sum is the headline by
+                // construction rather than by anyone remembering to keep them in
+                // step. Adding gold to CLAIMED_TYPES without adding goldTotal
+                // here is precisely the mistake this phrasing prevents.
+                const grand = totalBalance;
                 const pct = grand>0 ? (c.val/grand*100) : 0;
                 return (
                   <div key={c.key} className={`flex items-center gap-2 px-3 py-2 rounded-xl ${dk?'bg-white/5 border border-white/10':'bg-slate-50 border border-slate-200'}`}>
@@ -8966,13 +8975,19 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
               })}
             </div>
           </div>
+          {/* The same five buckets as the chips above, from the same figures.
+              This bar was drawing three of them against a total made of those
+              same three, so it always read as 100% of a number that was not the
+              one printed above it. */}
           <SegmentedProgress
             segments={[
               {type:'cash', val:Math.max(cashTotal,0), label:'เงินสด'},
               ...(hasCrypto?[{type:'crypto', val:cryptoTotal, label:'Crypto'}]:[]),
-              ...(hasStocks?[{type:'stock', val:stockTotal, label:'หุ้น'}]:[]),
+              ...(hasStocks?[{type:'stock', val:stockWalletTotal, label:'หุ้น'}]:[]),
+              ...(hasGold?[{type:'gold', val:goldTotal, label:'ทองคำ'}]:[]),
+              ...(hasOtherWallets?[{type:'other', val:otherTotal, label:'อื่นๆ'}]:[]),
             ]}
-            total={cashTotal+cryptoTotal+stockTotal}
+            total={totalBalance}
             theme={theme}
           />
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -8986,6 +9001,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                 {k:'cash-group', l:'💵 เงินสด'},
                 ...(walletData.some(w=>w.type==='stock')?[{k:'stock', l:'📈 พอร์ตหุ้น'}]:[]),
                 ...(hasCrypto?[{k:'crypto', l:'🔐 Crypto'}]:[]),
+                ...(hasGold?[{k:'gold', l:'🥇 ทองคำ'}]:[]),
                 ...(hasOtherWallets?[{k:'other-group', l:'👛 อื่นๆ'}]:[]),
               ].map(f=>(
                 <button key={f.k} onClick={()=>setFilterType(f.k)}
