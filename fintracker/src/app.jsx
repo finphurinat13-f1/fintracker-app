@@ -1997,8 +1997,6 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
     </div>
   );
 
-  const greeting = now.getHours()<12?'🌅 อรุณสวัสดิ์':now.getHours()<18?'☀️ สวัสดีตอนบ่าย':'🌙 สวัสดีตอนเย็น';
-  const dateStr = now.toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 
   return (
     // `stagger` replaces `fade-up` here rather than joining it: the parent
@@ -2051,13 +2049,6 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
         <div className={`relative overflow-hidden rounded-2xl px-5 py-6 ${dk?'':'glass-light shadow-sm border border-gold-100'}`}>
           {dk && <HeroSpark history={nwHistory}/>}
           <div className="relative flex flex-wrap items-start justify-between gap-4">
-            {/* The date, in the corner. It came off the greeting strip, and it is
-                the one thing that strip carried which this figure actually wants:
-                a net worth without a date is a number with no idea how old it is. */}
-            <div className="absolute top-0 right-0 text-right hidden sm:block">
-              <div className={`text-xs font-semibold ${dk?'text-slate-300':'text-slate-600'}`}>{dateStr}</div>
-              <div className={`text-[11px] mt-0.5 ${dk?'text-slate-500':'text-slate-400'}`}>{greeting}{whoAmI(user) ? `, ${whoAmI(user)}` : ''}</div>
-            </div>
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <div className={`text-xs font-medium uppercase tracking-widest ${dk?'text-slate-400':'text-slate-500'}`}>Net Worth · มูลค่าทรัพย์สินสุทธิ <button onClick={()=>setNwOpen(true)} title="ดูว่าตัวเลขนี้มาจากไหน" style={{cursor:'pointer',opacity:.7}}>ⓘ</button></div>
@@ -12471,6 +12462,11 @@ const App = () => {
     .split(/[s@._-]+/).filter(Boolean).slice(0, 2)
     .map(w => w[0].toUpperCase()).join('')) || '?';
 
+  // Drawn by the bar above every page, so computed here rather than inside the
+  // one page that used to hold them.
+  const _now = new Date();
+  const greeting = _now.getHours()<12?'🌅 อรุณสวัสดิ์':_now.getHours()<18?'☀️ สวัสดีตอนบ่าย':'🌙 สวัสดีตอนเย็น';
+  const dateStr = _now.toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const nav=[
     {k:'dashboard',   l:'Dashboard', i:'home'},
     {k:'transactions', l:'รายการ',   i:'list'},
@@ -12539,7 +12535,18 @@ const App = () => {
       {/* ── DESKTOP: Top Navbar (lg+) ── */}
       <nav className={`hidden lg:block sticky top-0 z-30 lg:pl-60 border-b no-print ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-white/88 border-gold-100 backdrop-blur-xl'}`}>
         <div className="px-4 lg:px-7 py-3 flex items-center gap-3">
-          <div className="flex-1"/>
+          {/* The date lives here rather than in a corner of the net worth card.
+              There it was absolutely positioned over the ground the asset chips
+              stand on — invisible until the hero got narrower, then a collision.
+              A bar that spans every page is where something true of every page
+              belongs, and the greeting comes with it: it is addressed to whoever
+              is signed in, which is what the rest of this bar is about. */}
+          <div className="flex-1 min-w-0 flex items-baseline gap-2.5">
+            <span className={`text-sm font-semibold truncate ${dk?'text-slate-300':'text-slate-600'}`}>{dateStr}</span>
+            <span className={`text-xs truncate ${dk?'text-slate-500':'text-slate-400'}`}>
+              {greeting}{whoAmI(user) ? `, ${whoAmI(user)}` : ''}
+            </span>
+          </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span title={syncTip} className={`inline-flex items-center px-1 ${syncStatus==='err'?'text-rose-400':syncStatus==='saving'?'text-yellow-400':'text-emerald-400'}`}><Ic n={syncStatus==='err'?'alert':'sync'} s={15} cls={syncStatus==='saving'?'animate-spin':''}/></span>
             <button onClick={togglePrivacy} title={privacy?'ปลดล็อกตัวเลข':'ล็อกตัวเลข'} className={`p-2 rounded-xl transition-colors ${privacy?(dk?'bg-gold-500/20 text-gold-300':'bg-gold-50 text-gold-500'):(dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-700')}`}>
