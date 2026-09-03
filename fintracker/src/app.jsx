@@ -8543,11 +8543,21 @@ const WalletCardFace = ({ w, meta, balanceText, usdText, hidden, accent }) => (
         badge moved down beside the wallet name, which is where a card prints
         its network mark anyway. */}
     <div className="relative px-4 pt-3.5 pb-3">
-      {/* Chip */}
-      <svg width="30" height="23" viewBox="0 0 30 23" aria-hidden="true">
-        <rect x="0.5" y="0.5" width="29" height="22" rx="4" fill="rgba(212,175,69,0.18)" stroke={accent} strokeWidth="0.8" opacity="0.85"/>
-        <path d="M0 8h9M0 15h9M21 8h9M21 15h9M9 0v23M21 0v23" stroke={accent} strokeWidth="0.7" opacity="0.55" fill="none"/>
-      </svg>
+      {/* Chip, then the name beside it. The name used to sit on the bottom line
+          at 12px under a 24px balance, which is the smallest thing on the card
+          and the one you are looking for when you are trying to work out which
+          card you are looking at. Right padding clears the edit and delete
+          buttons pinned to that corner. */}
+      <div className="flex items-center gap-2.5" style={{paddingRight:'76px'}}>
+        <svg width="30" height="23" viewBox="0 0 30 23" aria-hidden="true" className="flex-shrink-0">
+          <rect x="0.5" y="0.5" width="29" height="22" rx="4" fill="rgba(212,175,69,0.18)" stroke={accent} strokeWidth="0.8" opacity="0.85"/>
+          <path d="M0 8h9M0 15h9M21 8h9M21 15h9M9 0v23M21 0v23" stroke={accent} strokeWidth="0.7" opacity="0.55" fill="none"/>
+        </svg>
+        <div className="w-6 h-6 rounded-md flex items-center justify-center text-sm flex-shrink-0 overflow-hidden">
+          {w.type==='bank' ? detectBankIcon(w.name,24) : w.type==='crypto' ? detectCryptoWalletIcon(w.name,24) : (meta.icon || w.icon)}
+        </div>
+        <div className="text-sm font-semibold truncate" style={{color:'rgba(240,230,205,0.95)'}}>{w.name}</div>
+      </div>
 
       {/* Balance sits on the card-number line: same weight, same wide tracking,
           same tabular figures, so a masked balance keeps the card's shape. */}
@@ -8555,19 +8565,13 @@ const WalletCardFace = ({ w, meta, balanceText, usdText, hidden, accent }) => (
         {balanceText}
       </div>
 
-      <div className="flex items-end justify-between gap-3 mt-2">
-        <div className="min-w-0 flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md flex items-center justify-center text-sm flex-shrink-0 overflow-hidden">
-            {w.type==='bank' ? detectBankIcon(w.name,24) : w.type==='crypto' ? detectCryptoWalletIcon(w.name,24) : (meta.icon || w.icon)}
-          </div>
-          <div className="min-w-0">
-            <div className="text-[9px] uppercase truncate" style={{color:accent, letterSpacing:'0.12em'}}>{meta.label}</div>
-            <div className="text-xs font-semibold truncate" style={{color:'rgba(240,230,205,0.92)'}}>{w.name}</div>
-          </div>
-        </div>
-        <div className="text-right flex-shrink-0">
-          <div className="text-[9px] uppercase" style={{color:'rgba(240,230,205,0.45)', letterSpacing:'0.12em'}}>USD</div>
-          <div className="text-xs font-semibold tabular-nums" style={{color:'rgba(240,230,205,0.75)'}}>{hidden ? '$•••••' : usdText}</div>
+      {/* What a card prints along its bottom edge: what kind of thing it is on
+          one side, a secondary figure on the other. */}
+      <div className="flex items-end justify-between gap-3 mt-2.5">
+        <div className="text-[9px] uppercase truncate min-w-0" style={{color:accent, letterSpacing:'0.12em'}}>{meta.label}</div>
+        <div className="flex items-baseline gap-1.5 flex-shrink-0">
+          <span className="text-[9px] uppercase" style={{color:'rgba(240,230,205,0.45)', letterSpacing:'0.12em'}}>USD</span>
+          <span className="text-xs font-semibold tabular-nums" style={{color:'rgba(240,230,205,0.75)'}}>{hidden ? '$•••••' : usdText}</span>
         </div>
       </div>
     </div>
