@@ -10195,6 +10195,93 @@ const DashboardMock = () => (
 );
 
 
+// The two sections under the fold. Both are lifted in shape from the reference
+// and written from what this app actually does — the complaints on the left are
+// the ones that produced FinTracker in the first place, and every line on the
+// right points at something already shipped.
+const WhySection = ({ dk }) => {
+  const bad = [
+    'Balances live in five different apps. Adding them up by hand means the total is stale before you finish.',
+    'A spreadsheet gives you a number but never tells you it is wrong — a formula that quietly broke still returns something.',
+    'Nothing says which account is holding what, so money gets counted twice, or not at all.',
+  ];
+  const good = [
+    'Every holding and every account in one view — what you own, and where it sits.',
+    'Built-in data checks that name the problem, show the two figures that disagree, and say how to fix it.',
+    'Budget groups you name yourself, each category paced against the day of the month.',
+  ];
+  const Card = ({ title, items, ok }) => (
+    <div className={`relative rounded-2xl border p-6 sm:p-7 ${dk?'border-white/10 bg-white/[0.03]':'border-slate-200 bg-white shadow-sm'}`}>
+      <span className="absolute left-0 top-6 bottom-6 w-[3px] rounded-full"
+        style={{background: ok ? '#7aab8a' : (dk?'rgba(255,255,255,0.14)':'#cbd5e1')}}/>
+      <h3 className={`text-lg font-bold mb-5 ${dk?'text-white':'text-slate-800'}`}>{title}</h3>
+      <ul className="space-y-4">
+        {items.map(t=>(
+          <li key={t} className="flex items-start gap-3">
+            <span className={`mt-0.5 flex-shrink-0 text-sm font-bold ${ok?'text-emerald-400':'text-rose-400'}`}>{ok?'✓':'✕'}</span>
+            <span className={`text-sm leading-relaxed ${dk?'text-slate-300':'text-slate-600'}`}>{t}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+  return (
+    <section className="mt-24 sm:mt-32">
+      <div className="text-center">
+        <span className={`inline-block text-[11px] font-semibold uppercase px-4 py-1.5 rounded-full border ${dk?'border-gold-500/30 text-gold-300':'border-gold-300 text-gold-700'}`}
+          style={{letterSpacing:'0.16em'}}>Why FinTracker</span>
+        <h2 className={`mt-6 text-3xl sm:text-4xl font-bold ${dk?'text-white':'text-slate-900'}`}
+          style={{textWrap:'balance', letterSpacing:'-0.02em'}}>
+          Stop adding it up by hand
+        </h2>
+        <p className={`mt-4 mx-auto max-w-xl text-sm leading-relaxed ${dk?'text-slate-400':'text-slate-500'}`}>
+          What tracking your money looks like without this, and with it.
+        </p>
+      </div>
+      <div className="grid gap-5 sm:grid-cols-2 mt-10">
+        <Card title="Spreadsheets & five banking apps" items={bad} ok={false}/>
+        <Card title="FinTracker" items={good} ok={true}/>
+      </div>
+    </section>
+  );
+};
+
+const FeatureSection = ({ dk }) => {
+  const items = [
+    { tag:'Net Worth',    title:'One number, and where it came from',
+      body:'Stocks, crypto, gold, cash and property in a single total — then broken down by what it is, and by which account is holding it.' },
+    { tag:'Data Health',  title:'Checks that show their working',
+      body:'Seven rules run over your records. When one fires it prints the two figures that disagree and the gap between them, not just a warning.' },
+    { tag:'Budget',       title:'Groups you name yourself',
+      body:'Build your own categories and groups. Each one shows its share of the whole and whether today’s spending is ahead of the month.' },
+    { tag:'Anywhere',     title:'Offline first, synced everywhere',
+      body:'Install it like an app and open it with no connection. Changes sync to every device the moment you are back online.' },
+  ];
+  return (
+    <section className="mt-24 sm:mt-32">
+      <div className="text-center">
+        <span className={`inline-block text-[11px] font-semibold uppercase px-4 py-1.5 rounded-full border ${dk?'border-gold-500/30 text-gold-300':'border-gold-300 text-gold-700'}`}
+          style={{letterSpacing:'0.16em'}}>Core Features</span>
+        <h2 className={`mt-6 text-3xl sm:text-4xl font-bold ${dk?'text-white':'text-slate-900'}`}
+          style={{textWrap:'balance', letterSpacing:'-0.02em'}}>
+          Built for figures you can check
+        </h2>
+      </div>
+      <div className="grid gap-5 sm:grid-cols-2 mt-10">
+        {items.map(f=>(
+          <div key={f.tag} className={`rounded-2xl border p-6 sm:p-7 ${dk?'border-white/10 bg-white/[0.03]':'border-slate-200 bg-white shadow-sm'}`}>
+            <span className={`inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full ${dk?'bg-gold-500/15 text-gold-300':'bg-gold-50 text-gold-700'}`}>
+              {f.tag}
+            </span>
+            <h3 className={`mt-4 text-lg font-bold leading-snug ${dk?'text-white':'text-slate-800'}`}>{f.title}</h3>
+            <p className={`mt-2.5 text-sm leading-relaxed ${dk?'text-slate-400':'text-slate-500'}`}>{f.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+};
+
 const LoginPage = ({ theme }) => {
   const dk = theme === 'dark';
   const [mode, setMode]   = useState('login'); // 'login' | 'signup'
@@ -10408,7 +10495,10 @@ const LoginPage = ({ theme }) => {
           <DashboardMock/>
         </div>
 
-        <p className={`mt-10 pb-16 text-center text-xs ${dk?'text-slate-600':'text-slate-400'}`}>
+        <WhySection dk={dk}/>
+        <FeatureSection dk={dk}/>
+
+        <p className={`mt-20 pb-16 text-center text-xs ${dk?'text-slate-600':'text-slate-400'}`}>
           Free forever · No ads · No credit card
         </p>
       </div>
