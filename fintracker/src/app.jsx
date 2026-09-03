@@ -238,14 +238,21 @@ const CAT_ICON_KEYS = Object.keys(CAT_SVG);
 // spending category.
 const TYPE_SVG = {
   bank:    <><path d="M4.2 10.4h15.6v8.2H4.2z" opacity=".3"/><path d="M11.5 2.6a1 1 0 0 1 1 0l9 4.9a1 1 0 0 1-.48 1.88H2.98A1 1 0 0 1 2.5 7.5z"/><rect x="5.6" y="11" width="2.2" height="6.4" rx="1"/><rect x="10.9" y="11" width="2.2" height="6.4" rx="1"/><rect x="16.2" y="11" width="2.2" height="6.4" rx="1"/><rect x="3" y="18.8" width="18" height="2.4" rx="1.2"/></>,
-  // Just the ฿. Earlier versions drew it on a disc, and the disc was doing the
-  // job of saying "this is a thing" — which is the job the rounded tile behind
-  // every one of these now does. Two containers is one too many, and the inner
-  // one was eating the room the symbol needed to be read at 24px.
+  // The actual ฿ character, not a drawing of one. Four hand-drawn attempts came
+  // out as a B with a tail, because the thing that makes ฿ a ฿ — the stem
+  // crossing the bowls rather than standing beside them — is exactly what
+  // disappears first at 24px when you build it out of a rect and two arcs.
   //
-  // Centred on x=12 by hand: the stem sits left of the bowls and the bowls bulge
-  // right, so an origin-aligned ฿ hangs to one side of the box it is drawn in.
-  cash:    <><rect x="6.6" y="2.6" width="2.8" height="18.8" rx="0.6"/><path d="M9.4 5.6h4.3a3 3 0 0 1 0 6H9.4z"/><path d="M9.4 11.6h4.9a3.2 3.2 0 0 1 0 6.4H9.4z"/></>,
+  // The old note here argued a <text> glyph could not be trusted to render on a
+  // phone that had never seen Noto. That argument does not survive contact with
+  // the rest of the app: fmt() puts a ฿ in front of every amount on every
+  // screen, so a device that cannot draw one has already failed long before it
+  // reaches this icon.
+  // A ring around it, per the reference. The earlier disc failed because it was
+  // filled — a solid coin with a symbol on it competes with the tile behind it
+  // for the same job. A hairline ring does not: it frames the glyph instead of
+  // replacing the tile, which is why coin icons are drawn this way everywhere.
+  cash:    <><circle cx="12" cy="12" r="9.3" fill="none" stroke="currentColor" strokeWidth="2.1"/><text x="12" y="12" textAnchor="middle" dominantBaseline="central" fontSize="13.5" fontWeight="800" fill="currentColor">฿</text></>,
   stock:   <><path d="M3 20.2V13l4.6-3.4 4.4 3 4.6-5.2L21 4.8v15.4z" opacity=".3"/><path d="M2.9 14.2a1 1 0 0 1 .2-1.4l4.6-3.4a1 1 0 0 1 1.16-.02l3.62 2.47 4.03-4.55a1 1 0 1 1 1.5 1.32l-4.6 5.2a1 1 0 0 1-1.31.16L8.3 11.44l-4 2.96a1 1 0 0 1-1.4-.2z"/><circle cx="17.4" cy="7.6" r="1.9"/></>,
   credit:  <><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.6" opacity=".3"/><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.6" fill="none" stroke="currentColor" strokeWidth="1.7"/><rect x="2.2" y="8.2" width="19.6" height="2.8"/><rect x="5" y="14" width="5.2" height="2" rx="1"/></>,
   crypto:  <><path d="M12 2.4 20 5.6v6.1c0 4.4-3.1 8.4-8 9.9-4.9-1.5-8-5.5-8-9.9V5.6z" opacity=".3"/><path d="M12 2.4 20 5.6v6.1c0 4.4-3.1 8.4-8 9.9-4.9-1.5-8-5.5-8-9.9V5.6z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M10 8.4h3.1a2.1 2.1 0 0 1 0 4.2H10zm0 4.2h3.4a2.1 2.1 0 0 1 0 4.2H10zm1.1-6.5v2m0 9v2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></>,
