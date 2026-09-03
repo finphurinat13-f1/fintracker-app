@@ -12579,7 +12579,7 @@ const App = () => {
 
       {/* ── DESKTOP: Top Navbar (lg+) ── */}
       <nav className={`hidden lg:block sticky top-0 z-30 lg:pl-60 border-b no-print ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-[#faf9f7]/88 border-gold-100 backdrop-blur-xl'}`}>
-        <div className="max-w-[1500px] mx-auto px-4 lg:px-7 py-3 flex items-center gap-3">
+        <div className="px-4 lg:px-7 py-3 flex items-center gap-3">
           <div className="flex-1"/>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span title={syncTip} className={`inline-flex items-center px-1 ${syncStatus==='err'?'text-rose-400':syncStatus==='saving'?'text-yellow-400':'text-emerald-400'}`}><Ic n={syncStatus==='err'?'alert':'sync'} s={15} cls={syncStatus==='saving'?'animate-spin':''}/></span>
@@ -12760,7 +12760,7 @@ const App = () => {
 
       {/* Content */}
       <div className="lg:pl-60">
-      <main className="max-w-[1500px] mx-auto px-4 lg:px-7 py-6 lg:pb-6 pb-24">
+      <main className="px-4 lg:px-7 py-6 lg:pb-6 pb-24">
         {showChecklist && (
           <div className={`mb-4 rounded-2xl border p-5 no-print ${dk?'card-solid':'glass-light shadow-sm'}`}>
             <div className="flex items-center justify-between mb-3">
