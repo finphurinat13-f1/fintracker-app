@@ -375,7 +375,7 @@ const DateRangePicker = ({from, to, onPick, dk, years=[]}) => {
           off and behind the rows. A portal has no ancestors to inherit. */}
       {open&&ReactDOM.createPortal(
         <div ref={box} style={{position:'fixed', top:pos.top, left:pos.left, zIndex:60}}
-          className={`w-[278px] rounded-2xl shadow-2xl p-3 ${dk?'bg-[#1a1a19] border border-white/10':'bg-white border border-slate-200'}`}>
+          className={`w-[278px] rounded-2xl shadow-2xl p-3 ${dk?'bg-[#141418] border border-white/10':'bg-white border border-slate-200'}`}>
           <div className="flex items-center justify-between gap-1 mb-2">
             <button onClick={()=>step(-1)} className={navCls} title="เดือนก่อน">‹</button>
             <div className="flex gap-1.5">
@@ -976,7 +976,7 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
   const overDraw = f.type==='transfer' && availFrom!==null && (parseFloat(f.amount)||0) > availFrom + 0.01;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#141418] border border-gold-500/25':'bg-white'}`}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData?'แก้ไขรายการ':'เพิ่มรายการใหม่'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -1551,7 +1551,7 @@ const CardMenu = ({ dk, items }) => {
       {open && ReactDOM.createPortal(
         <div role="menu" onMouseDown={e=>e.stopPropagation()} onClick={e=>e.stopPropagation()}
           style={{ position:'fixed', top:pos.top, left:pos.left, width:172, zIndex:60 }}
-          className={`rounded-lg border shadow-2xl overflow-hidden ${dk?'bg-[#1a1a19] border-white/12':'bg-white border-slate-200'}`}>
+          className={`rounded-lg border shadow-2xl overflow-hidden ${dk?'bg-[#141418] border-white/12':'bg-white border-slate-200'}`}>
           {items.map(it => (
             <button key={it.label} role="menuitem" onClick={()=>{ setOpen(false); it.run(); }}
               className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors ${
@@ -1666,7 +1666,7 @@ const SegmentedProgress = ({ segments, total, theme }) => {
           // the eye finds an edge far faster than it compares two shades. This
           // is what a stacked bar needs instead of a second hue: the ramp keeps
           // the theme, the gap does the separating.
-          return <div key={seg.type} className="h-full transition-all duration-700" style={{width:`${pct}%`,backgroundColor:getColor(seg.type,i),boxShadow: i===0 ? 'none' : `inset 1.5px 0 0 ${dk?'#0b0b0e':'#faf9f7'}`,backgroundImage:'linear-gradient(180deg,rgba(255,255,255,0.20) 0%,rgba(255,255,255,0.05) 42%,rgba(0,0,0,0.10) 68%,rgba(0,0,0,0.20) 100%)'}}/>;
+          return <div key={seg.type} className="h-full transition-all duration-700" style={{width:`${pct}%`,backgroundColor:getColor(seg.type,i),boxShadow: i===0 ? 'none' : `inset 1.5px 0 0 ${dk?'#0b0b0e':'#ffffff'}`,backgroundImage:'linear-gradient(180deg,rgba(255,255,255,0.20) 0%,rgba(255,255,255,0.05) 42%,rgba(0,0,0,0.10) 68%,rgba(0,0,0,0.20) 100%)'}}/>;
         })}
       </div>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-2.5">
@@ -2074,9 +2074,9 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           Distinct because it is warm, not because it is foreign. */}
       <div className={`rounded-2xl px-5 py-3.5 fade-up ${dk?'card-solid':'glass-light shadow-sm'}`}
         style={dk
-          ? {background:'linear-gradient(115deg,rgba(230,200,92,0.16) 0%,rgba(217,175,43,0.10) 42%,#1a1a1f 88%)',
+          ? {background:'linear-gradient(115deg,rgba(230,200,92,0.16) 0%,rgba(217,175,43,0.10) 42%,#141418 88%)',
              border:'1px solid rgba(217,175,43,0.34)'}
-          : {background:'linear-gradient(115deg,#faf3e6 0%,#f6efe3 45%,#faf9f7 90%)',border:'1px solid rgba(212,175,69,0.30)'}}>
+          : {background:'linear-gradient(115deg,#faf3e6 0%,#f6efe3 45%,#ffffff 90%)',border:'1px solid rgba(212,175,69,0.30)'}}>
         <div className="flex items-center gap-3">
 
           {/* Left: Logo + Name */}
@@ -2987,7 +2987,7 @@ const Analytics = ({ txs, theme }) => {
       {/* Budget Edit Modal */}
       {editCat&&(
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={()=>setEditCat(null)}>
-          <div className={`w-full max-w-sm rounded-2xl p-6 shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+          <div className={`w-full max-w-sm rounded-2xl p-6 shadow-2xl scale-in ${dk?'bg-[#141418] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
             <h3 className={`text-base font-semibold mb-1 ${dk?'text-white':'text-slate-800'}`}>Update Budget</h3>
             <p className={`text-sm mb-5 ${dk?'text-slate-400':'text-slate-500'}`}>งบประมาณสำหรับหมวด <span className="font-medium" style={{color:catClr(editCat)}}>{editCat}</span></p>
             <div>
@@ -3344,7 +3344,7 @@ const TickerSearch = ({ value, onChange, onPick, dk, inp }) => {
         </div>
       </div>
       {open&&(
-        <div className={`absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-2xl max-h-56 overflow-y-auto ${dk?'bg-[#1a1a19] border-white/12':'bg-white border-slate-200'}`}>
+        <div className={`absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-2xl max-h-56 overflow-y-auto ${dk?'bg-[#141418] border-white/12':'bg-white border-slate-200'}`}>
           {busy&&!hits.length&&<div className={`px-3 py-2.5 text-xs ${dk?'text-slate-400':'text-slate-500'}`}>กำลังค้นหา…</div>}
           {!busy&&!hits.length&&<div className={`px-3 py-2.5 text-xs ${dk?'text-slate-400':'text-slate-500'}`}>ไม่พบ — ลองพิมพ์ชื่อภาษาอังกฤษดูค่ะ</div>}
           {hits.map(h=>(
@@ -3595,7 +3595,7 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
   const showTabs = !editData && defaultWalletId;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#141418] border border-gold-500/25':'bg-white'}`}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData?'Edit Asset':'Add Asset'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -6023,7 +6023,7 @@ const DataHealthPanel = ({ open, onClose, findings, onGoTx, dk, hidden = 0, onAc
   return ReactDOM.createPortal(
     <div className="fixed inset-0 z-[75] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div onClick={e=>e.stopPropagation()}
-        className={`w-full max-w-md max-h-[80vh] overflow-y-auto rounded-2xl border p-5 ${dk?'bg-[#1a1a1f] border-gold-500/25':'bg-white border-slate-200'}`}>
+        className={`w-full max-w-md max-h-[80vh] overflow-y-auto rounded-2xl border p-5 ${dk?'bg-[#141418] border-gold-500/25':'bg-white border-slate-200'}`}>
         <div className="flex items-center justify-between mb-4">
           <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>ตรวจสุขภาพข้อมูล</span>
           <button onClick={onClose} className={dk?'text-slate-500':'text-slate-400'}><Ic n="x" s={16}/></button>
@@ -6162,7 +6162,7 @@ const NetWorthBreakdown = ({ open, onClose, wallets, assets, debts, txs, usdRate
   return ReactDOM.createPortal(
     <div className="fixed inset-0 z-[75] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div onClick={e=>e.stopPropagation()}
-        className={`w-full max-w-md max-h-[80vh] overflow-y-auto rounded-2xl border p-5 ${dk?'bg-[#1a1a1f] border-gold-500/25':'bg-white border-slate-200'}`}>
+        className={`w-full max-w-md max-h-[80vh] overflow-y-auto rounded-2xl border p-5 ${dk?'bg-[#141418] border-gold-500/25':'bg-white border-slate-200'}`}>
         <div className="flex items-center justify-between mb-4">
           <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>มูลค่าสุทธิมาจากไหน</span>
           <button onClick={onClose} className={dk?'text-slate-500':'text-slate-400'}><Ic n="x" s={16}/></button>
@@ -6248,7 +6248,7 @@ const CommandPalette = ({ open, onClose, actions, txs, onPick, dk }) => {
   return ReactDOM.createPortal(
     <div className="fixed inset-0 z-[80] flex items-start justify-center pt-[12vh] px-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div onClick={e=>e.stopPropagation()}
-        className={`w-full max-w-lg rounded-2xl border overflow-hidden ${dk?'bg-[#1a1a1f] border-gold-500/25':'bg-white border-slate-200'}`}>
+        className={`w-full max-w-lg rounded-2xl border overflow-hidden ${dk?'bg-[#141418] border-gold-500/25':'bg-white border-slate-200'}`}>
         <input autoFocus value={q} onChange={e=>setQ(e.target.value)}
           placeholder="พิมพ์คำสั่ง หรือชื่อรายการ…"
           className={`w-full px-4 py-3.5 bg-transparent outline-none text-sm ${dk?'text-slate-100 placeholder-slate-600':'text-slate-800 placeholder-slate-400'}`}/>
@@ -6309,7 +6309,7 @@ const QuickAdd = ({ open, onClose, onSave, txs, wallets, defaultWalletId, dk }) 
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
       onClick={onClose}>
       <div onClick={e=>e.stopPropagation()}
-        className={`w-full max-w-sm rounded-2xl border p-5 ${dk?'bg-[#1a1a1f] border-gold-500/25':'bg-white border-slate-200'}`}
+        className={`w-full max-w-sm rounded-2xl border p-5 ${dk?'bg-[#141418] border-gold-500/25':'bg-white border-slate-200'}`}
         style={{marginBottom:'env(safe-area-inset-bottom)'}}>
         <div className="flex items-center justify-between mb-4">
           <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>บันทึกเร็ว</span>
@@ -6357,7 +6357,7 @@ const Toast = ({toasts, remove, cancelUndo}) => (
   <div className="fixed top-[70px] left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-2 pointer-events-none w-full max-w-md px-4">
     {toasts.map(t=>(
       t.type==='undo'
-        ? <div key={t.id} className="relative overflow-hidden flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-semibold toast-drop pointer-events-auto w-full max-w-sm bg-[#1a1a19] border border-amber-500/40 text-slate-100">
+        ? <div key={t.id} className="relative overflow-hidden flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-semibold toast-drop pointer-events-auto w-full max-w-sm bg-[#141418] border border-amber-500/40 text-slate-100">
             <span className="flex-1 truncate">{t.msg}</span>
             <button onClick={()=>cancelUndo(t.id)} className="text-amber-400 hover:text-amber-300 font-semibold text-xs whitespace-nowrap px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 transition-colors flex-shrink-0">ยกเลิก</button>
             <div className="absolute bottom-0 left-0 h-[2px] bg-amber-400/60 undo-bar rounded-full"/>
@@ -7188,7 +7188,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
         <div style={{position:'fixed',inset:0,zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}}
           className={`p-4 ${dk?'bg-black/60':'bg-black/30'} backdrop-blur-sm`}
           onClick={()=>setGroupEdit(null)}>
-          <div className={`w-80 max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl p-6 ${dk?'bg-[#0f1117] border border-white/10':'bg-white'}`}
+          <div className={`w-80 max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl p-6 ${dk?'bg-[#141418] border border-white/10':'bg-white'}`}
             onClick={e=>e.stopPropagation()}>
             <h3 className={`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-800'}`}>
               {groupEdit.id ? 'แก้ไขกลุ่ม' : 'เพิ่มกลุ่มใหม่'}
@@ -7271,7 +7271,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
         <div style={{position:'fixed',inset:0,zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}}
           className={`p-4 ${dk?'bg-black/60':'bg-black/30'} backdrop-blur-sm`}
           onClick={resetAdd}>
-          <div className={`w-80 max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl p-6 ${dk?'bg-[#0f1117] border border-white/10':'bg-white border border-slate-200'}`}
+          <div className={`w-80 max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl p-6 ${dk?'bg-[#141418] border border-white/10':'bg-white border border-slate-200'}`}
             onClick={e=>e.stopPropagation()}>
             <h3 className={`text-sm font-semibold mb-4 ${dk?'text-white':'text-slate-800'}`}>เพิ่มหมวดใหม่</h3>
             <div className="space-y-3">
@@ -7315,7 +7315,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 <div className="flex gap-2 flex-wrap">
                   {CAT_PALETTE.map(c=>(
                     <button key={c} onClick={()=>setNewClr(c)}
-                      className={`w-7 h-7 rounded-full transition-all ${newClr===c?'ring-2 ring-offset-2 '+(dk?'ring-white ring-offset-[#0f1117]':'ring-slate-700 ring-offset-white'):''}`}
+                      className={`w-7 h-7 rounded-full transition-all ${newClr===c?'ring-2 ring-offset-2 '+(dk?'ring-white ring-offset-[#141418]':'ring-slate-700 ring-offset-white'):''}`}
                       style={{background:c}}/>
                   ))}
                 </div>
@@ -7381,7 +7381,7 @@ const DebtModal = ({ open, onClose, onSave, editData, theme }) => {
   return (
     <Portal>
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 modal-bg">
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#141418] border border-gold-500/25':'bg-white'}`}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData?'แก้ไขรายการหนี้':'เพิ่มรายการหนี้ใหม่'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -7660,7 +7660,7 @@ const WalletModal = ({ open, onClose, onSave, editData, theme }) => {
   const lbl = `text-xs font-medium mb-1.5 block ${dk?'text-slate-400':'text-slate-500'}`;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#141418] border border-gold-500/25':'bg-white'}`}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData?'แก้ไขกระเป๋าเงิน':'เพิ่มกระเป๋าเงินใหม่'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -7745,7 +7745,7 @@ const CustodialModal = ({ open, onClose, onSave, editData, theme, wallets=[] }) 
   return (
     <Portal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-amber-900/40':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#141418] border border-amber-900/40':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData?'แก้ไขเงินที่ถือแทน':'🔒 เพิ่มเงินที่ถือแทน'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -7816,7 +7816,7 @@ const DCAModal = ({open, onClose, asset, usdRate=35, theme}) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#141418] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <div>
             <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>🧮 DCA Calculator</h2>
@@ -8085,7 +8085,7 @@ const UnifiedTransferModal = ({open, onClose, onSave, wallets=[], assets=[], txs
   if(!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-900/40':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl shadow-2xl scale-in ${dk?'bg-[#141418] border border-gold-900/40':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <div>
             <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>💸 โยกเงิน / ลงทุน</h2>
@@ -9527,7 +9527,7 @@ const RecurringModal = ({open, onClose, onSave, editData, theme, wallets=[], add
   return (
     <Portal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#141418] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{editData&&!addLabel?'แก้ไขรายการประจำ':'เพิ่มรายการประจำ'}</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -9607,7 +9607,7 @@ const AccountModal = ({open, onClose, theme, setTheme, colorTheme, setColorTheme
   return (
     <Portal>
       <div className="fixed inset-0 z-[999] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}} onClick={onClose}>
-        <div className={`w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-2xl p-6 sm:p-7 shadow-2xl ${dk?'bg-slate-800 border border-white/10':'bg-white border border-slate-200'}`} onClick={e=>e.stopPropagation()}>
+        <div className={`w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-2xl p-6 sm:p-7 shadow-2xl ${dk?'bg-[#141418] border border-white/10':'bg-white border border-slate-200'}`} onClick={e=>e.stopPropagation()}>
           {/* Eyebrow, title, gloss — the same three lines every page opens with
               now, so the one screen reached from a menu rather than the rail
               does not look like it came from a different app. */}
@@ -9740,7 +9740,7 @@ const TrashModal = ({open, onClose, theme, trash, wallets, assets, onRestore, on
   const typeLbl = t => t.type==='transfer'?'โยกเงิน':t.type==='income'?'รายรับ':t.type==='adjustment'?'ปรับยอด':t.type==='dividend'?'ปันผล':'รายจ่าย';
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#141418] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>🗑 ถังขยะ <span className={`text-xs font-normal ${dk?'text-slate-500':'text-slate-400'}`}>({trash.length})</span></h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -9801,7 +9801,7 @@ const BackupModal = ({open, onClose, onRestore, theme, txs, assets, wallets, deb
     setPass(''); setPass2(''); setShowPass(false); setEncFile(null); setUnlockPass(''); setBusy(''); } },[open]);
 
   const inp = `w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none ${dk?'bg-white/5 border-white/10 text-white':'bg-slate-50 border-slate-200 text-slate-800'}`;
-  const sel = `w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none ${dk?'bg-[#1a1a19] border-white/10 text-white':'bg-slate-50 border-slate-200 text-slate-800'}`;
+  const sel = `w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none ${dk?'bg-[#141418] border-white/10 text-white':'bg-slate-50 border-slate-200 text-slate-800'}`;
 
   const handleExport = async () => {
     const data = {
@@ -9908,7 +9908,7 @@ const BackupModal = ({open, onClose, onRestore, theme, txs, assets, wallets, deb
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in ${dk?'bg-[#141418] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>💾 Backup & Restore</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -10049,7 +10049,7 @@ const ImportModal = ({open, onClose, onImport, theme}) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg" onClick={onClose}>
-      <div className={`w-full max-w-lg rounded-2xl shadow-2xl scale-in ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
+      <div className={`w-full max-w-lg rounded-2xl shadow-2xl scale-in ${dk?'bg-[#141418] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
         <div className={`flex items-center justify-between px-5 py-4 border-b ${dk?'border-white/8':'border-slate-100'}`}>
           <h2 className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>📥 นำเข้าข้อมูล</h2>
           <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
@@ -10136,7 +10136,7 @@ const VerifyEmail = ({ user, dk, addToast }) => {
 
   return (
     <div className={`min-h-screen flex items-center justify-center p-6 ${dk?'bg-app':'bg-slate-50'}`}>
-      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#141418] border border-gold-500/25':'bg-white'}`}>
         <div className="text-4xl mb-4">📧</div>
         {/* The first screen a stranger meets, so it reads as a system notice
             rather than as a message from a person. */}
@@ -10939,7 +10939,7 @@ const PinModal = ({mode, onClose, onDone, dk}) => {
       <div className="fixed z-[9998] flex items-center justify-center p-4" onClick={onClose}
         style={{inset:0, top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.55)', backdropFilter:'blur(3px)'}}>
         <div onClick={e=>e.stopPropagation()} role="dialog" aria-modal="true" aria-label={head}
-          className={`w-full max-w-[300px] rounded-2xl shadow-2xl p-5 scale-in ${dk?'bg-[#1a1a19] border border-white/10':'bg-white'}`}>
+          className={`w-full max-w-[300px] rounded-2xl shadow-2xl p-5 scale-in ${dk?'bg-[#141418] border border-white/10':'bg-white'}`}>
           <div className="text-center mb-4">
             <div className="text-3xl mb-1.5">{mode==='unlock'?'🔒':mode==='off'?'🔓':mode==='change'?'🔁':'🔐'}</div>
             <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>{head}</div>
@@ -12399,7 +12399,7 @@ const App = () => {
   // ── Auth guard ──
   if (kickedOut) return (
     <div className="min-h-screen flex items-center justify-center" style={bgStyle}>
-      <div className={`w-full max-w-sm rounded-2xl shadow-2xl scale-in p-8 text-center ${theme==='dark'?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-sm rounded-2xl shadow-2xl scale-in p-8 text-center ${theme==='dark'?'bg-[#141418] border border-gold-500/25':'bg-white'}`}>
         <div className="text-5xl mb-4">⚠️</div>
         <h2 className={`text-lg font-bold mb-2 ${theme==='dark'?'text-white':'text-slate-800'}`}>ออกจากระบบอัตโนมัติ</h2>
         <p className={`text-sm mb-6 ${theme==='dark'?'text-slate-400':'text-slate-500'}`}>บัญชีนี้ถูกเข้าสู่ระบบจากอุปกรณ์อื่น<br/>กรุณาเข้าสู่ระบบใหม่อีกครั้ง</p>
@@ -12486,7 +12486,7 @@ const App = () => {
 
   if (user && userStatus === 'pending') return (
     <div className={`min-h-screen flex items-center justify-center ${dk?'bg-app':'bg-slate-50'}`}>
-      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#141418] border border-gold-500/25':'bg-white'}`}>
         {/* A wait with no stated length, no reason and no next step reads as
             being stonewalled. All three are cheap to give, and the page now
             watches the registry, so it lets itself in the moment approval
@@ -12507,7 +12507,7 @@ const App = () => {
 
   if (userStatus === 'rejected') return (
     <div className={`min-h-screen flex items-center justify-center ${dk?'bg-app':'bg-slate-50'}`}>
-      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
+      <div className={`w-full max-w-sm rounded-2xl p-8 text-center shadow-xl ${dk?'bg-[#141418] border border-gold-500/25':'bg-white'}`}>
         <div className="text-5xl mb-4">🚫</div>
         <h2 className={`text-lg font-bold mb-2 ${dk?'text-white':'text-slate-800'}`}>ไม่ได้รับอนุญาต</h2>
         {/* Two lines rather than one wrapped paragraph: the single line broke
@@ -12595,7 +12595,7 @@ const App = () => {
       </aside>
 
       {/* ── DESKTOP: Top Navbar (lg+) ── */}
-      <nav className={`hidden lg:block sticky top-0 z-30 lg:pl-60 border-b no-print ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-[#faf9f7]/88 border-gold-100 backdrop-blur-xl'}`}>
+      <nav className={`hidden lg:block sticky top-0 z-30 lg:pl-60 border-b no-print ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-white/88 border-gold-100 backdrop-blur-xl'}`}>
         <div className="px-4 lg:px-7 py-3 flex items-center gap-3">
           <div className="flex-1"/>
           <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -12623,7 +12623,7 @@ const App = () => {
               </button>
               {menuOpen&&(<>
                 <div className="fixed inset-0 z-40" onClick={()=>setMenuOpen(false)}/>
-                <div className={`absolute right-0 mt-2 w-64 rounded-xl shadow-2xl z-50 py-1.5 ${dk?'bg-[#1a1a19] border border-white/10':'bg-white border border-slate-200'}`}>
+                <div className={`absolute right-0 mt-2 w-64 rounded-xl shadow-2xl z-50 py-1.5 ${dk?'bg-[#141418] border border-white/10':'bg-white border border-slate-200'}`}>
                   {/* Whose account this is, before what can be done with it. On a
                       page that syncs to a cloud copy, the address holding that copy
                       is worth being able to check without leaving the screen. */}
@@ -12742,7 +12742,7 @@ const App = () => {
 
       {/* Mobile top bar */}
       <header className={`lg:hidden sticky top-0 z-30 h-14 flex items-center justify-between px-4 border-b no-print
-        ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-[#faf9f7]/88 border-gold-100 backdrop-blur-xl'}`}>
+        ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-white/88 border-gold-100 backdrop-blur-xl'}`}>
         <div className="flex items-center gap-2">
           <button onClick={()=>setSidebarOpen(true)} aria-label="เปิดเมนู" className={`p-2.5 rounded-xl ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-700'}`}>
             <Ic n="menu" s={18}/>
@@ -12879,7 +12879,7 @@ const App = () => {
            again far more often than not. */
         defaultWalletId={(txs.find(t=>t.type==='expense'&&t.walletId)||{}).walletId||null}/>
       <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 no-print border-t
-        ${dk?'bg-[#101012]/98 border-gold-500/15 backdrop-blur-2xl':'bg-[#faf9f7]/95 border-slate-200 backdrop-blur-xl'}`}
+        ${dk?'bg-[#101012]/98 border-gold-500/15 backdrop-blur-2xl':'bg-white/95 border-slate-200 backdrop-blur-xl'}`}
         style={{paddingBottom:'env(safe-area-inset-bottom)'}}>
         <div className="flex items-center justify-around px-1 pt-2 pb-2">
           {[
@@ -12919,7 +12919,7 @@ const App = () => {
       {isEmptyData && !onboardDone && (
         <Portal>
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-            <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in p-6 text-center ${dk?'bg-[#151514] border border-gold-500/25':'bg-white'}`}>
+            <div className={`w-full max-w-md rounded-2xl shadow-2xl scale-in p-6 text-center ${dk?'bg-[#141418] border border-gold-500/25':'bg-white'}`}>
               <div className="text-5xl mb-3">👋</div>
               <h2 className={`text-lg font-bold mb-1 ${dk?'text-white':'text-slate-800'}`}>ยินดีต้อนรับสู่ FinTracker</h2>
               <p className={`text-sm mb-6 ${dk?'text-slate-400':'text-slate-500'}`}>ติดตามเงิน กระเป๋า สินทรัพย์ และงบประมาณ ในที่เดียว</p>
@@ -12946,7 +12946,7 @@ const App = () => {
       <Toast toasts={toasts} remove={rmToast} cancelUndo={cancelUndo}/>
       {assetCreatedAlert&&(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-          <div className={`relative w-full max-w-sm rounded-2xl shadow-2xl scale-in overflow-hidden ${dk?'bg-[#151514] border border-white/10':'bg-white'}`}>
+          <div className={`relative w-full max-w-sm rounded-2xl shadow-2xl scale-in overflow-hidden ${dk?'bg-[#141418] border border-white/10':'bg-white'}`}>
             <button onClick={()=>setAssetCreatedAlert(null)} aria-label="ปิด" className={`absolute top-3 right-3 z-10 p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-500':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={15}/></button>
             <div className="px-6 pt-9 pb-6 text-center">
               <div className="mx-auto mb-4 w-16 h-16 rounded-full flex items-center justify-center bg-emerald-500 shadow-lg shadow-emerald-500/30" style={{animation:'checkPop .4s cubic-bezier(.34,1.4,.5,1) both'}}>
