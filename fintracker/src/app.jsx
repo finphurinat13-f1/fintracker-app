@@ -3376,7 +3376,11 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
   const [tuNote, setTuNote] = useState(''); // "เติมเข้า" — ชื่อรายการ / โน้ต
   useEffect(()=>{
     if(!open) return;
-    setTab(editData?'new':'new');
+    // Adding opens on the existing list, not on the create form. A holding
+    // recorded twice is worse than one recorded late: the second copy doubles a
+    // figure on three pages and nothing on screen says which of the two is the
+    // real one. Editing still opens on the form, which is the thing being edited.
+    setTab(editData?'new':'existing');
     setSearch(''); setPicked([]); setTuQty(''); setTuRate(''); setTuNote(''); setTuMode('qty'); setEditMove(null);
     setIName(''); setIValue(''); setEditItem(null);
     setCostTotal(editData && editData.qty ? String(parseFloat(((editData.avgCost||0)*editData.qty).toFixed(2))) : '');
@@ -3554,8 +3558,14 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
   };
   const defaultWallet = wallets.find(w=>w.id===defaultWalletId);
   const walletTypeFilter = defaultWallet?.type;
-  const WALLET_ASSET_TYPE_MAP = { crypto:['crypto'], bank:['cash'], cash:['cash'], credit:['cash'], stock:['stock','gold'], gold:['gold','cash'] };
+  // 'other' is on the gold list because ทองรูปพรรณ is usually recorded as a
+  // collection — piece by piece, each with its own weight — rather than as a
+  // single quantity of bullion. Both are gold, and a wallet for gold that will
+  // not accept the way most people in Thailand actually hold it is a filter
+  // working against the person it is filtering for.
+  const WALLET_ASSET_TYPE_MAP = { crypto:['crypto'], bank:['cash'], cash:['cash'], credit:['cash'], stock:['stock','gold'], gold:['gold','cash','other'] };
   const allowedAssetTypes = WALLET_ASSET_TYPE_MAP[walletTypeFilter] || null;
+  const unlinked = assets.filter(a=>!a.walletId);
   const filtered = assets.filter(a=>{
     if(a.walletId) return false; // already linked to a wallet — hide; show only unassigned assets
     if(allowedAssetTypes&&!allowedAssetTypes.includes(a.type)) return false;
@@ -3623,8 +3633,19 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
             <input className={inp} placeholder="ค้นหาสินทรัพย์..." value={search} onChange={e=>setSearch(e.target.value)}/>
           {allowedAssetTypes&&<p className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>แสดงเฉพาะสินทรัพย์ประเภท <span className="font-semibold">{allowedAssetTypes.join(', ')}</span> ตามประเภทกระเป๋า</p>}
             <div className={`rounded-xl border overflow-hidden ${dk?'border-white/8':'border-slate-100'}`} style={{maxHeight:'280px',overflowY:'auto'}}>
+            {/* One message covered two different situations and only
+                described one of them. Told "ทั้งหมดถูกผูกกระเป๋าแล้ว" while
+                holding an unlinked ทองรูปพรรณ, the only conclusion available
+                is that the app has lost it — when the truth was that the
+                type filter above had quietly excluded it. */}
               {filtered.length===0?(
-                <div className={`py-8 text-center text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{search?'ไม่พบสินทรัพย์':'สินทรัพย์ทั้งหมดถูกผูกกระเป๋าแล้ว'}</div>
+                <div className={`py-8 px-4 text-center text-xs leading-relaxed ${dk?'text-slate-400':'text-slate-500'}`}>
+                  {search ? 'ไม่พบสินทรัพย์'
+                   : unlinked.length>0
+                     ? <>ยังมีสินทรัพย์ที่ไม่ได้ผูกกระเป๋าอยู่ {unlinked.length} รายการ<br/>
+                         แต่ไม่ใช่ประเภทที่กระเป๋านี้รับ — เปลี่ยนประเภทสินทรัพย์ หรือใช้กระเป๋าอื่นค่ะ</>
+                     : 'สินทรัพย์ทั้งหมดถูกผูกกระเป๋าแล้ว'}
+                </div>
               ):filtered.map(a=>{
                 const ti=typeInfo(a.type);
                 const sel=picked.includes(a.id);
