@@ -1794,67 +1794,6 @@ const SegmentedProgress = ({ segments, total, theme }) => {
 
 const Portal = ({children}) => ReactDOM.createPortal(children, document.body);
 
-// ── DISCOVER MODE: highlight interactive spots ([data-hint]) with a ring + label ──
-const DiscoverOverlay = ({ active }) => {
-  const [rects, setRects] = useState([]);
-  // hints the user has already clicked once are remembered as "seen" and stop showing
-  const [dismissed, setDismissed] = useState(()=>{ try{ return new Set(JSON.parse(localStorage.getItem('ft-hints-seen')||'[]')); }catch{ return new Set(); } });
-  useEffect(()=>{
-    if(!active){ setRects([]); return; }
-    const compute = () => {
-      if(document.querySelector('.modal-bg')){ setRects([]); return; } // hide hints while a modal is open
-      const out=[], seen=new Set();
-      document.querySelectorAll('[data-hint]').forEach(el=>{
-        const hint=el.getAttribute('data-hint');
-        if(seen.has(hint)||dismissed.has(hint)) return;   // once per unique tip; skip ones already clicked
-        const r=el.getBoundingClientRect();
-        if(r.width>0&&r.height>0&&r.bottom>0&&r.top<window.innerHeight){
-          seen.add(hint);
-          out.push({hint, top:r.top, left:r.left, w:r.width, h:r.height});
-        }
-      });
-      // place labels with collision avoidance so they never overlap each other.
-      // process last-in-DOM first so the rightmost button (e.g. "เพิ่มกระเป๋า")
-      // gets the closest/top slot and earlier buttons stack below it.
-      const placed=[], LH=22, winW=window.innerWidth;
-      [...out].reverse().forEach(o=>{
-        const lw=Math.min(250, o.hint.length*7.2+34);
-        const lx=Math.max(6, Math.min(o.left, winW-lw-6));
-        const below = o.top < window.innerHeight*0.55;   // top elements → label below, stack down
-        let ly = below ? o.top+o.h+7 : o.top-LH-7;
-        let g=0;
-        while(g++<60 && placed.some(p=> lx < p.x+p.w+8 && lx+lw > p.x-8 && ly < p.y+p.h+4 && ly+LH > p.y-4))
-          ly += below ? (LH+5) : -(LH+5);
-        placed.push({x:lx, y:ly, w:lw, h:LH});
-        o.lx=lx; o.ly=ly;
-      });
-      setRects(out);
-    };
-    compute();
-    // once the user actually clicks a highlighted spot, retire that hint for good
-    const onClick=e=>{ const el=e.target.closest&&e.target.closest('[data-hint]'); if(!el) return; const hint=el.getAttribute('data-hint'); setDismissed(prev=>{ if(prev.has(hint)) return prev; const next=new Set(prev); next.add(hint); try{ localStorage.setItem('ft-hints-seen', JSON.stringify([...next])); }catch{} return next; }); };
-    document.addEventListener('click',onClick,true);
-    const on=()=>compute();
-    window.addEventListener('scroll',on,true);
-    window.addEventListener('resize',on);
-    const iv=setInterval(compute,350);
-    return ()=>{ document.removeEventListener('click',onClick,true); window.removeEventListener('scroll',on,true); window.removeEventListener('resize',on); clearInterval(iv); };
-  },[active,dismissed]);
-  if(!active) return null;
-  return (
-    <Portal>
-      <div style={{position:'fixed',inset:0,zIndex:70,pointerEvents:'none'}}>
-        {rects.map((r,i)=>(
-          <React.Fragment key={i}>
-            <div style={{position:'fixed',top:r.top-3,left:r.left-3,width:r.w+6,height:r.h+6,border:'2px solid #c3a343',borderRadius:12,animation:'hintPulse 1.6s ease-in-out infinite',boxSizing:'border-box'}}/>
-            <div style={{position:'fixed',top:r.ly,left:r.lx,zIndex:71}}><span style={{display:'inline-block',background:'#c3a343',color:'#241d08',fontSize:11,fontWeight:700,padding:'3px 9px',borderRadius:8,boxShadow:'0 4px 12px rgba(0,0,0,.5)',whiteSpace:'nowrap',fontFamily:"'Noto Sans Thai',sans-serif"}}>💡 {r.hint}</span></div>
-          </React.Fragment>
-        ))}
-      </div>
-    </Portal>
-  );
-};
-
 // ── CONFIRM DIALOG ─────────────────────────────────────────
 // ── ACTION SHEET ───────────────────────────────────────────
 // Built on the iOS action sheet, because that is the shape a phone user already
@@ -2167,7 +2106,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
               <div className="flex items-center gap-2 mb-2">
                 <div className={`text-xs font-medium uppercase tracking-widest ${dk?'text-slate-400':'text-slate-500'}`}>Net Worth · มูลค่าทรัพย์สินสุทธิ <button onClick={()=>setNwOpen(true)} title="ดูว่าตัวเลขนี้มาจากไหน" style={{cursor:'pointer',opacity:.7}}>ⓘ</button></div>
               </div>
-              <button data-hint="คลิกซ่อน/แสดงจำนวนเงิน" onClick={()=>onToggleHide&&onToggleHide()} className={`flex items-center gap-2 group cursor-pointer text-left`}>
+              <button onClick={()=>onToggleHide&&onToggleHide()} className={`flex items-center gap-2 group cursor-pointer text-left`}>
                 {/* clamp rather than a scale step: this figure should grow with
                     the window, and it is the one place in the app where that is
                     true. tabular-nums keeps it from jittering as it counts up. */}
@@ -2452,7 +2391,7 @@ const MonthGroup = ({ month, txs, dk, defaultOpen=false, sel, toggleSel, onEdit,
                   ? <input autoFocus className={`text-xs font-semibold w-full outline-none rounded px-1 -mx-1 ${dk?'bg-white/10 text-white':'bg-gold-50 text-slate-800'}`}
                       value={editInline.value} onChange={e=>setEditInline(p=>({...p,value:e.target.value}))}
                       onBlur={()=>commitEdit(t)} onKeyDown={e=>{if(e.key==='Enter')commitEdit(t);if(e.key==='Escape')setEditInline(null);}}/>
-                  : <div data-hint="ดับเบิลคลิกแก้ชื่อรายการ" className={`text-xs font-semibold truncate ${dk?'text-white':'text-slate-700'}`} onDoubleClick={()=>startEdit(t,'title')} title={onQuickEdit?'ดับเบิลคลิกเพื่อแก้ชื่อ':''}>{t.title}</div>
+                  : <div className={`text-xs font-semibold truncate ${dk?'text-white':'text-slate-700'}`} onDoubleClick={()=>startEdit(t,'title')} title={onQuickEdit?'ดับเบิลคลิกเพื่อแก้ชื่อ':''}>{t.title}</div>
                 }
                 <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                   <span className={`text-xs tabular-nums ${dk?'text-slate-400':'text-slate-500'}`}>{t.date}</span>
@@ -2482,7 +2421,7 @@ const MonthGroup = ({ month, txs, dk, defaultOpen=false, sel, toggleSel, onEdit,
                     value={editInline.value} onChange={e=>setEditInline(p=>({...p,value:e.target.value}))}
                     onBlur={()=>commitEdit(t)} onKeyDown={e=>{if(e.key==='Enter')commitEdit(t);if(e.key==='Escape')setEditInline(null);}}/>
                 : <div className="w-32 flex-shrink-0 text-right">
-                    <div data-hint="ดับเบิลคลิกแก้ยอดเงิน" className={`text-sm font-bold tabular-nums ${txAmtCls(t)}`} onDoubleClick={()=>t.type!=='transfer'&&startEdit(t,'amount')} title={onQuickEdit&&t.type!=='transfer'?'ดับเบิลคลิกเพื่อแก้ยอด':''}>{txSign(t)}{fmt(Math.abs(t.amount))}</div>
+                    <div className={`text-sm font-bold tabular-nums ${txAmtCls(t)}`} onDoubleClick={()=>t.type!=='transfer'&&startEdit(t,'amount')} title={onQuickEdit&&t.type!=='transfer'?'ดับเบิลคลิกเพื่อแก้ยอด':''}>{txSign(t)}{fmt(Math.abs(t.amount))}</div>
                     {/* narrow screens have no room for a fourth column, so the
                         balance tucks under the amount there instead */}
                     {balCol&&balCol.map[t.id]!==undefined&&(
@@ -2709,7 +2648,7 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
       <PageHeader theme={theme} lead="All" accent="Transactions"
         sub={`${txs.length} รายการ · รายรับ รายจ่าย โยกเงิน และปันผล`}
         right={onAdd
-          ? <button data-hint="กดเพิ่มรายรับ-รายจ่ายของคุณเองที่นี่" onClick={onAdd}
+          ? <button onClick={onAdd}
               className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-orange-400 hover:bg-orange-300 text-orange-950 text-xs font-semibold transition-colors">
               <Ic n="plus" s={13}/> เพิ่มรายการ
             </button>
@@ -4831,7 +4770,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
               rate on a rule of its own, the buttons splitting the width in half
               — and the column spreads them down the height it is given rather
               than bunching them against the top. */}
-          <div data-hint="ปรับเรท USD/THB สำหรับสินทรัพย์สกุลดอลลาร์"
+          <div
             className={`flex items-baseline justify-between gap-2 pt-3 border-t ${dk?'border-white/8':'border-slate-100'}`}>
             <span className={`text-xs font-medium ${dk?'text-slate-400':'text-slate-500'}`}>USD/THB</span>
             <div className="flex items-baseline gap-1.5">
@@ -4853,13 +4792,13 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
           <div className="grid grid-cols-2 gap-2 items-end">
             <div className="flex flex-col items-center gap-0.5">
               {priceUpdAt&&<span className={`text-[10px] ${dk?'text-slate-500':'text-slate-400'}`}>อัปเดต {priceUpdAt}</span>}
-              <button data-hint="ดึงราคาหุ้น/คริปโตล่าสุดอัตโนมัติ" onClick={()=>fetchAllPrices()} disabled={priceLoading}
+              <button onClick={()=>fetchAllPrices()} disabled={priceLoading}
                 className={`flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-xl text-xs font-semibold border transition-colors ${dk?'border-gold-500/50 text-gold-400 hover:bg-gold-500/15':'border-gold-300 text-gold-600 hover:bg-gold-50'} disabled:opacity-50`}>
                 <span className={priceLoading?'animate-spin':''}>{priceLoading?'⏳':'📡'}</span>
                 <span className="hidden sm:inline">{priceLoading?'กำลังดึง...':'อัปเดตราคา'}</span>
               </button>
             </div>
-            <button data-hint="เพิ่มหุ้น/ทอง/คริปโต/เงินสด" onClick={onAdd} className="flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-xl btn-primary text-xs font-semibold">
+            <button onClick={onAdd} className="flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-xl btn-primary text-xs font-semibold">
               <Ic n="plus" s={13}/> เพิ่มสินทรัพย์
             </button>
           </div>
@@ -5079,7 +5018,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                           <div className={`text-xs flex items-center gap-1.5 flex-wrap ${sub}`}>
                             <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap"
                               style={{background:`linear-gradient(135deg, ${ti.c}, ${ti.c}cc)`, boxShadow:'0 1px 4px rgba(0,0,0,0.12)', color:inkOn(ti.c)}}>{ti.l.substring(3)}</span>
-                            {a.note?<span>{a.note}</span>:null}{(()=>{const w=wallets.find(x=>x.id===a.walletId);return w?<span data-hint="สินทรัพย์นี้เชื่อมกับกระเป๋าเงิน — ไปโผล่ในหน้ากระเป๋าด้วย" className={`ml-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${dk?'bg-gold-500/20 text-gold-300':'bg-gold-50 text-gold-500'}`}>👛 {w.name}</span>:null;})()}{a.address&&<AddressChip address={a.address} dk={dk}/>}</div>
+                            {a.note?<span>{a.note}</span>:null}{(()=>{const w=wallets.find(x=>x.id===a.walletId);return w?<span className={`ml-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${dk?'bg-gold-500/20 text-gold-300':'bg-gold-50 text-gold-500'}`}>👛 {w.name}</span>:null;})()}{a.address&&<AddressChip address={a.address} dk={dk}/>}</div>
                           {a.type==='crypto'&&<div className={`text-[11px] mt-0.5 tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{fmtQty(a.qty)} {(a.ticker||a.name).trim().split(/\s+/)[0].toUpperCase()} <span className="opacity-70">≈ {fmt(a.valTHB)}</span></div>}
                         </div>
                       </div>
@@ -5098,7 +5037,6 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                         figure of its own — typing over it here would leave the
                         total disagreeing with the list that explains it. */}
                     <td className={`px-4 py-4 text-sm font-medium ${dk?'text-white':'text-slate-700'}`}
-                      data-hint={a.type!=='cash'&&!(a.items||[]).length?"ดับเบิลคลิกแก้ราคา":undefined}
                       onDoubleClick={a.type!=='cash'&&!(a.items||[]).length?()=>setEditingPrice({id:a.id,value:String(a.currentPrice)}):undefined}
                       title={a.type==='cash'?"":(a.items||[]).length?"มูลค่ารวมของทุกชิ้น — แก้ที่ยอดเงินของชิ้นนั้น":"ดับเบิลคลิกเพื่อแก้ราคา"}>
                       {a.type==='cash'?'—':(editingPrice?.id===a.id
@@ -7041,7 +6979,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 </div>
                 )}
                 {/* Ring row — click to expand */}
-                <button data-hint="คลิกดูรายการในหมวด" onClick={()=>setExpandedCat(isExp?null:cat)}
+                <button onClick={()=>setExpandedCat(isExp?null:cat)}
                   className={`w-full px-3.5 pt-3.5 pb-3.5 text-left transition-colors ${dk?'hover:bg-white/[0.03]':'hover:bg-slate-50/70'}`}>
                   <div className="flex items-center gap-3">
                     {/* A 58px ring with a 10px percentage inside it, twelve to a
@@ -7147,7 +7085,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                         :<div className="flex items-baseline justify-between gap-2">
                           <span className={`text-[11px] tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>
                             {isCurM
-                              ?<button data-hint="คลิกปรับงบประมาณของหมวดนี้ได้" onClick={e=>{e.stopPropagation();setEditing(cat);}}
+                              ?<button onClick={e=>{e.stopPropagation();setEditing(cat);}}
                                   className={`transition-colors ${dk?'hover:text-slate-300':'hover:text-slate-600'}`}>
                                   จาก {fmtBare(bgt)}<span className="card-actions ml-1">✏</span>
                                 </button>
@@ -9295,15 +9233,15 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
             </div>
             {/* Action buttons — right */}
             <div className="flex gap-2">
-              <button data-hint="ลากจัดลำดับกระเป๋าได้" onClick={()=>setEditOrder(o=>!o)}
+              <button onClick={()=>setEditOrder(o=>!o)}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-colors ${editOrder?(dk?'border-gold-500/40 bg-gold-500/15 text-gold-300':'border-gold-300 bg-gold-50 text-gold-600'):(dk?'border-white/15 text-slate-400 hover:bg-white/8':'border-slate-200 text-slate-500 hover:bg-slate-50')}`}>
                 ⠿ {editOrder?'เสร็จสิ้น':'เรียงลำดับ'}
               </button>
-              {onUnifiedTransfer&&<button data-hint="โยกเงินระหว่างกระเป๋า/ลงทุน" onClick={onUnifiedTransfer}
+              {onUnifiedTransfer&&<button onClick={onUnifiedTransfer}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-colors ${dk?'border-gold-500/50 text-gold-300 hover:bg-gold-500/15':'border-gold-300 text-gold-600 hover:bg-gold-50'}`}>
                 💸 โยกเงิน
               </button>}
-              <button data-hint="เพิ่มกระเป๋าใหม่ (บัญชี/เงินสด/พอร์ต/คริปโต)" onClick={()=>onOpenWalletModal(null)}
+              <button onClick={()=>onOpenWalletModal(null)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent transition-colors btn-primary`}>
                 <Ic n="plus" s={14}/> เพิ่มกระเป๋า
               </button>
@@ -9403,7 +9341,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                       paints its own stacking context for the grain and arcs, so
                       without it the buttons rendered but could not be clicked. */}
                   <div className={`absolute top-3 right-3 z-20 flex gap-1 transition-opacity ${editOrder?'opacity-0 pointer-events-none':'opacity-0 group-hover:opacity-100'}`}>
-                    <button data-hint="แก้ไขกระเป๋า — เปิด/ปิดฟีเจอร์ นับแบงค์, รับปันผล ได้ที่นี่" title="แก้ไขกระเป๋า" onClick={()=>onOpenWalletModal(w)}
+                    <button title="แก้ไขกระเป๋า" onClick={()=>onOpenWalletModal(w)}
                       className={`p-1.5 rounded-lg ${dk?'hover:bg-white/15 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="edit" s={13}/></button>
                     <button title="ลบกระเป๋า" onClick={()=>ask('ลบกระเป๋าเงิน',`ยืนยันการลบกระเป๋า "${w.name}"? การดำเนินการนี้ไม่สามารถย้อนกลับได้`,()=>onDelete(w.id))}
                       className={`p-1.5 rounded-lg ${dk?'hover:bg-rose-500/20 text-slate-400 hover:text-rose-400':'hover:bg-rose-50 text-slate-400 hover:text-rose-500'}`}><Ic n="trash" s={13}/></button>
@@ -9695,7 +9633,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                 )}
                 <div className={`flex border-t ${dk?'border-white/8':'border-slate-100'}`}>
                   {onAddTx&&(
-                    <button data-hint="บันทึกรายรับ-รายจ่ายเข้ากระเป๋านี้" onClick={()=>onAddTx(w.id)}
+                    <button onClick={()=>onAddTx(w.id)}
                       className={`flex-1 py-2.5 flex items-center justify-center gap-1.5 text-xs font-semibold transition-colors ${dk?'text-slate-400 hover:text-white hover:bg-white/5':'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}>
                       <Ic n="plus" s={11}/> บันทึกรายการ
                     </button>
@@ -9730,7 +9668,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                   {onAddAsset&&(
                     <>
                       {(onAddTx||onAdjust)&&<div className={`w-px my-2 ${dk?'bg-white/10':'bg-slate-100'}`}/>}
-                      <button data-hint="เชื่อมสินทรัพย์เข้ากระเป๋าได้" onClick={()=>onAddAsset(w.id)}
+                      <button onClick={()=>onAddAsset(w.id)}
                         className={`flex-1 py-2.5 flex items-center justify-center gap-1.5 text-xs font-semibold transition-colors ${dk?'text-gold-400 hover:text-gold-300 hover:bg-gold-500/8':'text-gold-500 hover:text-gold-600 hover:bg-gold-50'}`}>
                         <Ic n="plus" s={11}/> เพิ่มสินทรัพย์
                       </button>
@@ -12860,7 +12798,6 @@ const App = () => {
   // it, which came within one press of losing 439 records. An empty app with the
   // checklist below is a smaller thing to explain than that risk.
   const [onboardDone, setOnboardDone] = useState(()=>{ try{return localStorage.getItem('ft-onboard-done')==='1';}catch{return false;} });
-  const [discover, setDiscover] = useState(false); // "โหมดค้นพบ" — highlight interactive spots
   const isEmptyData = txs.length===0 && assets.length===0 && wallets.length===0;
   // First-run activation checklist (auto-ticks as the user completes each step)
   const [checklistDone, setChecklistDone] = useState(()=>{ try{return localStorage.getItem('ft-checklist-done')==='1';}catch{return false;} });
@@ -13228,7 +13165,6 @@ const App = () => {
                   </div>
                   {[
                     {icon:'⚙', label:'บัญชีและการตั้งค่า', on:()=>setAcctOpen(true)},
-                    {icon:'💡', label: discover?'ซ่อนคำแนะนำการใช้งาน':'คำแนะนำการใช้งาน', on:()=>setDiscover(d=>!d)},
                     {icon: healthWarn?'⚠️':'🩺', label:'ตรวจสุขภาพข้อมูล'+(healthWarn?' · พบบางอย่าง':''), on:()=>setHealthOpen(true)},
                     {icon:'📥', label:'นำเข้าข้อมูล', on:()=>setImport(true)},
                     {icon:'💾', label:'Backup & กู้คืน', on:()=>setBackupOpen(true)},
@@ -13401,9 +13337,6 @@ const App = () => {
                 </div>
               ))}
             </div>
-            <div className={`mt-4 pt-3 border-t text-xs ${dk?'border-white/8 text-slate-500':'border-slate-100 text-slate-400'}`}>
-              💡 กด <b>คำแนะนำการใช้งาน</b> ในเมนู ☰ เพื่อไฮไลต์จุดที่กดได้ทั่วทั้งหน้า
-            </div>
           </div>
         )}
         {/* One door, not seven. Masking the figures still left every page
@@ -13506,7 +13439,6 @@ const App = () => {
       <AssetModal  open={assetModal.open} onClose={()=>setAModal({open:false,editData:null,defaultWalletId:null})} onSave={saveAsset} onAssign={assignAssetToWallet} onUnlink={unlinkAsset} onAssetTransfer={assetId=>setUnifiedOpen({open:true,from:`a-${assetId}`,to:null})} editData={assetModal.editData} theme={theme} wallets={wallets} assets={assets} defaultWalletId={assetModal.defaultWalletId}/>
       <ImportModal  open={importOpen}      onClose={()=>setImport(false)}  onImport={doImport}  theme={theme}/>
       <BackupModal  open={backupOpen}      onClose={()=>setBackupOpen(false)} onRestore={doRestore} theme={theme} txs={txs} assets={assets} wallets={wallets} debts={debts} nwHistory={nwHistory} custodial={custodial}/>
-      <DiscoverOverlay active={discover}/>
       {isEmptyData && !onboardDone && (
         <Portal>
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
