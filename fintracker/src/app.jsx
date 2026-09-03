@@ -1127,7 +1127,7 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
         )}
         <div className="flex gap-3 px-5 pb-5">
           <button onClick={onClose} className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${dk?'bg-white/5 hover:bg-white/10 text-slate-300':'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}>ยกเลิก</button>
-          <button onClick={save} disabled={overDraw} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed ${f.type==='income'?'bg-gold-500 hover:bg-gold-600':f.type==='transfer'?'bg-gold-500 hover:bg-gold-600':'bg-rose-500 hover:bg-rose-600'}`}>{editData?'บันทึก':'เพิ่มรายการ'}</button>
+          <button onClick={save} disabled={overDraw} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed ${f.type==='income'?'btn-primary':f.type==='transfer'?'btn-primary':'bg-rose-500 hover:bg-rose-600'}`}>{editData?'บันทึก':'เพิ่มรายการ'}</button>
         </div>
       </div>
     </div>
@@ -2731,7 +2731,7 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
             <div className={`flex items-center justify-between gap-3 px-4 py-2.5 border-t ${dk?'border-white/5 bg-white/[0.02]':'border-slate-100 bg-slate-50/60'}`}>
               <span className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{pendingRec.length>0?`${pendingRec.length} รายการรอบันทึก`:'บันทึกครบแล้วเดือนนี้ ✓'}</span>
               <div className="flex gap-2">
-                {pendingRec.length>0&&<button onClick={addAllRec} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl btn-primary text-white text-xs font-semibold"><Ic n="plus" s={12}/> บันทึกทั้งหมด ({fmt(totalPendingRec)})</button>}
+                {pendingRec.length>0&&<button onClick={addAllRec} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl btn-primary text-xs font-semibold"><Ic n="plus" s={12}/> บันทึกทั้งหมด ({fmt(totalPendingRec)})</button>}
                 <button onClick={()=>setRecModal({open:true,editData:null})} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${dk?'bg-white/5 hover:bg-white/10 text-white border-white/10':'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'}`}><Ic n="plus" s={12}/> เพิ่ม</button>
               </div>
             </div>
@@ -2795,7 +2795,7 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
             <p className={`text-sm font-semibold mb-1 ${dk?'text-slate-300':'text-slate-600'}`}>{txs.length===0?'ยังไม่มีรายการ':'ไม่พบรายการที่ตรงกับตัวกรอง'}</p>
             <p className={`text-xs mb-4 ${dk?'text-slate-500':'text-slate-400'}`}>{txs.length===0?'เริ่มบันทึกรายรับ-รายจ่ายแรกของคุณได้เลย':'ลองล้างตัวกรองหรือเปลี่ยนคำค้นหา'}</p>
             {txs.length===0
-              ? (onAdd&&<button onClick={onAdd} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl btn-primary text-white text-xs font-semibold"><Ic n="plus" s={13}/> เพิ่มรายการ</button>)
+              ? (onAdd&&<button onClick={onAdd} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl btn-primary text-xs font-semibold"><Ic n="plus" s={13}/> เพิ่มรายการ</button>)
               : <button onClick={()=>{setSearch('');setFType('all');setFCat('all');setFWallet('all');setFDateFrom('');setFDateTo('');}} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border ${dk?'border-white/15 text-slate-300 hover:bg-white/8':'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>ล้างตัวกรอง</button>}
           </div>
         ) : grouped.map(([month, mTxs], i)=>(
@@ -2942,7 +2942,7 @@ const Analytics = ({ txs, theme }) => {
             </div>
             <div className="flex gap-2 mt-5">
               <button onClick={()=>setEditCat(null)} className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-colors ${dk?'border-white/10 text-slate-300 hover:bg-white/5':'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>Cancel</button>
-              <button onClick={saveBudget} className="flex-1 py-2.5 rounded-xl bg-gold-500 hover:bg-gold-600 text-sm font-medium transition-colors">Update</button>
+              <button onClick={saveBudget} className="flex-1 py-2.5 rounded-xl btn-primary text-sm font-medium transition-colors">Update</button>
             </div>
           </div>
         </div>
@@ -3646,7 +3646,7 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
             </div>
             <div className="flex gap-3">
               <button onClick={onClose} className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${dk?'bg-white/5 hover:bg-white/10 text-slate-300':'bg-slate-100 text-slate-600'}`}>Cancel</button>
-              <button onClick={assign} disabled={!picked.length} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity ${picked.length?'bg-gold-500 hover:bg-gold-600':'bg-gold-300 opacity-50 cursor-not-allowed'}`}>{picked.length>0?`เชื่อม ${picked.length} สินทรัพย์`:'เชื่อมกับกระเป๋านี้'}</button>
+              <button onClick={assign} disabled={!picked.length} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-opacity ${picked.length?'btn-primary':'bg-gold-300 opacity-50 cursor-not-allowed'}`}>{picked.length>0?`เชื่อม ${picked.length} สินทรัพย์`:'เชื่อมกับกระเป๋านี้'}</button>
             </div>
           </div>
         ):(
@@ -3774,7 +3774,7 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
               </div>
               <div className="flex gap-2">
                 <button type="button" onClick={commitItem} disabled={!iValid}
-                  className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40 disabled:cursor-not-allowed">{editItem?'บันทึกการแก้ไขชิ้นนี้':'+ เพิ่มชิ้นนี้'}</button>
+                  className="flex-1 py-1.5 rounded-lg text-xs font-semibold btn-primary disabled:opacity-40 disabled:cursor-not-allowed">{editItem?'บันทึกการแก้ไขชิ้นนี้':'+ เพิ่มชิ้นนี้'}</button>
                 {iPending&&(
                   <button type="button" onClick={clearItemForm}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${dk?'bg-white/10 hover:bg-white/15 text-slate-300':'bg-white border border-slate-300 text-slate-600 hover:bg-slate-100'}`}>ยกเลิก</button>
@@ -3836,7 +3836,7 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
                   )}
                 </>
               )}
-              <button type="button" onClick={applyTopUp} disabled={!tuValid} className="w-full py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40">อัปเดตจำนวน + เรทเฉลี่ยด้านบน</button>
+              <button type="button" onClick={applyTopUp} disabled={!tuValid} className="w-full py-1.5 rounded-lg text-xs font-semibold btn-primary disabled:opacity-40">อัปเดตจำนวน + เรทเฉลี่ยด้านบน</button>
             </div>
           )}
           {/* The preview above says "จำนวนรวมใหม่ 5,000", which reads as a promise
@@ -3945,7 +3945,7 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
         </div>
         <div className="flex gap-3 px-5 pb-5">
           <button onClick={onClose} className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${dk?'bg-white/5 hover:bg-white/10 text-slate-300':'bg-slate-100 text-slate-600'}`}>ยกเลิก</button>
-          <button onClick={save} disabled={tuPending||iPending} title={tuPending?'ยังมีค่าค้างในช่อง เติม / เอาออก':iPending?'ยังมีชิ้นที่กรอกค้างไว้ ยังไม่ได้กดเพิ่ม':''} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-gold-500 hover:bg-gold-600 disabled:opacity-40 disabled:cursor-not-allowed">{editData?'บันทึก':'เพิ่มสินทรัพย์'}</button>
+          <button onClick={save} disabled={tuPending||iPending} title={tuPending?'ยังมีค่าค้างในช่อง เติม / เอาออก':iPending?'ยังมีชิ้นที่กรอกค้างไว้ ยังไม่ได้กดเพิ่ม':''} className="flex-1 py-2.5 rounded-xl text-sm font-semibold btn-primary disabled:opacity-40 disabled:cursor-not-allowed">{editData?'บันทึก':'เพิ่มสินทรัพย์'}</button>
         </div>
         </>
         )}
@@ -4242,7 +4242,7 @@ const AssetRelBody = ({a, investTxs, dk, onAddTx, onDeleteTx, onTopUp, wallets=[
           <div className="flex gap-1.5 items-center">
             <input className={inpCls+' flex-1'} type="date" value={date} onChange={e=>setDate(e.target.value)}/>
             <button onClick={reset} className={`px-2.5 py-1 rounded-lg text-xs ${dk?'text-slate-400 hover:bg-white/10':'text-slate-500 hover:bg-slate-100'}`}>ยกเลิก</button>
-            <button onClick={save} disabled={!(parseFloat(amt)>0)} className="px-3 py-1 rounded-lg text-xs font-semibold bg-gold-500 hover:bg-gold-600 disabled:opacity-40">บันทึก</button>
+            <button onClick={save} disabled={!(parseFloat(amt)>0)} className="px-3 py-1 rounded-lg text-xs font-semibold btn-primary disabled:opacity-40">บันทึก</button>
           </div>
         </div>
       ) : topUp ? (
@@ -4325,7 +4325,7 @@ const AssetRelBody = ({a, investTxs, dk, onAddTx, onDeleteTx, onTopUp, wallets=[
           )}
           <div className="flex gap-1.5 justify-end">
             <button onClick={()=>{setTopUp(false);setTuQty('');setTuRate('');setTuNote('');setTuDest('');}} className={`px-2.5 py-1 rounded-lg text-xs ${dk?'text-slate-400 hover:bg-white/10':'text-slate-500 hover:bg-slate-100'}`}>ยกเลิก</button>
-            <button onClick={doTopUp} disabled={!tuCanSave} className={`px-3 py-1 rounded-lg text-xs font-semibold text-white disabled:opacity-40 ${tuSell?'bg-rose-500 hover:bg-rose-600':tuKind==='adjust'?'bg-amber-500 hover:bg-amber-600':'bg-emerald-600 hover:bg-emerald-700'}`}>บันทึก</button>
+            <button onClick={doTopUp} disabled={!tuCanSave} className={`px-3 py-1 rounded-lg text-xs font-semibold disabled:opacity-40 ${tuSell?'bg-rose-500 hover:bg-rose-600':tuKind==='adjust'?'bg-amber-500 hover:bg-amber-600':'btn-primary'}`}>บันทึก</button>
           </div>
         </div>
       ) : addingItem ? (
@@ -4336,7 +4336,7 @@ const AssetRelBody = ({a, investTxs, dk, onAddTx, onDeleteTx, onTopUp, wallets=[
           </div>
           <div className="flex gap-1.5 justify-end">
             <button onClick={()=>{setAddingItem(false);setNiName('');setNiValue('');}} className={`px-2.5 py-1 rounded-lg text-xs ${dk?'text-slate-400 hover:bg-white/10':'text-slate-500 hover:bg-slate-100'}`}>ยกเลิก</button>
-            <button onClick={doAddItem} disabled={!niValid} className="px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40">เพิ่ม</button>
+            <button onClick={doAddItem} disabled={!niValid} className="px-3 py-1 rounded-lg text-xs font-semibold btn-primary disabled:opacity-40">เพิ่ม</button>
           </div>
         </div>
       ) : (
@@ -4704,7 +4704,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
               The contextual routes are untouched and are better than either:
               starting from a specific asset or wallet fills in one side of the
               transfer instead of presenting two empty pickers. */}
-          <button data-hint="เพิ่มหุ้น/ทอง/คริปโต/เงินสด" onClick={onAdd} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gold-500 hover:bg-gold-600 text-white text-xs font-semibold">
+          <button data-hint="เพิ่มหุ้น/ทอง/คริปโต/เงินสด" onClick={onAdd} className="flex items-center gap-1.5 px-3 py-2 rounded-xl btn-primary text-xs font-semibold">
             <Ic n="plus" s={13}/> เพิ่มสินทรัพย์
           </button>
         </div>
@@ -4916,7 +4916,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                 <div className="text-4xl mb-3 opacity-60">{assets.length===0?'📈':'🔍'}</div>
                 <p className={`text-sm font-semibold mb-1 ${dk?'text-slate-300':'text-slate-600'}`}>{assets.length===0?'ยังไม่มีสินทรัพย์':'ไม่พบสินทรัพย์ที่ตรงกับตัวกรอง'}</p>
                 <p className={`text-xs mb-4 ${sub}`}>{assets.length===0?'เพิ่มหุ้น คริปโต ทอง หรือเงินสด เพื่อเริ่มติดตามพอร์ต':'ลองเปลี่ยนตัวกรองหรือคำค้นหา'}</p>
-                {assets.length===0&&<button onClick={onAdd} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gold-500 hover:bg-gold-600 text-white text-xs font-semibold"><Ic n="plus" s={13}/> เพิ่มสินทรัพย์</button>}
+                {assets.length===0&&<button onClick={onAdd} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl btn-primary text-xs font-semibold"><Ic n="plus" s={13}/> เพิ่มสินทรัพย์</button>}
               </td></tr>}
               {enriched.map((a,i)=>{
                 const ti = typeInfo(a.type);
@@ -6751,7 +6751,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 <p className="text-sm font-medium">ยังไม่มีหมวดค่าใช้จ่าย</p>
                 <p className="text-xs mt-1 mb-4">เพิ่มหมวดแรกเพื่อเริ่มตั้งงบประมาณค่ะ</p>
                 <button onClick={()=>setAddOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-gold-500 hover:bg-gold-600 text-xs font-semibold transition-colors">+ เพิ่มหมวดแรก</button>
+                  className="px-4 py-2 rounded-xl btn-primary text-xs font-semibold transition-colors">+ เพิ่มหมวดแรก</button>
               </>) : (
                 <p className="text-sm font-medium">ไม่มีข้อมูล Budget เดือนนี้ค่ะ</p>
               )}
@@ -7288,7 +7288,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 ยกเลิก
               </button>
               <button onClick={addCat} disabled={!newName.trim()||budgets[newName.trim()]!==undefined}
-                className="flex-1 py-2 rounded-xl bg-gold-500 hover:bg-gold-600 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                className="flex-1 py-2 rounded-xl btn-primary text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                 เพิ่มหมวด
               </button>
             </div>
@@ -7375,7 +7375,7 @@ const DebtModal = ({ open, onClose, onSave, editData, theme }) => {
         </div>
         <div className="flex gap-3 px-5 pb-5">
           <button onClick={onClose} className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${dk?'bg-white/5 hover:bg-white/10 text-slate-300':'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}>ยกเลิก</button>
-          <button onClick={save} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-gold-500 hover:bg-gold-600">{editData?'บันทึก':'เพิ่มหนี้'}</button>
+          <button onClick={save} className="flex-1 py-2.5 rounded-xl text-sm font-semibold btn-primary">{editData?'บันทึก':'เพิ่มหนี้'}</button>
         </div>
       </div>
     </div>
@@ -7465,7 +7465,7 @@ const DebtPage = ({ theme, debts, setDebts }) => {
           <div className="text-5xl mb-4">💳</div>
           <p className={`text-base font-semibold mb-1 ${dk?'text-gold-300':'text-gold-700'}`}>ยังไม่มีรายการหนี้</p>
           <p className={`text-xs mb-5 max-w-md mx-auto leading-relaxed ${sub}`}>บันทึกหนี้บัตรเครดิต ผ่อนสินค้า หรือเงินกู้ เพื่อติดตามยอดคงเหลือและดอกเบี้ย — ถ้ายังไม่มีหนี้ก็ถือเป็นเรื่องดีค่ะ</p>
-          <button onClick={()=>setDModal({open:true,editData:null})} className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-gold-500 hover:bg-gold-600 text-white text-sm font-semibold"><Ic n="plus" s={14}/> เพิ่มหนี้</button>
+          <button onClick={()=>setDModal({open:true,editData:null})} className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl btn-primary text-sm font-semibold"><Ic n="plus" s={14}/> เพิ่มหนี้</button>
         </div>
       )}
 
@@ -7663,7 +7663,7 @@ const WalletModal = ({ open, onClose, onSave, editData, theme }) => {
         </div>
         <div className="flex gap-3 px-5 pb-5">
           <button onClick={onClose} className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${dk?'bg-white/5 hover:bg-white/10 text-slate-300':'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}>ยกเลิก</button>
-          <button onClick={save} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-gold-500 hover:bg-gold-600">{editData?'บันทึก':'เพิ่มกระเป๋า'}</button>
+          <button onClick={save} className="flex-1 py-2.5 rounded-xl text-sm font-semibold btn-primary">{editData?'บันทึก':'เพิ่มกระเป๋า'}</button>
         </div>
       </div>
     </div>
@@ -8101,7 +8101,7 @@ const UnifiedTransferModal = ({open, onClose, onSave, wallets=[], assets=[], txs
         </div>
         <div className="flex gap-3 px-5 pb-5">
           <button onClick={onClose} className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${dk?'bg-white/5 hover:bg-white/10 text-slate-300':'bg-slate-100 text-slate-600'}`}>ยกเลิก</button>
-          <button onClick={handleSave} disabled={!canSave} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-all ${canSave?'bg-gold-500 hover:bg-gold-600':'opacity-40 bg-gold-400 cursor-not-allowed'}`}>{investDest?'ยืนยันการลงทุน →':'โยกเงิน →'}</button>
+          <button onClick={handleSave} disabled={!canSave} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${canSave?'btn-primary':'opacity-40 bg-gold-400 cursor-not-allowed'}`}>{investDest?'ยืนยันการลงทุน →':'โยกเงิน →'}</button>
         </div>
       </div>
     </div>
@@ -9010,7 +9010,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                 💸 โยกเงิน
               </button>}
               <button data-hint="เพิ่มกระเป๋าใหม่ (บัญชี/เงินสด/พอร์ต/คริปโต)" onClick={()=>onOpenWalletModal(null)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent transition-colors bg-gold-500 hover:bg-gold-600 text-white`}>
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent transition-colors btn-primary`}>
                 <Ic n="plus" s={14}/> เพิ่มกระเป๋า
               </button>
             </div>
@@ -9079,7 +9079,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
           <div className="text-5xl mb-4">👛</div>
           <p className={`text-base font-semibold mb-1 ${dk?'text-gold-300':'text-gold-700'}`}>เริ่มต้นด้วยกระเป๋าเงินใบแรก</p>
           <p className={`text-xs mb-5 max-w-md mx-auto leading-relaxed ${dk?'text-slate-400':'text-slate-500'}`}>กระเป๋าเงินคือที่เก็บยอดเงินของคุณ เช่น บัญชีธนาคาร เงินสด พอร์ตหุ้น หรือ Crypto Wallet — สร้างใบแรกเพื่อเริ่มบันทึกรายรับ-รายจ่าย</p>
-          <button onClick={()=>onOpenWalletModal(null)} className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-gold-500 hover:bg-gold-600 text-white text-sm font-semibold"><Ic n="plus" s={14}/> เพิ่มกระเป๋าใบแรก</button>
+          <button onClick={()=>onOpenWalletModal(null)} className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl btn-primary text-sm font-semibold"><Ic n="plus" s={14}/> เพิ่มกระเป๋าใบแรก</button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -9398,7 +9398,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                     <div className="flex gap-1.5 justify-end">
                       <button onClick={resetCount} className={`px-2.5 py-1.5 rounded-lg text-xs ${dk?'text-slate-400 hover:bg-white/10':'text-slate-500 hover:bg-slate-100'}`}>ยกเลิก</button>
                       <button onClick={()=>saveCount(w)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${dk?'bg-white/10 hover:bg-white/15 text-white':'bg-slate-200 hover:bg-slate-300 text-slate-700'}`}>บันทึกแบงค์</button>
-                      {Math.abs(countTotal-w.balance)>=0.01&&<button onClick={()=>reconcileCount(w)} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white">ตั้งยอด = {fmt(countTotal)}</button>}
+                      {Math.abs(countTotal-w.balance)>=0.01&&<button onClick={()=>reconcileCount(w)} className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-primary">ตั้งยอด = {fmt(countTotal)}</button>}
                     </div>
                   </div>
                 )}
@@ -9546,7 +9546,7 @@ const RecurringModal = ({open, onClose, onSave, editData, theme, wallets=[], add
         </div>
         <div className="flex gap-3 px-5 pb-5">
           <button onClick={onClose} className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${dk?'bg-white/5 hover:bg-white/10 text-slate-300':'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}>ยกเลิก</button>
-          <button onClick={save} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold text-white ${f.type==='income'?'bg-gold-500 hover:bg-gold-600':'bg-rose-500 hover:bg-rose-600'}`}>{editData&&!addLabel?'บันทึก':'เพิ่มรายการ'}</button>
+          <button onClick={save} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold ${f.type==='income'?'btn-primary':'bg-rose-500 hover:bg-rose-600'}`}>{editData&&!addLabel?'บันทึก':'เพิ่มรายการ'}</button>
         </div>
       </div>
     </div>
@@ -9588,7 +9588,7 @@ const AccountModal = ({open, onClose, theme, setTheme, colorTheme, setColorTheme
             <div className="flex gap-2">
               <input value={dispName} onChange={e=>{ setDispName(e.target.value); setNameSaved(false); }} placeholder="ชื่อ"
                 className={`flex-1 px-3 py-2 rounded-xl text-sm border outline-none transition-colors ${dk?'bg-white/5 border-white/10 text-white placeholder-slate-500 focus:border-gold-500':'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:border-gold-400'}`}/>
-              <button onClick={saveDispName} className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors ${nameSaved?'bg-emerald-500/20 text-emerald-400':'bg-gold-500 hover:bg-gold-600'}`}>{nameSaved?<Ic n="check" s={14}/>:'บันทึก'}</button>
+              <button onClick={saveDispName} className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors ${nameSaved?'bg-emerald-500/20 text-emerald-400':'btn-primary'}`}>{nameSaved?<Ic n="check" s={14}/>:'บันทึก'}</button>
             </div>
           </div>
           <div className={`rounded-xl px-4 py-3 mb-4 ${dk?'bg-white/5':'bg-slate-50'}`}>
@@ -9597,7 +9597,7 @@ const AccountModal = ({open, onClose, theme, setTheme, colorTheme, setColorTheme
           </div>
           {pwSent
             ? <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-500/15 text-emerald-400 text-sm"><Ic n="check" s={14}/>ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลแล้วค่ะ</div>
-            : <button onClick={sendReset} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gold-500 hover:bg-gold-600 text-sm font-medium transition-colors"><Ic n="key" s={14}/>เปลี่ยนรหัสผ่าน</button>}
+            : <button onClick={sendReset} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl btn-primary text-sm font-medium transition-colors"><Ic n="key" s={14}/>เปลี่ยนรหัสผ่าน</button>}
           </div>
           <div className={`rounded-2xl border p-5 mb-4 ${dk?'border-white/8 bg-white/[0.02]':'border-slate-200 bg-white'}`}>
             <h3 className={`text-sm font-bold mb-4 ${dk?'text-white':'text-slate-800'}`}>การแสดงผล</h3>
@@ -9628,14 +9628,14 @@ const AccountModal = ({open, onClose, theme, setTheme, colorTheme, setColorTheme
                 <div className="flex-shrink-0 flex gap-1.5 flex-wrap">
                   {lockOn&&(
                     <button onClick={()=>{ onClose(); onLockChange&&onLockChange('change'); }}
-                      className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-gold-500 hover:bg-gold-600">Change passcode</button>
+                      className="px-3 py-1.5 rounded-xl text-xs font-semibold btn-primary">Change passcode</button>
                   )}
                   {/* Red because it is the one control here that removes the
                       protection — it looked like any other secondary button.
                       Outlined rather than solid: a settings row should not carry
                       two filled buttons competing, and gold stays the accent. */}
                   <button onClick={()=>{ onClose(); onLockChange&&onLockChange(lockOn?'off':'set'); }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap border transition-colors ${lockOn?(dk?'border-rose-500/40 text-rose-300 hover:bg-rose-500/10':'border-rose-300 text-rose-600 hover:bg-rose-50'):'bg-gold-500 hover:bg-gold-600 border-transparent'}`}>
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap border transition-colors ${lockOn?(dk?'border-rose-500/40 text-rose-300 hover:bg-rose-500/10':'border-rose-300 text-rose-600 hover:bg-rose-50'):'btn-primary border-transparent'}`}>
                     {lockOn?'Turn off':'Set passcode'}
                   </button>
                 </div>
@@ -9726,7 +9726,7 @@ const TrashModal = ({open, onClose, theme, trash, wallets, assets, onRestore, on
                           <div className={`${dk?'text-slate-500':'text-slate-400'}`}>ลบเมื่อ {when(t._deletedAt)}{t.date?` · ของวันที่ ${t.date}`:''}</div>
                         </div>
                         <div className="flex flex-col gap-1 flex-shrink-0">
-                          <button onClick={()=>onRestore(ids)} className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500 hover:bg-emerald-600 text-white">↩ กู้คืน</button>
+                          <button onClick={()=>onRestore(ids)} className="px-2.5 py-1 rounded-lg text-[11px] font-semibold btn-primary">↩ กู้คืน</button>
                           <button onClick={()=>onPurge(ids)} className={`px-2.5 py-1 rounded-lg text-[11px] font-medium ${dk?'text-slate-500 hover:bg-white/10':'text-slate-400 hover:bg-slate-100'}`}>ลบถาวร</button>
                         </div>
                       </div>
@@ -10022,7 +10022,7 @@ const ImportModal = ({open, onClose, onImport, theme}) => {
             <button onClick={()=>fileRef.current?.click()} className={`w-full py-2 rounded-xl text-xs font-medium border border-dashed ${dk?'border-white/15 text-slate-400 hover:bg-white/5':'border-slate-300 text-slate-500 hover:bg-slate-50'}`}>📎 หรืออัปโหลดไฟล์ CSV / TXT</button>
             <div className="flex gap-3">
               <button onClick={onClose} className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${dk?'bg-white/5 text-slate-300':'bg-slate-100 text-slate-600'}`}>ยกเลิก</button>
-              <button onClick={parse} disabled={!text.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold btn-primary text-white disabled:opacity-40">อ่านข้อมูล →</button>
+              <button onClick={parse} disabled={!text.trim()} className="flex-1 py-2.5 rounded-xl text-sm font-semibold btn-primary disabled:opacity-40">อ่านข้อมูล →</button>
             </div>
           </div>
         ):(
@@ -10048,7 +10048,7 @@ const ImportModal = ({open, onClose, onImport, theme}) => {
             </div>
             <div className="flex gap-3 pt-1">
               <button onClick={reset} className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${dk?'bg-white/5 text-slate-300':'bg-slate-100 text-slate-600'}`}>← กลับ</button>
-              <button onClick={doImport} disabled={!rows.some(r=>r._on)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold btn-primary text-white disabled:opacity-40">นำเข้า {rows.filter(r=>r._on).length} รายการ</button>
+              <button onClick={doImport} disabled={!rows.some(r=>r._on)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold btn-primary disabled:opacity-40">นำเข้า {rows.filter(r=>r._on).length} รายการ</button>
             </div>
           </div>
         )}
@@ -10585,7 +10585,7 @@ const LoginPage = ({ theme }) => {
               It says the same thing and now does something with it. */}
           <button onClick={()=>{ switchMode('signup');
               requestAnimationFrame(()=>formRef.current&&formRef.current.scrollIntoView({behavior:'smooth', block:'center'})); }}
-            className="px-5 py-2 rounded-full text-sm font-semibold btn-primary text-white transition-transform hover:scale-[1.03] active:scale-100">
+            className="px-5 py-2 rounded-full text-sm font-semibold btn-primary transition-transform hover:scale-[1.03] active:scale-100">
             Start Free
           </button>
         </nav>
@@ -10796,7 +10796,7 @@ const LockedPanel = ({onUnlock, dk}) => (
     <div className="text-5xl mb-4">🔒</div>
     <div className={`text-base font-semibold mb-1 ${dk?'text-gold-300':'text-gold-700'}`}>FinTracker is locked</div>
     <div className={`text-xs mb-7 ${dk?'text-slate-400':'text-slate-500'}`}>Enter your passcode to continue</div>
-    <button onClick={onUnlock} className="px-8 py-3 rounded-xl text-sm font-semibold bg-gold-500 hover:bg-gold-600">Enter passcode</button>
+    <button onClick={onUnlock} className="px-8 py-3 rounded-xl text-sm font-semibold btn-primary">Enter passcode</button>
   </div>
 );
 
@@ -10968,7 +10968,7 @@ const PinModal = ({mode, onClose, onDone, dk}) => {
           <div className="flex gap-2 mt-4">
             <button onClick={onClose} className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${dk?'bg-white/5 hover:bg-white/10 text-slate-300':'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}>Cancel</button>
             <button onClick={submit} disabled={!ready}
-              className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-gold-500 hover:bg-gold-600 disabled:opacity-40 disabled:cursor-not-allowed">
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold btn-primary disabled:opacity-40 disabled:cursor-not-allowed">
               {mode==='set'?'Set passcode':mode==='off'?'Turn off':mode==='change'?'Next':'Unlock'}
             </button>
           </div>
@@ -12364,7 +12364,7 @@ const App = () => {
         <h2 className={`text-lg font-bold mb-2 ${theme==='dark'?'text-white':'text-slate-800'}`}>ออกจากระบบอัตโนมัติ</h2>
         <p className={`text-sm mb-6 ${theme==='dark'?'text-slate-400':'text-slate-500'}`}>บัญชีนี้ถูกเข้าสู่ระบบจากอุปกรณ์อื่น<br/>กรุณาเข้าสู่ระบบใหม่อีกครั้ง</p>
         <button onClick={()=>setKickedOut(false)}
-          className="w-full py-3 rounded-xl btn-primary text-white text-sm font-semibold">
+          className="w-full py-3 rounded-xl btn-primary text-sm font-semibold">
           🔓 Login ใหม่
         </button>
       </div>
@@ -12786,7 +12786,7 @@ const App = () => {
                       leaves the person where the work happens rather than back
                       on the dashboard. */}
                   <button onClick={()=>{ setPage(s.pg); try{localStorage.setItem('ft-page',s.pg);}catch{} setTimeout(s.open, 0); }}
-                    className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg bg-gold-500 hover:bg-gold-600 whitespace-nowrap">{s.cta} →</button>
+                    className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg btn-primary whitespace-nowrap">{s.cta} →</button>
                 </div>
               ))}
             </div>
@@ -12827,7 +12827,7 @@ const App = () => {
             : page==='debt'   ? window.dispatchEvent(new Event('ft-add-debt'))
             : setModal({open:true,editData:null})}
           aria-label={page==='assets'?'เพิ่มสินทรัพย์':page==='wallet'?'เพิ่มกระเป๋า':page==='debt'?'เพิ่มหนี้สิน':'เพิ่มรายการ'}
-          className="lg:hidden fixed right-5 z-40 no-print w-14 h-14 rounded-full btn-primary text-white shadow-2xl flex items-center justify-center active:scale-90 transition-transform"
+          className="lg:hidden fixed right-5 z-40 no-print w-14 h-14 rounded-full btn-primary shadow-2xl flex items-center justify-center active:scale-90 transition-transform"
           style={{bottom:'calc(env(safe-area-inset-bottom) + 76px)'}}>
           <Ic n="plus" s={26}/>
         </button>
@@ -12903,7 +12903,7 @@ const App = () => {
               <div className="text-5xl mb-3">👋</div>
               <h2 className={`text-lg font-bold mb-1 ${dk?'text-white':'text-slate-800'}`}>ยินดีต้อนรับสู่ FinTracker</h2>
               <p className={`text-sm mb-6 ${dk?'text-slate-400':'text-slate-500'}`}>ติดตามเงิน กระเป๋า สินทรัพย์ และงบประมาณ ในที่เดียว</p>
-              <button onClick={dismissOnboard} className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors">➕ เริ่มบันทึกข้อมูล</button>
+              <button onClick={dismissOnboard} className="w-full py-3 rounded-xl text-sm font-semibold btn-primary transition-colors">➕ เริ่มบันทึกข้อมูล</button>
               <p className={`text-[11px] mt-4 ${dk?'text-slate-500':'text-slate-400'}`}>มีรายการตั้งต้น 3 ข้อคอยแนะนำในหน้าแรก</p>
             </div>
           </div>
