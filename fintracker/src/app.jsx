@@ -10194,52 +10194,6 @@ const DashboardMock = () => (
   </div>
 );
 
-// The half of the sign-in screen that says what this is. Everything on it has to
-// be true of FinTracker rather than true of a landing page: no trial to start, no
-// card to withhold, and no user count, because inventing one is the cheapest lie
-// on the internet and this app's whole subject is figures you can check.
-const LoginHero = ({ dk }) => (
-  <aside className="relative hidden lg:flex flex-col justify-center px-12 xl:px-16 py-12 overflow-hidden">
-    {dk && (
-      <div className="absolute inset-0 pointer-events-none" style={{
-        background:'radial-gradient(ellipse 70% 90% at 20% 15%, rgba(217,175,43,0.10) 0%, transparent 60%),'
-                  +'radial-gradient(ellipse 60% 80% at 85% 85%, rgba(230,200,92,0.06) 0%, transparent 58%)',
-      }}/>
-    )}
-    <div className="relative max-w-lg">
-      <span className={`inline-block text-[11px] font-medium uppercase px-3 py-1 rounded-full border ${dk?'border-gold-500/30 text-gold-300':'border-gold-300 text-gold-700'}`}
-        style={{letterSpacing:'0.16em'}}>
-        สินทรัพย์ · กระเป๋าเงิน · งบประมาณ
-      </span>
-      {/* Fin's own sentence for what the two main pages are for. It was the
-          clearest thing said about this app all year, and a headline written
-          from scratch would only have been a worse version of it. */}
-      <h1 className={`mt-5 text-4xl xl:text-5xl font-bold leading-[1.15] ${dk?'text-white':'text-slate-800'}`}
-        style={{textWrap:'balance'}}>
-        รู้ว่ามีเท่าไหร่<br/>
-        <span className={dk?'text-gold-300':'text-gold-600'}>และอยู่ที่ไหน</span>
-      </h1>
-      <p className={`mt-4 text-sm leading-relaxed ${dk?'text-slate-400':'text-slate-500'}`}>
-        หุ้น คริปโต ทองคำ และเงินสด รวมอยู่ที่เดียว —
-        เห็นทั้งว่ามีอะไรบ้าง และแต่ละอย่างเก็บไว้ตรงไหน
-      </p>
-      <ul className={`mt-6 space-y-2.5 text-sm ${dk?'text-slate-300':'text-slate-600'}`}>
-        {['ซิงก์ทุกเครื่อง · เปิดใช้ได้แม้ไม่มีเน็ต',
-          'งบประมาณรายหมวด จัดกลุ่มเองได้',
-          'ตรวจสุขภาพข้อมูลให้อัตโนมัติ',
-          'ฟรี ไม่มีค่าใช้จ่าย ไม่มีโฆษณา'].map(t=>(
-          <li key={t} className="flex items-start gap-2.5">
-            <span className={`mt-0.5 flex-shrink-0 ${dk?'text-gold-400':'text-gold-600'}`}>✓</span>
-            <span>{t}</span>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-9">
-        <DashboardMock/>
-      </div>
-    </div>
-  </aside>
-);
 
 const LoginPage = ({ theme }) => {
   const dk = theme === 'dark';
@@ -10257,43 +10211,43 @@ const LoginPage = ({ theme }) => {
   const switchMode = m => { setMode(m); setErr(''); setResetSent(false); setPw(''); setConfirmPw(''); };
 
   const forgotPassword = async () => {
-    if (!email) { setErr('กรุณากรอก Email ก่อนค่ะ'); return; }
+    if (!email) { setErr('Enter your email first'); return; }
     setResetLoading(true); setErr('');
     try {
       await auth.sendPasswordResetEmail(email);
       setResetSent(true);
     } catch (e) {
-      const msgs = { 'auth/user-not-found':'ไม่พบ Email นี้ในระบบ', 'auth/invalid-email':'รูปแบบ Email ไม่ถูกต้อง' };
-      setErr(msgs[e.code] || `ส่ง Email ไม่สำเร็จ (${e.code})`);
+      const msgs = { 'auth/user-not-found':'No account found for that email', 'auth/invalid-email':'That email address looks wrong' };
+      setErr(msgs[e.code] || `Could not send the email (${e.code})`);
     }
     setResetLoading(false);
   };
 
   const login = async () => {
-    if (!email || !pw) { setErr('กรุณากรอก Email และรหัสผ่าน'); return; }
+    if (!email || !pw) { setErr('Enter your email and password'); return; }
     setLoading(true); setErr('');
     try {
       await auth.signInWithEmailAndPassword(email, pw);
     } catch (e) {
       const msgs = {
-        'auth/user-not-found':     'ไม่พบ Email นี้ในระบบ',
-        'auth/wrong-password':     'รหัสผ่านไม่ถูกต้อง',
-        'auth/invalid-email':      'รูปแบบ Email ไม่ถูกต้อง',
-        'auth/invalid-credential': 'Email หรือรหัสผ่านไม่ถูกต้อง',
-        'auth/too-many-requests':  'ลองใหม่อีกครั้งในภายหลัง',
+        'auth/user-not-found':     'No account found for that email',
+        'auth/wrong-password':     'Wrong password',
+        'auth/invalid-email':      'That email address looks wrong',
+        'auth/invalid-credential': 'Email or password is wrong',
+        'auth/too-many-requests':  'Too many attempts — try again later',
       };
-      setErr(msgs[e.code] || `เข้าสู่ระบบไม่สำเร็จ (${e.code})`);
+      setErr(msgs[e.code] || `Sign in failed (${e.code})`);
       setLoading(false);
     }
   };
 
   const signup = async () => {
-    if (!email || !pw || !confirmPw) { setErr('กรุณากรอกข้อมูลให้ครบ'); return; }
+    if (!email || !pw || !confirmPw) { setErr('Fill in every field'); return; }
     // Eight, not the six Firebase will accept. This is the front door to a
     // record of somebody's money, and six characters is the floor of a service
     // that knows nothing about what it is guarding.
-    if (pw.length < 8) { setErr('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'); return; }
-    if (pw !== confirmPw) { setErr('รหัสผ่านไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง'); return; }
+    if (pw.length < 8) { setErr('Password needs at least 8 characters'); return; }
+    if (pw !== confirmPw) { setErr('The two passwords do not match'); return; }
     setLoading(true); setErr('');
     try {
       const cred = await auth.createUserWithEmailAndPassword(email, pw);
@@ -10316,11 +10270,11 @@ const LoginPage = ({ theme }) => {
       });
     } catch (e) {
       const msgs = {
-        'auth/email-already-in-use': 'Email นี้มีบัญชีอยู่แล้ว',
-        'auth/invalid-email':        'รูปแบบ Email ไม่ถูกต้อง',
-        'auth/weak-password':        'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร',
+        'auth/email-already-in-use': 'That email already has an account',
+        'auth/invalid-email':        'That email address looks wrong',
+        'auth/weak-password':        'Password needs at least 8 characters',
       };
-      setErr(msgs[e.code] || `สมัครไม่สำเร็จ (${e.code})`);
+      setErr(msgs[e.code] || `Sign up failed (${e.code})`);
       setLoading(false);
     }
   };
@@ -10333,19 +10287,54 @@ const LoginPage = ({ theme }) => {
   const lbl = `text-sm font-medium mb-1.5 block ${dk?'text-slate-200':'text-slate-700'}`;
 
   return (
-    <div className={`min-h-screen lg:grid lg:grid-cols-2 ${dk?'bg-app':'bg-slate-50'}`}>
-      <LoginHero dk={dk}/>
-      {/* The form half. Below lg it is the whole screen — on a phone the person
-          holding it has already decided, and a page of reasons to sign up sits
-          between them and the field they came to type in. */}
-      <div className={`flex flex-col justify-center px-6 py-10 min-h-screen lg:min-h-0 ${dk?'lg:bg-white/[0.02]':'lg:bg-white'}`}>
-        <div className="mx-auto w-full max-w-sm">
+    <div className={`min-h-screen ${dk?'bg-app':'bg-slate-50'}`}>
+      {/* One centred column, not two halves. Split down the middle, a 384px form
+          sat alone in 900px of empty screen while the copy hugged the far left
+          edge — two things in the same room refusing to look at each other. The
+          reference this is modelled on centres everything and holds it inside a
+          fixed measure, which is why nothing in it floats. */}
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
 
-          {/* Logo + App name */}
-          <div className="flex flex-col items-center mb-8">
-            <LogoSvg size={52}/>
-            <span className={`mt-3 text-2xl font-bold tracking-wide ${dk?'text-white':'text-slate-800'}`}>FinTracker</span>
-            <span className={`mt-1 text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{mode==='signup' ? 'สร้างบัญชีใหม่' : 'เข้าสู่ระบบ'}</span>
+        {/* Floating pill bar. No Features/Pricing/FAQ: those are three links to
+            pages that do not exist, and a nav that lies about the size of the
+            product is a worse first impression than a small nav. */}
+        <nav className={`mt-5 flex items-center justify-between rounded-full border px-5 py-3 ${dk?'border-white/10 bg-white/[0.04]':'border-slate-200 bg-white shadow-sm'}`}>
+          <div className="flex items-center gap-2.5">
+            <LogoSvg size={26}/>
+            <span className={`text-base font-bold tracking-wide ${dk?'text-white':'text-slate-800'}`}>FinTracker</span>
+          </div>
+          <span className={`text-xs font-medium px-3 py-1.5 rounded-full ${dk?'bg-gold-500/15 text-gold-300':'bg-gold-50 text-gold-700'}`}>
+            Free forever
+          </span>
+        </nav>
+
+        {/* Hero */}
+        <div className="text-center pt-16 sm:pt-24">
+          <span className={`inline-block text-[11px] font-semibold uppercase px-4 py-1.5 rounded-full border ${dk?'border-gold-500/30 text-gold-300':'border-gold-300 text-gold-700'}`}
+            style={{letterSpacing:'0.16em'}}>
+            Net Worth &amp; Portfolio Tracker
+          </span>
+          <h1 className={`mt-7 text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.12] ${dk?'text-white':'text-slate-900'}`}
+            style={{textWrap:'balance', letterSpacing:'-0.02em'}}>
+            Track everything you own.<br/>
+            Down to the <span className={dk?'text-gold-300':'text-gold-600'}>last baht</span>.
+          </h1>
+          <p className={`mt-6 mx-auto max-w-xl text-base leading-relaxed ${dk?'text-slate-400':'text-slate-500'}`}>
+            Stocks, crypto, gold and cash in one place — what you hold, and which
+            account is holding it. Synced across devices, works offline.
+          </p>
+        </div>
+
+        {/* The form. It is the reason the page exists, so it sits directly under
+            the headline rather than behind a button that scrolls to it. */}
+        <div className={`mx-auto w-full max-w-md mt-12 rounded-2xl border p-7 ${dk?'border-white/10 bg-white/[0.03]':'border-slate-200 bg-white shadow-sm'}`}>
+          <div className="mb-6 text-center">
+            <span className={`text-lg font-bold ${dk?'text-white':'text-slate-800'}`}>
+              {mode==='signup' ? 'Create your account' : 'Welcome back'}
+            </span>
+            <span className={`mt-1 block text-xs ${dk?'text-slate-400':'text-slate-500'}`}>
+              {mode==='signup' ? 'Free forever · No card required' : 'Sign in to your tracker'}
+            </span>
           </div>
 
           {/* Form */}
@@ -10380,7 +10369,7 @@ const LoginPage = ({ theme }) => {
               </div>
             )}
             {err && <p className="text-rose-400 text-xs text-center">{err}</p>}
-            {resetSent && <p className="text-emerald-400 text-xs text-center">✅ ส่ง Email รีเซ็ตรหัสผ่านแล้วค่ะ กรุณาตรวจ Inbox</p>}
+            {resetSent && <p className="text-emerald-400 text-xs text-center">✅ Reset email sent — check your inbox</p>}
             <button onClick={mode==='login'?login:signup} disabled={loading}
               className="mt-2 w-full py-2.5 rounded-full bg-orange-400 hover:bg-orange-300 active:bg-orange-500 text-orange-950 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
               {loading ? 'Loading...' : mode==='login' ? 'Sign in' : 'Create account'}
@@ -10393,10 +10382,10 @@ const LoginPage = ({ theme }) => {
               operator reading them is not worth it at this size. */}
           {mode==='login'&&(
             <p className={`text-sm mt-4 ${dk?'text-slate-400':'text-slate-500'}`}>
-              ลืมรหัสผ่าน?{' '}
+              Forgot your password?{' '}
               <button onClick={forgotPassword} disabled={resetLoading}
                 className="font-medium text-gold-400 hover:text-gold-300 transition-colors disabled:opacity-50">
-                {resetLoading ? 'กำลังส่ง...' : 'รีเซ็ตรหัสผ่าน'}
+                {resetLoading ? 'Sending…' : 'Reset password'}
               </button>
             </p>
           )}
@@ -10409,9 +10398,19 @@ const LoginPage = ({ theme }) => {
               {mode==='login' ? 'Sign up' : 'Sign in'}
             </button>
           </p>
-
-
         </div>
+
+        {/* The picture goes under the form rather than beside it. Beside it, the
+            two competed for the same glance and the page had no obvious place to
+            start reading; under it, the order is: what this is, then do it, then
+            here is what you get. */}
+        <div className="mx-auto w-full max-w-3xl mt-16 sm:mt-20">
+          <DashboardMock/>
+        </div>
+
+        <p className={`mt-10 pb-16 text-center text-xs ${dk?'text-slate-600':'text-slate-400'}`}>
+          Free forever · No ads · No credit card
+        </p>
       </div>
     </div>
   );
