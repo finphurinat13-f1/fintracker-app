@@ -4638,10 +4638,10 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
       {/* Header */}
       <div className={`${card} p-4 flex items-center justify-between flex-wrap gap-3`}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="min-w-0">
-            <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>พอร์ตสินทรัพย์</div>
-            <div className={sub}>{enriched.length}{enriched.length!==assets.length?` / ${assets.length}`:''} รายการ</div>
-          </div>
+          {/* "พอร์ตสินทรัพย์ · 35 รายการ" went here. The page header one line
+              above says Holdings and 35 รายการ, so this was a title for the
+              thing the title above it had already titled. What is left is the
+              search box and the controls, which is what this row is for. */}
           <div onClick={()=>searchInputRef.current?.focus()} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border flex-1 max-w-sm cursor-text flex-wrap ${dk?'border-white/10 bg-white/5':'border-slate-200 bg-white'}`}>
             <Ic n="search" s={12} cls={dk?'text-slate-500':'text-slate-400'}/>
             {searchTags.map(tag=>(
@@ -4711,6 +4711,11 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
       </div>
 
       {/* Net Worth hero card */}
+      {/* Same band, same reason as the dashboard: the total spent the page's
+          full width printing one number, then four short cards took a whole
+          band of their own underneath it. Three fifths and two. */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7 items-stretch">
+        <div className="lg:col-span-3">
       {wallets.length>0&&(
         <div className={`${card} card-hero p-5`}>
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -4742,9 +4747,11 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
           </div>
         </div>
       )}
+        </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
+        <div className="lg:col-span-2">
+        <div className="grid grid-cols-2 gap-x-7 gap-y-5 content-start">
         {[
           {label:'มูลค่าพอร์ต (฿)', val:fmt(totVal),    cls:dk?'text-2xl font-bold tracking-wide tg-white':'text-2xl font-bold tracking-wide text-slate-800',                                        note:'ราคาปัจจุบันรวม',    extra:wallets.length>0?'':(dk?'card-hero':'')},
           {label:'ต้นทุนรวม (฿)',   val:fmt(totCost),   cls:`text-2xl font-bold tracking-wide ${dk?'text-slate-300':'text-slate-600'}`,                                                  note:'เงินที่ลงทุนไป',     extra:''},
@@ -4757,6 +4764,8 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
             <div className={`mt-1 ${sub}`}>{note}</div>
           </div>
         ))}
+      </div>
+        </div>
       </div>
 
       {/* สัดส่วนตามประเภท used to sit here, with a donut and a per-type table of
