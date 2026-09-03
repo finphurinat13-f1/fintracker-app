@@ -475,7 +475,13 @@ const LogoSvg = ({size=32}) => (
         <stop offset="100%" stopColor="#9c7020"/>
       </linearGradient>
     </defs>
-    <rect width="100" height="100" fill="#05080f" rx="12"/>
+    {/* No plate behind it. A near-black tile was the ground the mark was
+        designed against, and it worked while every card had a gold edge and a
+        dark fill of its own. On the sidebar's own dark it is a slightly
+        different black inside a rounded rectangle nobody asked for, and in the
+        light theme it is a black stamp on a white bar. The letterform carries
+        the gold gradient on its own — a mark that needs a box behind it is a
+        mark that is not finished. */}
     {/* Two pieces with a diagonal channel between them, and a V bitten out of
         the top edge. The single-polygon F it replaces was a bold F with its arm
         ends cut on a slant — recognisable, but the slant was the only idea in
@@ -12385,7 +12391,7 @@ const App = () => {
         return (<>
           <div className={`border-b ${dk?'border-gold-500/18':'border-gold-100'}`}>
             <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl logo-icon flex items-center justify-center"><LogoSvg size={18}/></div>
+              <LogoSvg size={30}/>
               <div className={`h-4 w-24 rounded-lg animate-pulse ${dk?'bg-white/[0.06]':'bg-slate-100'}`}/>
               <div className="flex-1"/>
               <div className={`h-7 w-7 rounded-lg animate-pulse ${dk?'bg-white/[0.06]':'bg-slate-100'}`}/>
@@ -12522,13 +12528,17 @@ const App = () => {
       <aside className={`hidden lg:flex flex-col fixed inset-y-0 left-0 w-60 z-40 border-r no-print ${dk?'bg-[#0e0e11] border-gold-500/12':'bg-white border-slate-200'}`}>
         {/* Name and what the thing is, with a rule under them — the rail's own
             header rather than a logo floating above a list. */}
-        <div className={`flex items-center gap-3 px-5 py-4 border-b flex-shrink-0 ${dk?'border-white/8':'border-slate-100'}`}>
+        {/* The wordmark is the way home, which is where every app puts it and
+            where anyone lost on a page will click before they read the nav. */}
+        <button onClick={()=>{setPage('dashboard');localStorage.setItem('ft-page','dashboard');}}
+          title="กลับหน้าแรก"
+          className={`w-full text-left flex items-center gap-3 px-5 py-4 border-b flex-shrink-0 transition-colors ${dk?'border-white/8 hover:bg-white/[0.04]':'border-slate-100 hover:bg-slate-50'}`}>
           <LogoSvg size={34}/>
           <span className="min-w-0">
             <span className={`block font-bold text-base leading-tight ${dk?'text-white':'text-slate-800'}`}>FinTracker</span>
             <span className={`block text-[11px] leading-tight mt-0.5 ${dk?'text-slate-500':'text-slate-400'}`}>Personal Finance</span>
           </span>
-        </div>
+        </button>
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
           {NAV_GROUPS.map(({g,keys})=>(
             <div key={g}>
