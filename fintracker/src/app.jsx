@@ -2195,12 +2195,29 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           against the largest, which is a different chart and a decision for
           another day. The treemap takes the full width in the meantime, which
           is what the small holdings needed anyway. */}
+      {/* Size and performance, side by side. They are different questions —
+          what is big, and what is growing — and the answer to the second sat
+          three screens below the first, on a page whose whole idea is seeing
+          everything at once. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+        <div className="lg:col-span-2">
       <div className={card + ' p-5'}>
         <div className="flex items-baseline gap-2.5 flex-wrap mb-4">
           <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>แผนผังพอร์ต</h3>
           <p className={`text-xs ${subTx}`}>เรียงตามมูลค่า · สี = กำไร/ขาดทุน · ชี้เพื่อดูรายละเอียด</p>
         </div>
         <PortfolioTreemap assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy}/>
+      </div>
+        </div>
+        <div className={card + ' p-5'}>
+          {/* This card is a third of the row, so its two lines stay stacked —
+              on one baseline the gloss would push the heading off on its own
+              line and read worse than it does above it. Same rule everywhere:
+              one line where there is room for one. */}
+          <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>ผลตอบแทนต่อปี</h3>
+          <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>คิดแบบทบต้น เทียบกันได้ข้ามระยะเวลาถือ</p>
+          <ReturnRanking assets={assets} txs={txs} usdRate={usdRate} theme={theme}/>
+        </div>
       </div>
 
       {/* The last-10 transactions list used to sit here, collapsed, above the
@@ -2215,20 +2232,10 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           figures and the ranking carries five names — and because the totals
           are what the page is for. The treemap keeps its own row above: size is
           a different question from performance. */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-        <div className="lg:col-span-2">
+      {/* The P/L table takes the row on its own now. Five rows of five figures
+          in two thirds of the width meant every column was narrower than the
+          numbers in it wanted, on the one table this page exists to show. */}
           <UnrealizedPL assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy} nwHistory={nwHistory} cashTotal={walletCashTotal}/>
-        </div>
-        <div className={card + ' p-5'}>
-          {/* This card is a third of the row, so its two lines stay stacked —
-              on one baseline the gloss would push the heading off on its own
-              line and read worse than it does above it. Same rule everywhere:
-              one line where there is room for one. */}
-          <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>ผลตอบแทนต่อปี</h3>
-          <p className={`text-xs mt-0.5 mb-4 ${subTx}`}>คิดแบบทบต้น เทียบกันได้ข้ามระยะเวลาถือ</p>
-          <ReturnRanking assets={assets} txs={txs} usdRate={usdRate} theme={theme}/>
-        </div>
-      </div>
     </div>
   );
 };
