@@ -4653,6 +4653,26 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
   const heroPortfolioVal = totVal - cashAssetsTotal - otherAssetsTotal;
   const heroWalletVal    = totalWalletBalance + cashAssetsTotal;
 
+  // The same five names the wallet page uses, so the two can be read against each
+  // other. They are cut differently on purpose: there by wallet type, here by
+  // asset type. The totals agree because both are the whole of the same money —
+  // where a bucket does not, that is a holding filed under a wallet of another
+  // kind, which is worth seeing rather than worth hiding.
+  //
+  // Four named and one catch-all, for the reason CLAIMED_TYPES is written that
+  // way: a type nobody remembers to add lands in อื่นๆ and stays in the total,
+  // instead of dropping out of it silently.
+  const assetBucket = t => t==='cash' ? 'cash' : t==='crypto' ? 'crypto' : t==='gold' ? 'gold'
+                         : (t==='stock'||t==='etf'||t==='fund') ? 'stock' : 'other';
+  const heroBuckets = useMemo(()=>{
+    const b = {cash:0, crypto:0, stock:0, gold:0, other:0};
+    enriched.forEach(a=>{ b[assetBucket(a.type)] += a.valTHB; });
+    // Loose wallet cash is money that no asset record describes; it belongs to
+    // the cash bucket or to nothing at all.
+    b.cash += totalWalletBalance;
+    return b;
+  },[enriched, totalWalletBalance]);
+
   // Cash sitting loose in wallets rather than written down as an asset record.
   const looseCash = useMemo(()=>wallets.reduce((s,w)=>s+walletCash(w,txs,assets),0),[wallets,txs,assets]);
   // It belongs in the เงินสด slice. This page used to total asset records only
@@ -4753,23 +4773,26 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
               <div className={`text-xs font-medium uppercase tracking-wide mb-1 ${dk?'text-slate-400':'text-slate-500'}`}>มูลค่าสินทรัพย์รวม</div>
               <div className={`text-3xl font-bold tracking-tight ${dk?'tg-white':'text-slate-800'}`}>{fmtNW(heroPortfolioVal+heroWalletVal+otherAssetsTotal)}</div>
             </div>
-            <div className="flex gap-6 flex-wrap">
-              <div>
-                <div className={`text-xs mb-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>📈 พอร์ตลงทุน</div>
-                <div className={`text-lg font-bold tracking-wide ${dk?'text-white':'text-slate-800'}`}>{fmt(heroPortfolioVal)}</div>
-              </div>
-              <div className={`w-px ${dk?'bg-white/10':'bg-slate-200'}`}/>
-              <div>
-                <div className={`text-xs mb-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>👛 กระเป๋าเงิน</div>
-                <div className={`text-lg font-bold tracking-wide ${dk?'text-white':'text-slate-800'}`}>{fmt(heroWalletVal)}</div>
-              </div>
-              {otherAssetsTotal>0&&(<>
-                <div className={`w-px ${dk?'bg-white/10':'bg-slate-200'}`}/>
-                <div>
-                  <div className={`text-xs mb-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>🗂️ สินทรัพย์อื่นๆ</div>
-                  <div className={`text-lg font-bold tracking-wide ${dk?'text-white':'text-slate-800'}`}>{fmt(otherAssetsTotal)}</div>
-                </div>
-              </>)}
+            <div className="flex flex-wrap gap-2">
+              {[
+                {key:'cash',   icon:'💵', label:'เงินสด', val:heroBuckets.cash},
+                {key:'crypto', icon:'🔐', label:'Crypto', val:heroBuckets.crypto},
+                {key:'stock',  icon:'📈', label:'หุ้น',   val:heroBuckets.stock},
+                {key:'gold',   icon:'🥇', label:'ทองคำ', val:heroBuckets.gold},
+                {key:'other',  icon:'👛', label:'อื่นๆ',  val:heroBuckets.other},
+              ].filter(c=>Math.abs(c.val)>0.005).map(c=>{
+                const grand = heroPortfolioVal+heroWalletVal+otherAssetsTotal;
+                const pct = grand>0 ? (c.val/grand*100) : 0;
+                return (
+                  <div key={c.key} className={`flex items-center gap-2 px-3 py-2 rounded-xl ${dk?'bg-white/5 border border-white/10':'bg-slate-50 border border-slate-200'}`}>
+                    <span className="text-base leading-none">{c.icon}</span>
+                    <div className="min-w-0">
+                      <div className={`text-xs font-bold ${dk?'text-slate-100':'text-slate-700'}`}>{fmt(c.val)}</div>
+                      <div className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{c.label} · {pct.toFixed(1)}%</div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
