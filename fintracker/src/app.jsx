@@ -8568,21 +8568,27 @@ const PageHeader = ({ lead, accent, sub, theme, right=null }) => {
             as a second heading rather than as the explanation of the first —
             the same thing that was wrong on the P/L card, and the app should
             not do it one way here and another way there. */}
-        <div className="min-w-0 flex items-baseline gap-2.5 flex-wrap">
-          {/* The accent word was orange, which is the colour this app uses for
-              things you press. A heading is not pressable, and spending the
-              action colour on it is what made every page open by pointing at
-              something inert. Gold is the material the page is made of, which
-              is what a heading is.
+        {/* Three lines instead of one, in the order the eye wants them: where
+            you are, what this page is, then the sentence explaining it.
 
-              Weight drops from bold to semibold and the tracking opens up:
-              at this size bold reads as emphasis competing with the figures
-              below it, where the heading only needs to be first. */}
-          <h1 className={`text-xl font-semibold ${dk?'text-slate-100':'text-slate-800'}`}
-            style={{textWrap:'balance', letterSpacing:'0.01em'}}>
-            {lead} <span className={dk?'text-gold-300':'text-gold-700'}>{accent}</span>
+            It used to be one baseline — heading and gloss side by side at 20px
+            — which read as a single run-on and gave the page nothing to open
+            with. The eyebrow is the same word the rail is highlighting, which
+            is not repetition: the rail is answering "where can I go" and this
+            is answering "where am I".
+
+            The accent word was orange once, the colour this app uses for things
+            you press. A heading is not pressable, and spending the action colour
+            on it made every page open by pointing at something inert. Gold is
+            the material the page is made of, which is what a heading is. */}
+        <div className="min-w-0">
+          <div className={`text-[10px] font-semibold uppercase mb-1.5 ${dk?'text-slate-500':'text-slate-400'}`}
+            style={{letterSpacing:'0.18em'}}>{lead}</div>
+          <h1 className={`text-2xl sm:text-3xl font-bold ${dk?'text-slate-100':'text-slate-800'}`}
+            style={{textWrap:'balance', letterSpacing:'-0.015em'}}>
+            <span className={dk?'text-gold-300':'text-gold-700'}>{accent}</span>
           </h1>
-          {sub && <p className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{sub}</p>}
+          {sub && <p className={`text-xs mt-1.5 ${dk?'text-slate-400':'text-slate-500'}`}>{sub}</p>}
         </div>
         {right && <div className="flex items-center gap-2 flex-wrap">{right}</div>}
       </div>
@@ -9601,17 +9607,22 @@ const AccountModal = ({open, onClose, theme, setTheme, colorTheme, setColorTheme
   return (
     <Portal>
       <div className="fixed inset-0 z-[999] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.5)'}} onClick={onClose}>
-        <div className={`w-full max-w-sm rounded-2xl p-6 shadow-2xl ${dk?'bg-slate-800 border border-white/10':'bg-white border border-slate-200'}`} onClick={e=>e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${dk?'bg-gold-500/20':'bg-gold-50'}`}>👤</div>
-              <div>
-                <div className={`text-sm font-semibold ${dk?'text-white':'text-slate-800'}`}>Account</div>
-                <div className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>จัดการบัญชีของคุณ</div>
-              </div>
+        <div className={`w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-2xl p-6 sm:p-7 shadow-2xl ${dk?'bg-slate-800 border border-white/10':'bg-white border border-slate-200'}`} onClick={e=>e.stopPropagation()}>
+          {/* Eyebrow, title, gloss — the same three lines every page opens with
+              now, so the one screen reached from a menu rather than the rail
+              does not look like it came from a different app. */}
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <div className={`text-[10px] font-semibold uppercase mb-1.5 ${dk?'text-slate-500':'text-slate-400'}`}
+                style={{letterSpacing:'0.18em'}}>Configure</div>
+              <h2 className={`text-2xl font-bold ${dk?'text-gold-300':'text-gold-700'}`}
+                style={{letterSpacing:'-0.015em'}}>Settings</h2>
+              <p className={`text-xs mt-1.5 ${dk?'text-slate-400':'text-slate-500'}`}>บัญชี การแสดงผล และความเป็นส่วนตัว</p>
             </div>
-            <button onClick={onClose} className={`p-1.5 rounded-lg ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={16}/></button>
+            <button onClick={onClose} className={`p-1.5 rounded-lg flex-shrink-0 ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-400'}`}><Ic n="x" s={18}/></button>
           </div>
+          <div className={`rounded-2xl border p-5 mb-4 ${dk?'border-white/8 bg-white/[0.02]':'border-slate-200 bg-white'}`}>
+            <h3 className={`text-sm font-bold mb-4 ${dk?'text-white':'text-slate-800'}`}>โปรไฟล์</h3>
           <div className="mb-4">
             <div className={`text-xs mb-1.5 font-medium ${dk?'text-slate-400':'text-slate-500'}`}>ชื่อที่แสดง</div>
             <div className="flex gap-2">
@@ -9627,13 +9638,18 @@ const AccountModal = ({open, onClose, theme, setTheme, colorTheme, setColorTheme
           {pwSent
             ? <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-500/15 text-emerald-400 text-sm"><Ic n="check" s={14}/>ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลแล้วค่ะ</div>
             : <button onClick={sendReset} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gold-500 hover:bg-gold-600 text-sm font-medium transition-colors"><Ic n="key" s={14}/>เปลี่ยนรหัสผ่าน</button>}
-          <div className={`my-4 h-px ${dk?'bg-white/10':'bg-slate-100'}`}/>
+          </div>
+          <div className={`rounded-2xl border p-5 mb-4 ${dk?'border-white/8 bg-white/[0.02]':'border-slate-200 bg-white'}`}>
+            <h3 className={`text-sm font-bold mb-4 ${dk?'text-white':'text-slate-800'}`}>การแสดงผล</h3>
           <button onClick={()=>setTheme(t=>t==='dark'?'light':'dark')}
             className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-colors mb-4 ${dk?'bg-white/5 hover:bg-white/8 text-slate-200':'bg-slate-50 hover:bg-slate-100 text-slate-700'}`}>
             <span className="flex items-center gap-2"><Ic n={dk?'sun':'moon'} s={14}/>{dk?'โหมดสว่าง':'โหมดมืด'}</span>
             <span className={`text-xs ${dk?'text-slate-500':'text-slate-400'}`}>{dk?'Dark':'Light'}</span>
           </button>
-          <div>
+          </div>
+          <div className={`rounded-2xl border p-5 mb-4 ${dk?'border-white/8 bg-white/[0.02]':'border-slate-200 bg-white'}`}>
+            <h3 className={`text-sm font-bold mb-4 ${dk?'text-white':'text-slate-800'}`}>ความเป็นส่วนตัว</h3>
+            <div>
             {/* Deliberately worded as hiding, not securing. It keeps figures off
                 the screen; it does not encrypt anything, and saying otherwise
                 would be the one thing worse than not having it. */}
@@ -9676,6 +9692,7 @@ const AccountModal = ({open, onClose, theme, setTheme, colorTheme, setColorTheme
                 lose to one that was actually designed, and the picker was a
                 standing cost on every screen added since.
                 Light and dark remain — those are about the room you are in. */}
+          </div>
           </div>
           {/* Also reachable from the ☰ menu, but this is the first place anyone
               looks for it — the cost of having it twice is nothing next to the
