@@ -10406,6 +10406,7 @@ const LoginPage = ({ theme }) => {
   const [err, setErr]     = useState('');
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const formRef = useRef(null);
   const [resetLoading, setResetLoading] = useState(false);
 
   const switchMode = m => { setMode(m); setErr(''); setResetSent(false); setPw(''); setConfirmPw(''); };
@@ -10504,9 +10505,14 @@ const LoginPage = ({ theme }) => {
             <ScrambleText text="FinTracker"
               className={`text-2xl font-bold tracking-wide ${dk?'text-white':'text-slate-800'}`}/>
           </div>
-          <span className={`text-xs font-medium px-3 py-1.5 rounded-full ${dk?'bg-gold-500/15 text-gold-300':'bg-gold-50 text-gold-700'}`}>
-            Free forever
-          </span>
+          {/* Was a badge reading "Free forever" — a fact printed in the one
+              corner of a landing page every visitor looks to for the way in.
+              It says the same thing and now does something with it. */}
+          <button onClick={()=>{ switchMode('signup');
+              requestAnimationFrame(()=>formRef.current&&formRef.current.scrollIntoView({behavior:'smooth', block:'center'})); }}
+            className="px-5 py-2 rounded-full text-sm font-semibold btn-primary text-white transition-transform hover:scale-[1.03] active:scale-100">
+            Start Free
+          </button>
         </nav>
 
         {/* Hero */}
@@ -10528,7 +10534,7 @@ const LoginPage = ({ theme }) => {
 
         {/* The form. It is the reason the page exists, so it sits directly under
             the headline rather than behind a button that scrolls to it. */}
-        <div className={`mx-auto w-full max-w-md mt-12 rounded-2xl border p-7 ${dk?'border-white/10 bg-white/[0.03]':'border-slate-200 bg-white shadow-sm'}`}>
+        <div ref={formRef} className={`mx-auto w-full max-w-md mt-12 rounded-2xl border p-7 ${dk?'border-white/10 bg-white/[0.03]':'border-slate-200 bg-white shadow-sm'}`}>
           <div className="mb-6 text-center">
             <span className={`text-lg font-bold ${dk?'text-white':'text-slate-800'}`}>
               {mode==='signup' ? 'Create your account' : 'Welcome back'}
