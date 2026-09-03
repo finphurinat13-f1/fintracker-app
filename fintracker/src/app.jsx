@@ -5461,12 +5461,14 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
       <PageHeader theme={theme} lead="Financial" accent="Summary"
         sub="รายเดือน รายปี และเป้าหมายเงินเก็บ"/>
       {/* Toggle */}
-      <div className={`${card} p-4 flex items-center justify-between flex-wrap gap-3`}>
-        <div>
-          <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>{view==='plan'?'ประมาณการผลตอบแทนทบต้น':'สรุปรายรับ-รายจ่าย'}</div>
-          <div className={`text-xs mt-0.5 ${dk?'text-slate-400':'text-slate-500'}`}>
+      <div className={`${card} px-4 py-3 flex items-center justify-between flex-wrap gap-3`}>
+        {/* The heading that sat here named the tab selected two inches to its
+            right, under a page header that had already said Summary. The gloss
+            stays: it counts what is in view, and on the projection tab it says
+            the figures are not saved anywhere — the one line here that has to
+            be read. */}
+        <div className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>
             {view==='plan' ? 'คำนวณเพื่อประกอบการวางแผน — ไม่บันทึกและไม่แก้ไขข้อมูลจริง' : `${data.length} ${view==='monthly'?'เดือน':'ปี'} · ${txs.length} รายการทั้งหมด`}
-          </div>
         </div>
         {/* The first two tabs look back; this one looks forward — same question,
             other direction, so it belongs beside them rather than in its own page */}
@@ -8931,7 +8933,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
   return (
     <div className="space-y-7 fade-up">
       <PageHeader theme={theme} lead="All" accent="Wallets"
-        sub={`${wallets.length} กระเป๋า · เงินสด บัญชีธนาคาร และวอลเล็ตคริปโต`}/>
+        sub={`${wallets.length} กระเป๋า${hasStocks?` · ${stockCount} สินทรัพย์`:''} · เงินสด บัญชีธนาคาร และวอลเล็ตคริปโต`}/>
       {/* Summary header */}
       <div className={`${card} p-5`}>
         <div className="flex flex-col gap-3">
@@ -8940,7 +8942,9 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
             <div>
               <p className={`text-xs font-medium uppercase tracking-widest mb-1 ${dk?'text-slate-400':'text-slate-500'}`}>ยอดรวมกระเป๋าเงิน</p>
               <div className={`text-2xl lg:text-3xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`}>{fmt(totalBalance)}</div>
-              <p className={`text-xs mt-1 ${dk?'text-slate-400':'text-slate-500'}`}>{walletData.length} กระเป๋า{hasStocks?` · ${stockCount} สินทรัพย์`:''}</p>
+              {/* "16 กระเป๋า · 35 สินทรัพย์" went here, one line under a page header
+                  that already said 16 กระเป๋า. The asset count was the only new
+                  thing in it, so that moved up and the line went. */}
             </div>
             <div className="flex flex-wrap gap-2">
               {[
