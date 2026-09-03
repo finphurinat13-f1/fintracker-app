@@ -9135,7 +9135,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                         wallet meant opening the broker to find out. */}
                     {w.costBasis>0&&(
                       <div className="flex items-baseline gap-1.5 mt-1 text-xs">
-                        <span className={dk?'text-slate-500':'text-slate-400'}>P/L ที่ยังไม่ขาย</span>
+                        <span className={dk?'text-slate-500':'text-slate-400'}>Unrealized P/L</span>
                         <span className={`font-semibold tabular-nums ${w.unrealized>=0?'text-emerald-400':'text-rose-400'}`}>
                           {hidden ? '฿ •••••' : (w.unrealized>=0?'+':'−')+fmt(Math.abs(w.unrealized))}
                         </span>
