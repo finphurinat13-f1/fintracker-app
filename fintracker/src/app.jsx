@@ -2057,11 +2057,11 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
           {/* The same mark the holdings hero carries, fainter here because this
               card already has something behind it. The sparkline is real data
               and keeps the emphasis; the mark sits under it at the right edge,
-              bleeding off the card so it reads as texture rather than as a
+              clear of the edge by the mark own padding, so it reads as texture rather than as a
               second thing to look at. In light mode the sparkline does not
               render at all and this is the only thing back there. */}
           <div aria-hidden="true" className="pointer-events-none select-none"
-            style={{position:'absolute', right:'-22px', top:'50%', transform:'translateY(-50%)',
+            style={{position:'absolute', right:'0px', top:'50%', transform:'translateY(-50%)',
                     opacity:dk?0.06:0.05}}>
             <LogoSvg size={165}/>
           </div>
