@@ -2186,7 +2186,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
       <div className={card + ' p-5'}>
         <div className="flex items-baseline gap-2.5 flex-wrap mb-4">
           <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>แผนผังพอร์ต</h3>
-          <p className={`text-xs ${subTx}`}>ขนาด = มูลค่า · สี = กำไร/ขาดทุน · ชี้เพื่อดูรายละเอียด</p>
+          <p className={`text-xs ${subTx}`}>เรียงตามมูลค่า · สี = กำไร/ขาดทุน · ชี้เพื่อดูรายละเอียด</p>
         </div>
         <PortfolioTreemap assets={assets} txs={txs} usdRate={usdRate} theme={theme} hide={hideAmt||privacy}/>
       </div>
@@ -8160,7 +8160,9 @@ const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
   // default and its button says what it does, because a chart that quietly
   // misrepresents its own numbers is worse than one that is hard to read.
   const [tmType, setTmType] = useState('all');
-  const [even, setEven] = useState(false);
+  // Fixed. Laid out by the square root of value, which pulls the range in hard
+  // enough that every holding gets a tile with its name on it.
+  const even = true;
   const [hoverId, setHoverId] = useState(null);
   const TM_TABS = [
     {k:'all',    l:'ทั้งหมด'},
@@ -8208,11 +8210,12 @@ const PortfolioTreemap = ({ assets, txs, usdRate, theme, hide=false }) => {
           </button>
         ))}
       </div>
-      <button onClick={()=>setEven(v=>!v)}
-        title="ย่อช่องว่างระหว่างรายการใหญ่กับเล็ก เพื่อให้เห็นรายการเล็กชัดขึ้น — พื้นที่จะไม่ตรงกับมูลค่าจริง"
-        className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${even?(dk?'border-orange-400/60 text-orange-300 bg-orange-400/10':'border-orange-400 text-orange-600 bg-orange-50'):(dk?'border-white/10 text-slate-400 hover:text-slate-200':'border-slate-200 text-slate-500 hover:text-slate-700')}`}>
-        {even ? '⚖ สเกลเท่ากันมากขึ้น (พื้นที่ ≠ มูลค่า)' : '⚖ เห็นรายการเล็กชัดขึ้น'}
-      </button>
+      {/* The even/true toggle is gone, fixed on even. True areas gave one or
+          two holdings most of the panel and everything else a sliver with no
+          room for its own name, which is a chart that can only be read for the
+          thing you already knew. Fin's call, and the right one: the exact
+          figures are printed on the tiles, so area only has to say bigger or
+          smaller — and it still does, just not to scale. */}
     </div>
   );
 
