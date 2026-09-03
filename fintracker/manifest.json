@@ -9,13 +9,13 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='ftgold' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%238f6518'/><stop offset='22%25' stop-color='%23e6c368'/><stop offset='40%25' stop-color='%23fbf0c4'/><stop offset='58%25' stop-color='%23c9992f'/><stop offset='78%25' stop-color='%23f2dc98'/><stop offset='100%25' stop-color='%239c7020'/></linearGradient></defs><<polygon points='12,13 88,13 79,31 25,31 21,39 12,21' fill='url(%23ftgold)'/><polygon points='30,40 72,40 63,58 39,58 25,86 16,68' fill='url(%23ftgold)'/></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='ftgold' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%238f6518'/><stop offset='22%25' stop-color='%23e6c368'/><stop offset='40%25' stop-color='%23fbf0c4'/><stop offset='58%25' stop-color='%23c9992f'/><stop offset='78%25' stop-color='%23f2dc98'/><stop offset='100%25' stop-color='%239c7020'/></linearGradient></defs><polygon points='12,13 88,13 79,31 25,31 21,39 12,21' fill='url(%23ftgold)'/><polygon points='30,40 72,40 63,58 39,58 25,86 16,68' fill='url(%23ftgold)'/></svg>",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='ftgold' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%238f6518'/><stop offset='22%25' stop-color='%23e6c368'/><stop offset='40%25' stop-color='%23fbf0c4'/><stop offset='58%25' stop-color='%23c9992f'/><stop offset='78%25' stop-color='%23f2dc98'/><stop offset='100%25' stop-color='%239c7020'/></linearGradient></defs><<polygon points='12,13 88,13 79,31 25,31 21,39 12,21' fill='url(%23ftgold)'/><polygon points='30,40 72,40 63,58 39,58 25,86 16,68' fill='url(%23ftgold)'/></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='ftgold' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%238f6518'/><stop offset='22%25' stop-color='%23e6c368'/><stop offset='40%25' stop-color='%23fbf0c4'/><stop offset='58%25' stop-color='%23c9992f'/><stop offset='78%25' stop-color='%23f2dc98'/><stop offset='100%25' stop-color='%239c7020'/></linearGradient></defs><polygon points='12,13 88,13 79,31 25,31 21,39 12,21' fill='url(%23ftgold)'/><polygon points='30,40 72,40 63,58 39,58 25,86 16,68' fill='url(%23ftgold)'/></svg>",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
