@@ -3566,12 +3566,20 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
   const WALLET_ASSET_TYPE_MAP = { crypto:['crypto'], bank:['cash'], cash:['cash'], credit:['cash'], stock:['stock','gold'], gold:['gold','cash','other'] };
   const allowedAssetTypes = WALLET_ASSET_TYPE_MAP[walletTypeFilter] || null;
   const unlinked = assets.filter(a=>!a.walletId);
-  const filtered = assets.filter(a=>{
-    if(a.walletId) return false; // already linked to a wallet — hide; show only unassigned assets
+  const matches = a => {
     if(allowedAssetTypes&&!allowedAssetTypes.includes(a.type)) return false;
     const q=search.toLowerCase();
     return !q||a.name.toLowerCase().includes(q)||(a.note||'').toLowerCase().includes(q);
-  });
+  };
+  const filtered = assets.filter(a=>!a.walletId && matches(a));
+  // Holdings that already belong to another wallet. They were hidden outright,
+  // which is right for "add" and wrong for what people actually come here to do:
+  // Fin made a gold wallet and wanted his ทองรูปพรรณ in it, and the only route
+  // was to remember which wallet had it, open that one, unlink there, come back.
+  // assignAssetToWallet already overwrites walletId, so moving was one click away
+  // the whole time — it just had nothing to click.
+  const movable = assets.filter(a=>a.walletId && a.walletId!==defaultWalletId && matches(a));
+  const walletNameOf = id => (wallets.find(w=>w.id===id)||{}).name || 'กระเป๋าอื่น';
   if(!open) return null;
   const inp = `w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all ${dk?'bg-white/5 border-white/10 text-white placeholder-slate-600 focus:border-gold-500':'bg-slate-50 border-slate-200 text-slate-800 focus:border-gold-400'}`;
   const lbl = `text-xs font-medium mb-1.5 block ${dk?'text-slate-400':'text-slate-500'}`;
@@ -3638,7 +3646,7 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
                 holding an unlinked ทองรูปพรรณ, the only conclusion available
                 is that the app has lost it — when the truth was that the
                 type filter above had quietly excluded it. */}
-              {filtered.length===0?(
+              {filtered.length===0&&movable.length===0?(
                 <div className={`py-8 px-4 text-center text-xs leading-relaxed ${dk?'text-slate-400':'text-slate-500'}`}>
                   {search ? 'ไม่พบสินทรัพย์'
                    : unlinked.length>0
@@ -3658,6 +3666,26 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
                       <div className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{ti.l.substring(3)}{a.note?' · '+a.note:''}</div>
                     </div>
                     {sel&&<div className="w-4 h-4 rounded-full bg-gold-500 flex items-center justify-center flex-shrink-0"><svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg></div>}
+                  </div>
+                );
+              })}
+              {movable.length>0 && (
+                <div className={`px-4 py-1.5 text-[11px] font-medium ${dk?'bg-white/[0.03] text-slate-500':'bg-slate-50 text-slate-400'}`}>
+                  อยู่ในกระเป๋าอื่น · เลือกเพื่อย้ายมาที่นี่
+                </div>
+              )}
+              {movable.map(a=>{
+                const ti=typeInfo(a.type);
+                const sel=picked.includes(a.id);
+                return (
+                  <div key={a.id} onClick={()=>togglePick(a.id)}
+                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer border-b transition-colors ${dk?'border-white/5':'border-slate-100'} ${sel?(dk?'bg-gold-500/10':'bg-gold-50'):(dk?'hover:bg-white/5':'hover:bg-slate-50')}`}>
+                    <AssetIcon a={a} ti={ti} size="sm"/>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-sm font-semibold truncate ${dk?'text-white':'text-slate-700'}`}>{a.name}</div>
+                      <div className={`text-xs truncate ${dk?'text-amber-400/80':'text-amber-600'}`}>ย้ายจาก {walletNameOf(a.walletId)}</div>
+                    </div>
+                    {sel&&<div className="w-4 h-4 rounded-full bg-gold-500 flex items-center justify-center flex-shrink-0"><svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="#251c06" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg></div>}
                   </div>
                 );
               })}
