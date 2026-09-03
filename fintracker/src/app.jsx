@@ -10145,54 +10145,167 @@ const VerifyEmail = ({ user, dk, addToast }) => {
   );
 };
 
-// ── LOGIN PAGE ─────────────────────────────────────────────
-// A drawn stand-in for the dashboard, not a screenshot of it. Every figure here
-// is invented: this repository is public and the sign-in page is the most
-// screenshotted surface in any app, so a real balance would be published twice
-// over. It only has to say "this is what the thing looks like" from across a
-// room, which is all anyone reads a hero image for.
-const DashboardMock = () => (
-  <div className="rounded-2xl overflow-hidden shadow-2xl select-none" aria-hidden="true"
-    style={{background:'#0b0b0e', border:'1px solid rgba(217,175,43,0.2)'}}>
-    <div className="flex items-center gap-1.5 px-3 py-2.5" style={{background:'#141416'}}>
-      {['#3a3a3f','#3a3a3f','#3a3a3f'].map((c,i)=>(
-        <span key={i} className="w-2 h-2 rounded-full" style={{background:c}}/>
-      ))}
-    </div>
-    <div className="flex">
-      <div className="w-14 shrink-0 py-3 px-2 space-y-2" style={{background:'#101013'}}>
-        {[1,0,0,0,0].map((on,i)=>(
-          <div key={i} className="h-2 rounded-full"
-            style={{background: on ? 'rgba(217,175,43,0.55)' : 'rgba(255,255,255,0.07)',
-                    width: on ? '100%' : `${55+i*9}%`}}/>
+// The name resolves out of noise, once on arrival and again on hover. Copied in
+// spirit from Fin's reference, where the wordmark settles a letter at a time.
+//
+// Two things it has to get right. The width is reserved by an invisible copy of
+// the real word underneath, because random glyphs are not the same width as the
+// real ones and a wordmark that jiggles the nav bar around while it settles is
+// worse than no effect at all. And it obeys prefers-reduced-motion — an animated
+// wordmark is decoration, and decoration is exactly what that setting is for.
+const ScrambleText = ({ text, className = '' }) => {
+  const [out, setOut] = useState(text);
+  const timer = useRef(null);
+  const run = useCallback(() => {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const noise = '!?%$#@*&+=<>/\\~^';
+    let frame = 0;
+    clearInterval(timer.current);
+    timer.current = setInterval(() => {
+      frame++;
+      const settled = Math.floor(frame / 2.2);
+      if (settled >= text.length) { clearInterval(timer.current); setOut(text); return; }
+      setOut(text.split('').map((c, i) =>
+        i < settled ? c : (c === ' ' ? ' ' : noise[Math.floor(Math.random() * noise.length)])
+      ).join(''));
+    }, 45);
+  }, [text]);
+  useEffect(() => { run(); return () => clearInterval(timer.current); }, [run]);
+  return (
+    <span className="relative inline-block align-middle" onMouseEnter={run}>
+      <span className={`${className} invisible`} aria-hidden="true">{text}</span>
+      <span className={`${className} absolute inset-0 whitespace-nowrap`}>{out}</span>
+    </span>
+  );
+};
+
+// A drawn stand-in for the whole app window, not a screenshot of it. Every
+// figure is invented: this repository is public and a sign-in page is the most
+// screenshotted surface an app has, so a real balance would be published twice
+// over. The nav labels are the real ones, because those are the only part a
+// screenshot would show that carries no money in it.
+//
+// Drawn at a fixed 1000x620 and scaled by the container, so the proportions
+// hold at any width rather than reflowing into something the app never looks
+// like. Everything inside is absolutely sized against that box.
+const DashboardMock = () => {
+  const cream = 'rgba(240,230,205,';
+  const Bar = ({w, o=0.1, h=6}) => (
+    <div className="rounded-full" style={{width:w, height:h, background:`rgba(255,255,255,${o})`}}/>
+  );
+  const nav = [
+    ['ภาพรวม', 1], ['รายการ', 0], ['สินทรัพย์', 0], ['กระเป๋าเงิน', 0],
+    ['Budget', 0], ['หนี้สิน', 0], ['สรุป', 0],
+  ];
+  const stats = [
+    ['เงินสด', '฿539,490', '42%'],
+    ['หุ้น',    '฿449,575', '35%'],
+    ['ทองคำ',  '฿192,675', '15%'],
+    ['อื่นๆ',   '฿102,760', '8%'],
+  ];
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-2xl select-none" aria-hidden="true"
+      style={{background:'#0b0b0e', border:'1px solid rgba(217,175,43,0.18)'}}>
+      {/* window chrome */}
+      <div className="flex items-center gap-2 px-4 py-3" style={{background:'#141416'}}>
+        {['#3a3a3f','#3a3a3f','#3a3a3f'].map((c,i)=>(
+          <span key={i} className="w-2.5 h-2.5 rounded-full" style={{background:c}}/>
         ))}
-      </div>
-      <div className="flex-1 min-w-0 p-4">
-        <div className="text-[8px] tracking-[0.2em] uppercase" style={{color:'rgba(240,230,205,0.4)'}}>Net Worth</div>
-        <div className="text-xl font-bold tracking-wide metal-gold">฿1,284,500</div>
-        <div className="grid grid-cols-3 gap-1.5 mt-3">
-          {[['เงินสด','42%'],['หุ้น','35%'],['ทองคำ','23%']].map(([l,v])=>(
-            <div key={l} className="rounded-lg px-2 py-1.5" style={{background:'#17171b', border:'1px solid rgba(255,255,255,0.05)'}}>
-              <div className="text-[7px]" style={{color:'rgba(240,230,205,0.4)'}}>{l}</div>
-              <div className="text-[10px] font-semibold" style={{color:'rgba(240,230,205,0.85)'}}>{v}</div>
-            </div>
-          ))}
+        <div className="flex-1 flex justify-center">
+          <div className="px-3 py-1 rounded-md text-[10px]"
+            style={{background:'#0e0e11', color:`${cream}0.3)`}}>f1-tracker.web.app</div>
         </div>
-        <svg viewBox="0 0 200 52" className="w-full mt-3" preserveAspectRatio="none" style={{height:'52px'}}>
-          <defs>
-            <linearGradient id="ftmockfill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#d9af2b" stopOpacity="0.3"/>
-              <stop offset="100%" stopColor="#d9af2b" stopOpacity="0"/>
-            </linearGradient>
-          </defs>
-          <polygon fill="url(#ftmockfill)" points="0,52 0,40 28,34 56,37 84,24 112,27 140,16 168,12 200,6 200,52"/>
-          <polyline fill="none" stroke="#d9af2b" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round"
-            vectorEffect="non-scaling-stroke" points="0,40 28,34 56,37 84,24 112,27 140,16 168,12 200,6"/>
-        </svg>
+      </div>
+
+      <div className="flex" style={{minHeight:'380px'}}>
+        {/* sidebar */}
+        <div className="w-40 shrink-0 p-3.5 hidden sm:block" style={{background:'#0e0e11', borderRight:'1px solid rgba(255,255,255,0.05)'}}>
+          <div className="flex items-center gap-2 mb-5 px-1">
+            <div className="w-5 h-5 rounded" style={{background:'rgba(217,175,43,0.5)'}}/>
+            <span className="text-[11px] font-bold" style={{color:`${cream}0.85)`}}>FinTracker</span>
+          </div>
+          <div className="space-y-1">
+            {nav.map(([label,on])=>(
+              <div key={label} className="flex items-center gap-2 px-2 py-1.5 rounded-lg"
+                style={{background: on ? 'rgba(217,175,43,0.12)' : 'transparent'}}>
+                <span className="w-1.5 h-1.5 rounded-sm shrink-0"
+                  style={{background: on ? '#d9af2b' : 'rgba(255,255,255,0.16)'}}/>
+                <span className="text-[10px]" style={{color: on ? '#e9d892' : `${cream}0.42)`}}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* main */}
+        <div className="flex-1 min-w-0 p-4 sm:p-5">
+          <div className="flex items-center gap-2 mb-5">
+            <div className="flex-1 rounded-lg px-2.5 py-1.5 text-[10px]"
+              style={{background:'#141418', color:`${cream}0.25)`}}>ค้นหารายการ…</div>
+            <div className="w-6 h-6 rounded-lg" style={{background:'#141418'}}/>
+            <div className="w-6 h-6 rounded-full" style={{background:'rgba(217,175,43,0.35)'}}/>
+          </div>
+
+          <div className="text-[9px] tracking-[0.2em] uppercase" style={{color:`${cream}0.38)`}}>Net Worth</div>
+          <div className="flex items-baseline gap-3 mt-1">
+            <span className="text-2xl sm:text-3xl font-bold tracking-wide metal-gold">฿1,284,500</span>
+            <span className="text-[11px] font-semibold" style={{color:'#7aab8a'}}>+2.4%</span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2 mt-4">
+            {stats.map(([l,v,pc])=>(
+              <div key={l} className="rounded-lg px-2.5 py-2"
+                style={{background:'#141418', border:'1px solid rgba(255,255,255,0.05)'}}>
+                <div className="text-[8px]" style={{color:`${cream}0.38)`}}>{l}</div>
+                <div className="text-[11px] font-semibold mt-0.5" style={{color:`${cream}0.88)`}}>{v}</div>
+                <div className="text-[8px] mt-0.5" style={{color:'#d9af2b'}}>{pc}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-xl mt-4 p-3" style={{background:'#141418', border:'1px solid rgba(255,255,255,0.05)'}}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[9px]" style={{color:`${cream}0.5)`}}>มูลค่าสุทธิ 12 เดือน</span>
+              <div className="flex gap-1">
+                {['6M','1Y','All'].map((t,i)=>(
+                  <span key={t} className="text-[8px] px-1.5 py-0.5 rounded"
+                    style={{background: i===1?'rgba(217,175,43,0.15)':'transparent', color: i===1?'#e9d892':`${cream}0.3)`}}>{t}</span>
+                ))}
+              </div>
+            </div>
+            <svg viewBox="0 0 400 90" className="w-full" preserveAspectRatio="none" style={{height:'90px'}}>
+              <defs>
+                <linearGradient id="ftmockfill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#d9af2b" stopOpacity="0.28"/>
+                  <stop offset="100%" stopColor="#d9af2b" stopOpacity="0"/>
+                </linearGradient>
+              </defs>
+              {[22,45,68].map(y=>(
+                <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" vectorEffect="non-scaling-stroke"/>
+              ))}
+              <polygon fill="url(#ftmockfill)" points="0,90 0,72 40,66 80,70 120,54 160,58 200,44 240,47 280,32 320,25 360,18 400,10 400,90"/>
+              <polyline fill="none" stroke="#d9af2b" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+                points="0,72 40,66 80,70 120,54 160,58 200,44 240,47 280,32 320,25 360,18 400,10"/>
+            </svg>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 mt-3">
+            {[['กระเป๋าเงิน','8 บัญชี'],['Budget เดือนนี้','63%']].map(([t,v])=>(
+              <div key={t} className="rounded-xl p-3 space-y-2"
+                style={{background:'#141418', border:'1px solid rgba(255,255,255,0.05)'}}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px]" style={{color:`${cream}0.5)`}}>{t}</span>
+                  <span className="text-[9px] font-semibold" style={{color:'#e9d892'}}>{v}</span>
+                </div>
+                <Bar w="86%"/><Bar w="62%" o={0.07}/><Bar w="71%" o={0.07}/>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 
 // The two sections under the fold. Both are lifted in shape from the reference
@@ -10374,7 +10487,7 @@ const LoginPage = ({ theme }) => {
   const lbl = `text-sm font-medium mb-1.5 block ${dk?'text-slate-200':'text-slate-700'}`;
 
   return (
-    <div className={`min-h-screen ${dk?'bg-app':'bg-slate-50'}`}>
+    <div className={`fixed inset-0 overflow-y-auto overflow-x-hidden ${dk?'bg-app':'bg-slate-50'}`}>
       {/* One centred column, not two halves. Split down the middle, a 384px form
           sat alone in 900px of empty screen while the copy hugged the far left
           edge — two things in the same room refusing to look at each other. The
@@ -10387,8 +10500,9 @@ const LoginPage = ({ theme }) => {
             product is a worse first impression than a small nav. */}
         <nav className={`mt-5 flex items-center justify-between rounded-full border px-5 py-3 ${dk?'border-white/10 bg-white/[0.04]':'border-slate-200 bg-white shadow-sm'}`}>
           <div className="flex items-center gap-2.5">
-            <LogoSvg size={26}/>
-            <span className={`text-base font-bold tracking-wide ${dk?'text-white':'text-slate-800'}`}>FinTracker</span>
+            <LogoSvg size={32}/>
+            <ScrambleText text="FinTracker"
+              className={`text-2xl font-bold tracking-wide ${dk?'text-white':'text-slate-800'}`}/>
           </div>
           <span className={`text-xs font-medium px-3 py-1.5 rounded-full ${dk?'bg-gold-500/15 text-gold-300':'bg-gold-50 text-gold-700'}`}>
             Free forever
@@ -10491,7 +10605,7 @@ const LoginPage = ({ theme }) => {
             two competed for the same glance and the page had no obvious place to
             start reading; under it, the order is: what this is, then do it, then
             here is what you get. */}
-        <div className="mx-auto w-full max-w-3xl mt-16 sm:mt-20">
+        <div className="mx-auto w-full max-w-5xl mt-16 sm:mt-20">
           <DashboardMock/>
         </div>
 
