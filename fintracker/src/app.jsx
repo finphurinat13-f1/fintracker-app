@@ -4602,6 +4602,29 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
   // match their own visible rows).
   const cashAssetsTotal  = enriched.filter(a=>a.type==='cash').reduce((s,a)=>s+a.valTHB,0);
   const otherAssetsTotal = enriched.filter(a=>a.type==='other'||a.type==='property').reduce((s,a)=>s+a.valTHB,0);
+  // Grouped off whatever the filters left, not off the whole portfolio: a
+  // summary that ignored the tabs above it would be describing a different
+  // page. A walletId with no matching wallet counts as unlinked, the same rule
+  // the asset picker uses — deleting a wallet never cleared the ids of what it
+  // held, and those holdings are not "in" anything.
+  const byWallet = useMemo(()=>{
+    const live = new Map(wallets.map(w=>[w.id, w.name]));
+    const m = new Map();
+    enriched.forEach(a=>{
+      const known = a.walletId && live.has(a.walletId);
+      const key = known ? a.walletId : '__none';
+      const name = known ? live.get(a.walletId) : 'ยังไม่ได้ผูกกระเป๋า';
+      const cur = m.get(key) || { id:key, name, val:0, orphan:!known };
+      cur.val += a.valTHB;
+      m.set(key, cur);
+    });
+    const rows = [...m.values()].filter(r=>Math.abs(r.val)>0.005);
+    const tot = rows.reduce((s,r)=>s+r.val, 0);
+    return rows
+      .map(r=>({...r, pct: tot>0 ? r.val/tot*100 : 0}))
+      .sort((a,b)=>b.val-a.val);
+  },[enriched, wallets]);
+
   const heroPortfolioVal = totVal - cashAssetsTotal - otherAssetsTotal;
   const heroWalletVal    = totalWalletBalance + cashAssetsTotal;
 
@@ -4754,6 +4777,48 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
           </div>
         </div>
       )}
+        {/* Where the holdings are kept, which is the one thing the rest of this
+            page never says. Everything above answers what you own and what it is
+            worth; the table below lists it by name. Neither of them mentions the
+            account holding it, and that is the question the wallets page was
+            built to answer from the other direction.
+
+            It reads the current filter rather than the whole portfolio, so
+            switching to หุ้น narrows this to which accounts hold the stocks —
+            a summary that ignored the filter above it would be describing a
+            different page. */}
+        <div className={`${card} p-5 mt-5`}>
+          <div className="flex items-baseline gap-2.5 flex-wrap mb-3.5">
+            <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>แยกตามกระเป๋า</h3>
+            <p className={`text-xs ${sub}`}>สินทรัพย์ที่กำลังแสดง อยู่ในบัญชีไหนบ้าง</p>
+          </div>
+          {byWallet.length===0
+            ? <p className={`text-xs py-4 text-center ${sub}`}>ไม่มีสินทรัพย์ที่ตรงกับตัวกรอง</p>
+            : (
+            <div className="space-y-2">
+              {byWallet.map(w=>(
+                <div key={w.id} className="flex items-center gap-3">
+                  <span className={`text-xs truncate flex-1 min-w-0 ${w.orphan
+                    ? (dk?'text-amber-400/80':'text-amber-600')
+                    : (dk?'text-slate-300':'text-slate-600')}`}>{w.name}</span>
+                  {/* The bar is the comparison and the figures are the answer, so
+                      the bar gets a fixed share of the row rather than growing
+                      with the longest name. */}
+                  <span className={`hidden sm:block h-1.5 rounded-full overflow-hidden w-32 flex-shrink-0 ${dk?'bg-white/6':'bg-slate-100'}`}>
+                    <span className="block h-full rounded-full"
+                      style={{width:`${w.pct}%`, background: w.orphan ? '#b08f52' : '#d9af2b'}}/>
+                  </span>
+                  <span className={`text-xs font-semibold tabular-nums w-28 text-right flex-shrink-0 ${dk?'text-slate-200':'text-slate-700'}`}>
+                    {fmtNW(w.val)}
+                  </span>
+                  <span className={`text-xs tabular-nums w-12 text-right flex-shrink-0 ${dk?'text-slate-500':'text-slate-400'}`}>
+                    {w.pct.toFixed(1)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         </div>
 
       {/* Summary Cards */}
