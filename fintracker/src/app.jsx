@@ -12459,6 +12459,12 @@ const App = () => {
   );
 
   const signOut = () => auth.signOut();
+  // Two letters off whatever the account has a name in. An address splits on its
+  // punctuation as readily as a name splits on spaces, so "fin.somchai@..." and
+  // "Fin Somchai" both come out FS rather than one of them coming out F.
+  const acctInitials = ((user.displayName || user.email || '?').trim()
+    .split(/[s@._-]+/).filter(Boolean).slice(0, 2)
+    .map(w => w[0].toUpperCase()).join('')) || '?';
 
   const nav=[
     {k:'dashboard',   l:'Dashboard', i:'home'},
@@ -12494,7 +12500,6 @@ const App = () => {
               <Ic n={privacy?'lock':'lockopen'} s={15}/>
             </button>
             {isAdmin&&<button onClick={()=>{setPage('admin');localStorage.setItem('ft-page','admin');}} title="Users" className={`p-2 rounded-xl transition-colors text-sm leading-none ${page==='admin'?(dk?'bg-gold-500/20':'bg-gold-50'):(dk?'hover:bg-white/10':'hover:bg-slate-100')}`}>👤</button>}
-            <button onClick={()=>setAcctOpen(true)} title="บัญชี" className={`p-2 rounded-xl transition-colors ${dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-700'}`}><Ic n="settings" s={15}/></button>
             {/* Consolidated settings menu */}
             <div className="relative">
               {/* A dot rather than a toast. Something to look at when the eye
@@ -12503,11 +12508,31 @@ const App = () => {
               {healthWarn && !menuOpen && (
                 <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-400 pointer-events-none"/>
               )}
-              <button onClick={()=>setMenuOpen(o=>!o)} title="เมนู" className={`p-2 rounded-xl transition-colors ${menuOpen?(dk?'bg-white/10 text-white':'bg-slate-100 text-slate-800'):(dk?'hover:bg-white/10 text-slate-400':'hover:bg-slate-100 text-slate-700')}`}><Ic n="menu" s={16}/></button>
+              {/* A burger beside a gear asked which of the two held the thing you
+                  wanted, and the answer was "one each". The face of the account
+                  is the one control on a bar like this whose contents nobody has
+                  to guess at — everything about your own account lives behind it. */}
+              <button onClick={()=>setMenuOpen(o=>!o)} title="บัญชีและเมนู"
+                className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-all ${menuOpen?'ring-2 ring-gold-400/60':''}`}
+                style={{background:'linear-gradient(135deg,#e6c85c 0%,#a8843c 100%)', color:'#1c1608'}}>
+                {acctInitials}
+              </button>
               {menuOpen&&(<>
                 <div className="fixed inset-0 z-40" onClick={()=>setMenuOpen(false)}/>
-                <div className={`absolute right-0 mt-2 w-56 rounded-xl shadow-2xl z-50 py-1.5 ${dk?'bg-[#1a1a19] border border-white/10':'bg-white border border-slate-200'}`}>
+                <div className={`absolute right-0 mt-2 w-64 rounded-xl shadow-2xl z-50 py-1.5 ${dk?'bg-[#1a1a19] border border-white/10':'bg-white border border-slate-200'}`}>
+                  {/* Whose account this is, before what can be done with it. On a
+                      page that syncs to a cloud copy, the address holding that copy
+                      is worth being able to check without leaving the screen. */}
+                  <div className={`flex items-center gap-2.5 px-3.5 pt-2 pb-3 mb-1 border-b ${dk?'border-white/8':'border-slate-100'}`}>
+                    <span className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                      style={{background:'linear-gradient(135deg,#e6c85c 0%,#a8843c 100%)', color:'#1c1608'}}>{acctInitials}</span>
+                    <span className="min-w-0">
+                      <span className={`block text-xs font-semibold truncate ${dk?'text-white':'text-slate-800'}`}>{user.displayName||'บัญชีของฉัน'}</span>
+                      <span className={`block text-[11px] truncate ${dk?'text-slate-500':'text-slate-400'}`}>{user.email}</span>
+                    </span>
+                  </div>
                   {[
+                    {icon:'⚙', label:'บัญชีและการตั้งค่า', on:()=>setAcctOpen(true)},
                     {icon:'💡', label: discover?'ซ่อนคำแนะนำการใช้งาน':'คำแนะนำการใช้งาน', on:()=>setDiscover(d=>!d)},
                     {icon: healthWarn?'⚠️':'🩺', label:'ตรวจสุขภาพข้อมูล'+(healthWarn?' · พบบางอย่าง':''), on:()=>setHealthOpen(true)},
                     {icon:'📥', label:'นำเข้าข้อมูล', on:()=>setImport(true)},
