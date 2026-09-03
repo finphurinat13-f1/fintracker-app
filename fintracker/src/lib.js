@@ -286,14 +286,24 @@ export const dataHealth = ({ txs = [], assets = [], wallets = [], debts = [] } =
   // 2. Units and their own history disagreeing. moves is the record of every
   //    buy and sell; if it does not add up to qty, one of the two was written
   //    by hand and the other was not.
-  const driftOf = a => {
-    const newest = a.moves[0];
-    return (Number(a.qty) || 0) - Number(newest.newQty);
+  // moves is stored newest-first, but two writers used to append instead of
+  // prepend — so a hand-edit could sit at the far end of the list where index 0
+  // never saw it, and this check would compare qty against a superseded line and
+  // report a conflict that was really a sorting bug. Pick by date; list order
+  // breaks ties, which is correct for everything written the right way round.
+  const newestMove = a => {
+    let best = null;
+    for (const m of (a.moves || [])) {
+      if (!m) continue;
+      if (!best || String(m.date || '') > String(best.date || '')) best = m;
+    }
+    return best;
   };
+  const driftOf = a => (Number(a.qty) || 0) - Number(newestMove(a).newQty);
   const drifted = assets.filter(a => {
     if (!a || a.type === 'cash' || !Array.isArray(a.moves) || !a.moves.length) return false;
     const moved = a.moves.reduce((s, m) => s + (Number(m.qty) || 0), 0);
-    const newest = a.moves[0];
+    const newest = newestMove(a);
     return newest && newest.newQty != null && Math.abs((Number(a.qty) || 0) - Number(newest.newQty)) > 0.00001 && moved !== 0;
   });
   if (drifted.length) add('warn', 'จำนวนหน่วยไม่ตรงกับประวัติ',
@@ -301,7 +311,7 @@ export const dataHealth = ({ txs = [], assets = [], wallets = [], debts = [] } =
     // The row carries the two numbers and the gap between them, because "does
     // not match" without them is a claim the reader cannot check.
     drifted.map(a => ({ ...a, _hint:
-      `เก็บไว้ ${q(a.qty)} · ประวัติล่าสุด ${q(a.moves[0].newQty)} · ต่างกัน ${driftOf(a) > 0 ? '+' : ''}${q(driftOf(a))}` })),
+      `เก็บไว้ ${q(a.qty)} · ประวัติล่าสุด ${q(newestMove(a).newQty)} · ต่างกัน ${driftOf(a) > 0 ? '+' : ''}${q(driftOf(a))}` })),
     'asset',
     'เปิดหน้าสินทรัพย์ → แก้จำนวนให้ตรงกับประวัติ หรือเพิ่มรายการเติม/เอาออกที่ขาดไป');
 

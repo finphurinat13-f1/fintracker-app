@@ -3513,13 +3513,13 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
       const oldQty = editData.qty||0, oldAvg = editData.avgCost||0;
       const moved  = Math.abs(qty-oldQty) > 1e-8 || Math.abs(avgCost-oldAvg) > 1e-8;
       if(moved){
-        out = {...out, moves:[...(f.moves||[]), {
+        out = {...out, moves:[{
           id: uid(), date: today(), manual: true,
           note: `แก้ด้วยมือ · จำนวน ${fmtQty(oldQty)} → ${fmtQty(qty)}${Math.abs(avgCost-oldAvg)>1e-8?` · ทุนเฉลี่ย ${oldAvg} → ${avgCost}`:''}`,
           qty: parseFloat((qty-oldQty).toFixed(8)), rate: 0,
           newQty: parseFloat(qty.toFixed(8)), newAvg: parseFloat(avgCost.toFixed(6)),
           realized: 0,
-        }]};
+        }, ...(f.moves||[])]};
       }
     }
     onSave(out);
@@ -3847,7 +3847,7 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
             <div className={`p-2.5 rounded-xl ${dk?'bg-white/5 border border-white/10':'bg-slate-50 border border-slate-200'}`}>
               <div className={`text-xs font-semibold mb-1 ${dk?'text-slate-300':'text-slate-600'}`}>🧾 ประวัติเติม / เอาออก ({(f.moves||[]).length})</div>
               <div className="max-h-44 overflow-auto">
-                {(f.moves||[]).map(m=>(
+                {[...(f.moves||[])].sort((x,y)=>String(y.date||'').localeCompare(String(x.date||''))).map(m=>(
                   <div key={m.id} className={`text-[11px] py-1.5 border-b last:border-b-0 group/mv ${dk?'border-white/5':'border-slate-100'}`}>
                     <div className="flex items-center gap-1.5 mb-0.5">
                       {editMove?.id===m.id
@@ -4151,7 +4151,7 @@ const AssetRelBody = ({a, investTxs, dk, onAddTx, onDeleteTx, onTopUp, wallets=[
         <div className={`mt-2 pt-2 border-t ${dk?'border-white/8':'border-slate-200'}`}>
           <div className={`text-[11px] font-semibold mb-1 ${dk?'text-slate-400':'text-slate-500'}`}>🧾 ประวัติเติม / เอาออก ({(a.moves||[]).length})</div>
           <div className="max-h-40 overflow-auto">
-            {(a.moves||[]).map(m=>{
+            {[...(a.moves||[])].sort((x,y)=>String(y.date||'').localeCompare(String(x.date||''))).map(m=>{
               const back = revertMove(m, a.qty||0, a.avgCost||0);
               return (
               <div key={m.id} className={`text-[11px] py-1 border-b last:border-b-0 group/mv ${dk?'border-white/5':'border-slate-100'}`}>
@@ -7915,7 +7915,10 @@ const UnifiedTransferModal = ({open, onClose, onSave, wallets=[], assets=[], txs
         // some units does not change what the remaining ones cost.
         if(soldQty>0){
           const newQty = src.qty - soldQty;
-          srcPatch.moves = [...(src.moves||[]), {
+          // Newest first, like every other writer of this list. Appending put a
+          // hand-edit at the end, where it read as the oldest entry and where
+          // moves[0] never saw it.
+          srcPatch.moves = [{
             id: uid(), date: d,
             note: `ขายเพื่อซื้อ ${toIsNew ? na.name.trim() : (toAsset?.name||'สินทรัพย์อื่น')}`,
             qty: parseFloat((-soldQty).toFixed(8)),
@@ -7923,7 +7926,7 @@ const UnifiedTransferModal = ({open, onClose, onSave, wallets=[], assets=[], txs
             newQty: parseFloat(newQty.toFixed(8)),
             newAvg: parseFloat((src.avgCost||0).toFixed(6)),
             realized,
-          }];
+          }, ...(src.moves||[])];
         }
         assetUpdates.push({id:src.id, patch:srcPatch});
         onSave({txs:[], assetUpdates, newAssets});
