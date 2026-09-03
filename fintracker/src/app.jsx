@@ -807,7 +807,7 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
         if(!fromSource&&editData.walletId&&editData.transferDir==='from') fromSource=`w-${editData.walletId}`;
         if(!toSource&&editData.walletId&&editData.transferDir==='to') toSource=`w-${editData.walletId}`;
       }
-      setF({...editData, amount:String(Math.abs(editData.amount)), walletId:editData.walletId||null, targetAssetId:editData.targetAssetId||null, fromSource, toSource});
+      setF({...editData, fxAssetId:null, fxRate:editData.fxRate?String(editData.fxRate):'', amount:String(Math.abs(editData.amount)), walletId:editData.walletId||null, targetAssetId:editData.targetAssetId||null, fromSource, toSource});
     }
     else if (prefill) {
       // Everything except the date and the identity: a repeat is the same
@@ -816,14 +816,14 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
         title: prefill.title||'', amount: String(Math.abs(prefill.amount||0)),
         category: prefill.category||'อาหาร', date: today(),
         type: prefill.type||'expense', notes: prefill.notes||'',
-        walletId: prefill.walletId||null, targetAssetId: null,
+        walletId: prefill.walletId||null, targetAssetId: null, fxAssetId: null, fxRate: '',
         fromWalletId:null, toWalletId:null, fromAssetId:null, toAssetId:null,
         fromSource:'', toSource:'',
       });
     }
     else {
       const fs = defaultWalletId?`w-${defaultWalletId}`:'';
-      setF({ title:'', amount:'', category:'อาหาร', date:today(), type:'expense', notes:'', walletId:defaultWalletId, fromWalletId:null, toWalletId:null, fromAssetId:null, toAssetId:null, targetAssetId:null, fromSource:fs, toSource:'' });
+      setF({ title:'', amount:'', category:'อาหาร', date:today(), type:'expense', notes:'', fxAssetId:null, fxRate:'', walletId:defaultWalletId, fromWalletId:null, toWalletId:null, fromAssetId:null, toAssetId:null, targetAssetId:null, fromSource:fs, toSource:'' });
     }
   }, [editData, prefill, open, defaultWalletId]);
   // Guessed from the rows already recorded, not from a lookup table. There are
@@ -950,7 +950,19 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
       // The form abs-es the amount on load, so re-apply the original sign on edit
       // to stop a negative ปรับยอด from flipping positive when only the title changes.
       const finalAmt = (f.type==='adjustment' && editData && editData.amount<0) ? -Math.abs(amt) : amt;
-      onSave({...f, amount:finalAmt, walletId:f.walletId||null});
+      // amount stays in baht whatever was typed in the box. Every summary in
+      // the app adds up amount directly, so a row that stored units there would
+      // report a salary of eighteen thousand. The units sit beside it instead,
+      // and the baht figure is the product those summaries already read.
+      if(fxAsset){
+        const {fxAssetId:_a, ...rest} = f;
+        onSave({...rest, amount: parseFloat((amt*fxRateN).toFixed(2)),
+          walletId: fxAsset.walletId, targetAssetId: fxAsset.id,
+          fxCur: fxAsset.name, fxRate: fxRateN, fxUnits: amt});
+      } else {
+        const {fxAssetId:_a, fxRate:_r, ...rest} = f;
+        onSave({...rest, amount:finalAmt, walletId:f.walletId||null});
+      }
     }
     onClose();
   };
@@ -961,6 +973,18 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
   // place to move money from — offering both is what put two identically-named
   // entries in this list and made picking the wrong one so easy.
   const pickableAssets = assets.filter(a=>!(a.type==='cash'&&a.walletId));
+  // Holdings that money can arrive as, rather than be converted into. A salary
+  // paid in USDT was never baht that later became USDT, so the row has to name
+  // the units it arrived in and the rate that turns them into the baht figure
+  // every report in this app reads.
+  //
+  // Crypto and cash only, and only where the holding names a wallet. Shares of
+  // a fund are not something anyone is paid in, and the wallet must be the one
+  // holding the units — otherwise the row puts baht in one account and units in
+  // another, which is the mixing this exists to prevent.
+  const fxAssets = assets.filter(a=>(a.type==='crypto'||a.type==='cash') && a.walletId);
+  const fxAsset  = f.fxAssetId ? fxAssets.find(a=>String(a.id)===String(f.fxAssetId)) : null;
+  const fxRateN  = parseFloat(f.fxRate)||0;
   // What the chosen source can actually send. Editing an existing transfer must
   // not be measured against a balance that already has that transfer taken out,
   // so its own legs are removed before counting.
@@ -1031,13 +1055,49 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
             {f.title===''&&f.amount&&<p className="mt-1 text-xs text-rose-400">กรุณากรอกชื่อรายการค่ะ</p>}
           </div>
           <div>
-            <label className={lbl}>จำนวน (฿)</label>
+            <label className={lbl}>{fxAsset ? `จำนวน (${fxAsset.name})` : 'จำนวน (฿)'}</label>
             <input type="text" inputMode="decimal" className={`${inp} ${f.amount&&isNaN(parseFloat(f.amount))?'border-rose-500/50':''}`} placeholder="0" value={fmtNumInput(f.amount)} onChange={e=>set('amount',e.target.value.replace(/,/g,''))}/>
             {f.amount&&isNaN(parseFloat(f.amount))&&<p className="mt-1 text-xs text-rose-400">กรุณากรอกจำนวนที่ถูกต้องค่ะ</p>}
             {f.type==='expense'&&parseFloat(f.amount)<0&&(
               <p className="mt-1.5 text-xs text-emerald-400 flex items-center gap-1">↩ บันทึกเป็น Refund / เงินคืน — จะหักออกจากรายจ่ายเดือนนี้</p>
             )}
           </div>
+          {/* Money that did not arrive in baht. The box above then counts units
+              and this pair says what they are and what one of them was worth, so
+              the row can carry both the figure the reports add up and the number
+              of units the holding actually gained. */}
+          {f.type!=='transfer' && !editData && fxAssets.length>0 && (
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className={lbl}>สกุลเงิน</label>
+                <select className={inp} value={f.fxAssetId||''} onChange={e=>{
+                  const id = e.target.value||null;
+                  const a  = fxAssets.find(x=>String(x.id)===String(id));
+                  // Seeded with the price already on the holding, which is the
+                  // rate it was last valued at and almost always the right answer.
+                  setF(prev=>({...prev, fxAssetId:id,
+                    walletId: a ? a.walletId : prev.walletId,
+                    fxRate: a ? String(a.currentPrice||'') : ''}));
+                }}>
+                  <option value="">฿ THB (บาท)</option>
+                  {fxAssets.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+              </div>
+              {fxAsset && (
+                <div><label className={lbl}>เรท (฿ ต่อ 1 หน่วย)</label>
+                  <input type="text" inputMode="decimal" placeholder="0.00" value={f.fxRate}
+                    onChange={e=>set('fxRate',e.target.value)}
+                    className={`${inp} ${fxRateN>0?'':'border-amber-500/60'}`}/>
+                </div>
+              )}
+            </div>
+          )}
+          {fxAsset && (
+            <p className={`-mt-2 text-xs ${fxRateN>0&&parseFloat(f.amount)>0?(dk?'text-slate-400':'text-slate-500'):'text-amber-400'}`}>
+              {fxRateN>0&&parseFloat(f.amount)>0
+                ? <>{fmtQty(parseFloat(f.amount))} {fxAsset.name} × {fxRateN} = <b>{fmt(parseFloat(f.amount)*fxRateN)}</b> · หน่วยจะไปเพิ่มที่สินทรัพย์นี้</>
+                : <>กรอกจำนวนหน่วยและเรท เพื่อคิดเป็นบาท</>}
+            </p>
+          )}
           {f.type!=='transfer'?(
             <div className="grid grid-cols-2 gap-3">
               <div><label className={lbl}>หมวดหมู่</label>
@@ -1091,18 +1151,28 @@ const Modal = ({ open, onClose, onSave, editData, prefill=null, theme, wallets=[
             </div>
           )}
           {wallets.length>0&&f.type!=='transfer'&&(
-            <div><label className={lbl}>กระเป๋าเงิน</label>
-              <select className={inp} value={f.walletId||''} onChange={e=>set('walletId',e.target.value?parseInt(e.target.value):null)}>
+            <div><label className={lbl}>กระเป๋าเงิน{fxAsset&&<span className="ml-1.5 font-normal opacity-60">· ล็อกตามสินทรัพย์</span>}</label>
+              {/* Locked, not hidden. The units go onto a holding and the holding
+                  already names the account it sits in, so letting the row point
+                  somewhere else would put the baht in one wallet and the units in
+                  another — two accounts each holding half of one arrival. */}
+              <select className={`${inp}${fxAsset?' opacity-60 cursor-not-allowed':''}`} disabled={!!fxAsset}
+                value={(fxAsset?fxAsset.walletId:f.walletId)||''}
+                onChange={e=>set('walletId',e.target.value?parseInt(e.target.value):null)}>
                 <option value="">ไม่ระบุ</option>
                 {wallets.map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
               </select>
             </div>
           )}
-          {/* No asset picker here at all. Wallet cash and holdings stay separate
-              accounts of the same money: an asset already names the wallet it
-              belongs to, so linking a transaction to one as well counts the
-              amount in two places. See isAssetTxIn/Out in lib.js for what that
-              cost. Adding to a holding is บันทึกความเคลื่อนไหว on the asset. */}
+          {/* No free-standing asset picker. Wallet cash and holdings are two
+              accounts of the same money and a holding already names the wallet
+              it belongs to, so a row that pointed at both counted the amount in
+              two places — see isAssetTxIn/Out in lib.js for what that cost.
+
+              The สกุลเงิน select above is not that picker. It does not tag a baht
+              row onto a holding; it says the row is denominated in that holding,
+              which makes the units the record and takes the baht back out of the
+              wallet total. isFxTx is the exclusion that keeps the two apart. */}
           {/* A row with neither a wallet nor an asset is money with nowhere to
               come from: Budget counts the spend, Net Worth does not, and the two
               disagree with nothing to say so. It is legitimate — cash the app was
@@ -12070,6 +12140,36 @@ const App = () => {
     return tx;
   },[]);
 
+  // A row denominated in a holding writes the units onto it, the way a purchase
+  // would. This is the half that makes the row honest: without it the baht are
+  // excluded from the wallet by isFxTx and nothing gains the units, so the
+  // arrival would disappear from the net worth altogether.
+  //
+  // Receiving blends the rate in by weight, which is what an average cost is.
+  // Spending units leaves the average alone — a disposal does not change what
+  // the remaining units cost — and realized stays 0, because the profit on money
+  // spent as currency is a different question from the one this row answers.
+  const applyFxUnits = useCallback(d=>{
+    const units = Number(d.fxUnits)||0;
+    if(!(units>0) || !d.targetAssetId) return;
+    const signed = d.type==='expense' ? -units : units;
+    setAssets(as=>as.map(a=>{
+      if(String(a.id)!==String(d.targetAssetId)) return a;
+      const oldQty = Number(a.qty)||0, oldAvg = Number(a.avgCost)||0;
+      const newQty = parseFloat((oldQty+signed).toFixed(8));
+      const newAvg = signed>0 && newQty>0
+        ? parseFloat(((oldQty*oldAvg + signed*(Number(d.fxRate)||0)) / newQty).toFixed(6))
+        : oldAvg;
+      return {...a, qty:newQty, avgCost:newAvg, moves:[{
+        id: uid(), date: d.date,
+        note: `${d.type==='expense'?'จ่าย':'รับ'}เป็น ${d.fxCur||'สกุลต่างประเทศ'}${d.title?' · '+d.title:''}`,
+        qty: parseFloat(signed.toFixed(8)), rate: Number(d.fxRate)||0,
+        newQty, newAvg, oldAvg: parseFloat(oldAvg.toFixed(6)), realized: 0,
+      }, ...(a.moves||[])]};
+    }));
+    addToast(`✓ ${d.type==='expense'?'หัก':'เพิ่ม'} ${fmtQty(units)} ${d.fxCur||''} ที่สินทรัพย์`);
+  },[setAssets,addToast]);
+
   const saveModal  = useCallback(data=>{
     if(modal.editData){
       if(Array.isArray(data)){
@@ -12127,9 +12227,10 @@ const App = () => {
         ]);
       } else {
         setTxs(ts=>[{...linkCashAsset(data),id:uid()},...ts]);
+        applyFxUnits(data);
       }
     }
-  },[modal.editData,checkBudget,linkCashAsset]);
+  },[modal.editData,checkBudget,linkCashAsset,applyFxUnits]);
 
   const saveAsset  = useCallback(data=>{
     // _sales rides along on the form: units taken out with a wallet named as the

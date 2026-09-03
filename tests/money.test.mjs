@@ -1110,3 +1110,40 @@ test('revertMove: a real เอาออก still leaves the average alone', () 
   assert.equal(back.qty, 100);
   assert.equal(back.avgCost, 25, 'ขายบางส่วนไม่กระทบทุนเฉลี่ย');
 });
+
+// ── รายรับสกุลต่างประเทศ (fxUnits) ─────────────────────────
+// เงินเดือนเข้าเป็น USDT ไม่ใช่บาท: หน่วยไปอยู่บนสินทรัพย์ ส่วนยอดบาทมีไว้ให้
+// รายงานรายรับ-รายจ่ายอ่าน — ถ้าทั้งสองทางถูกนับ เงินก้อนเดียวจะกลายเป็นสองก้อน
+// ซึ่งเป็นบั๊กเดิมของ 2026-08-31 กลับหัว
+test('รายรับสกุลต่างประเทศ: หน่วยขึ้นที่สินทรัพย์ ไม่บวกซ้ำที่ยอดกระเป๋า', () => {
+  const w = { id: 'w1', initialBalance: 0 };
+  // 18,856.45 USDT ที่เรท 32.88 = ฿620,000 (ปัดที่ทศนิยมสองตำแหน่ง)
+  const units = 18856.45, rate = 32.88;
+  const usdt = { id: 'a1', type: 'crypto', walletId: 'w1', qty: units, currentPrice: rate, avgCost: rate, currency: 'THB' };
+  const txs = [{
+    id: 't1', type: 'income', amount: +(units * rate).toFixed(2), date: '2026-09-04',
+    walletId: 'w1', targetAssetId: 'a1', fxCur: 'USDT', fxRate: rate, fxUnits: units,
+  }];
+
+  assert.equal(walletCash(w, txs, [usdt]), 0, 'ยอดเงินสดของกระเป๋าต้องไม่ขยับ — เงินไม่เคยอยู่ในรูปบาท');
+  // ปัดก่อนเทียบ: 18856.45 × 32.88 ในเลขทศนิยมลอยตัวได้ 620000.0760000001
+  const near = (a, b, why) => assert.ok(Math.abs(a - b) < 0.01, why + ' (' + a + ' vs ' + b + ')');
+  near(assetVal(usdt, txs, 1), units * rate, 'มูลค่าต้องมาจาก หน่วย × ราคา เท่านั้น');
+  // รวมสองทาง = มูลค่าจริงครั้งเดียว ไม่ใช่สองครั้ง
+  near(walletCash(w, txs, [usdt]) + assetVal(usdt, txs, 1), units * rate, 'รวมสองหน้าต้องได้เงินก้อนเดียว');
+});
+
+test('รายรับสกุลต่างประเทศ: ยอดบาทยังเป็นรายรับตามปกติ', () => {
+  const txs = [{ id: 't1', type: 'income', amount: 620000, date: '2026-09-04',
+    walletId: 'w1', targetAssetId: 'a1', fxCur: 'USDT', fxRate: 32.88, fxUnits: 18856.45 }];
+  // ทุกสรุปในแอปบวกจาก amount ตรงๆ การเก็บ amount เป็นบาทจึงทำให้รายงานเดิมใช้ได้เลย
+  assert.equal(txs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0), 620000);
+});
+
+test('รายการที่ไม่มี fxUnits ยังนับเข้าสินทรัพย์เงินสดเหมือนเดิม', () => {
+  const cash = { id: 'a1', type: 'cash', walletId: 'w1', qty: 1, currentPrice: 0, avgCost: 0, currency: 'THB' };
+  const w = { id: 'w1', initialBalance: 0 };
+  const txs = [{ id: 't1', type: 'income', amount: 5000, date: '2026-09-04', walletId: 'w1', targetAssetId: 'a1' }];
+  assert.equal(assetTaggedNet(cash, txs), 5000, 'พฤติกรรมเดิมต้องไม่เปลี่ยน');
+  assert.equal(walletCash(w, txs, [cash]), 0);
+});

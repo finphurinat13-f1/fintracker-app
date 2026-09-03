@@ -238,13 +238,19 @@ export const CAT_EMOJIS  = ['other','food','transport','shopping','home','entert
 //
 // [invest] is excluded from "in" regardless of type: the flow that writes it
 // raises qty and avgCost in the same action, so the units already carry it.
+//
+// fxUnits is the same exclusion as [invest] and for the same reason: a row that
+// carries units writes them onto the holding as a movement, so the units are
+// already the record of it. Counting the baht as well makes one arrival of money
+// worth twice what arrived — the bug of 2026-08-31, in the other direction.
+export const isFxTx = t => !!t && Number(t.fxUnits) > 0 && !!t.targetAssetId;
 export const isAssetTxOut = (t, id) =>
   (t.fromAssetId===id && t.transferDir!=='from') ||
-  (t.targetAssetId===id && t.type==='expense' && t.notes!=='[invest]') ||
+  (t.targetAssetId===id && t.type==='expense' && t.notes!=='[invest]' && !isFxTx(t)) ||
   (t.targetAssetId===id && t.type==='adjustment' && t.amount<0);
 export const isAssetTxIn = (t, id) =>
   (t.toAssetId===id && t.transferDir!=='to') ||
-  (t.targetAssetId===id && t.type==='income') ||
+  (t.targetAssetId===id && t.type==='income' && !isFxTx(t)) ||
   (t.targetAssetId===id && t.type==='adjustment' && t.amount>0);
 export const assetTagged = (txs, id) => {
   let taggedIn=0, taggedOut=0;
@@ -439,7 +445,11 @@ export const assetVal = (a, txs, usdRate=1) => {
 // own cash-type assets (those count via assetVal) — avoids double-counting.
 export const walletCash = (w, txs, assets=[]) => {
   const cashAssetIds = new Set(assets.filter(a=>a.walletId===w.id&&a.type==='cash').map(a=>a.id));
-  const tagged = t => cashAssetIds.has(t.targetAssetId)||cashAssetIds.has(t.toAssetId)||cashAssetIds.has(t.fromAssetId);
+  // A row in a foreign currency never sat in this wallet as baht. It arrived as
+  // units of the holding it names, the units are on the holding, and the holding
+  // is counted through the wallet it is linked to. Adding the baht here as well
+  // is the same wallet reporting the same money twice.
+  const tagged = t => isFxTx(t) || cashAssetIds.has(t.targetAssetId)||cashAssetIds.has(t.toAssetId)||cashAssetIds.has(t.fromAssetId);
   const wt   = txs.filter(t=>t.walletId===w.id&&!tagged(t));
   const tOut = txs.filter(t=>t.type==='transfer'&&t.walletId===w.id&&!tagged(t)).reduce((s,t)=>s+t.amount,0);
   const tIn  = txs.filter(t=>t.type==='transfer'&&t.toWalletId===w.id&&!tagged(t)).reduce((s,t)=>s+t.amount,0);
