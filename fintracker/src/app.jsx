@@ -9103,10 +9103,15 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
       <PageHeader theme={theme} lead="All" accent="Wallets"
         sub={`${wallets.length} กระเป๋า${hasStocks?` · ${stockCount} สินทรัพย์`:''} · เงินสด บัญชีธนาคาร และวอลเล็ตคริปโต`}/>
       {/* Summary header */}
-      <div className={`${card} p-5`}>
+      <div className={`${card} p-5 relative overflow-hidden`}>
+        <div aria-hidden="true" className="pointer-events-none select-none"
+          style={{position:'absolute', right:'0px', top:'50%', transform:'translateY(-50%)',
+                  opacity:dk?0.07:0.05}}>
+          <LogoSvg size={155}/>
+        </div>
         <div className="flex flex-col gap-3">
           {/* Hero total + breakdown chips (same visual language as the Net Worth card) */}
-          <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <div>
               <p className={`text-xs font-medium uppercase tracking-widest mb-1 ${dk?'text-slate-400':'text-slate-500'}`}>ยอดรวมกระเป๋าเงิน</p>
               <div className={`text-2xl lg:text-3xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`}>{fmt(totalBalance)}</div>
@@ -9114,7 +9119,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                   that already said 16 กระเป๋า. The asset count was the only new
                   thing in it, so that moved up and the line went. */}
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex-1 flex flex-wrap gap-2">
               {[
                 // Same colours ASSET_TYPES uses for the same four words. They were an
                 // olive, a raspberry, a cyan and a brown — four hues invented here and
@@ -9141,7 +9146,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                 const grand = totalBalance;
                 const pct = grand>0 ? (c.val/grand*100) : 0;
                 return (
-                  <div key={c.key} className={`flex items-center gap-2 px-3 py-2 rounded-xl ${dk?'bg-white/5 border border-white/10':'bg-slate-50 border border-slate-200'}`}>
+                  <div key={c.key} className={`flex items-center gap-2 flex-1 basis-32 min-w-0 px-3 py-2 rounded-xl ${dk?'bg-white/5 border border-white/10':'bg-slate-50 border border-slate-200'}`}>
                     <span className="text-base leading-none">{c.icon}</span>
                     <div className="min-w-0">
                       <div className={`text-xs font-bold ${dk?'text-slate-100':'text-slate-700'}`}>{fmt(c.val)}</div>
@@ -9201,17 +9206,14 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-transparent transition-colors btn-primary`}>
                 <Ic n="plus" s={14}/> เพิ่มกระเป๋า
               </button>
+              <button onClick={()=>setCustModal({open:true,editData:null})} title="เงินของคนอื่นที่คุณถือไว้ — แสดงแยกไว้เฉยๆ ไม่ปนกับเงินเรา" className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors ${dk?'text-slate-500 hover:text-amber-300 hover:bg-amber-500/10':'text-slate-400 hover:text-amber-600 hover:bg-amber-50'}`}><span>🔒</span><Ic n="plus" s={11}/> เพิ่มเงินที่ถือแทน (เงินฝากคนอื่น)</button>
             </div>
           </div>
         </div>
       </div>
 
       {/* ── เงินที่ถือแทน / เงินฝาก (custodial — held for others, deducted from our net worth) ── */}
-      {custodial.length===0 ? (
-        <div className="flex justify-center">
-          <button onClick={()=>setCustModal({open:true,editData:null})} title="เงินของคนอื่นที่คุณถือไว้ — แสดงแยกไว้เฉยๆ ไม่ปนกับเงินเรา" className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors ${dk?'text-slate-500 hover:text-amber-300 hover:bg-amber-500/10':'text-slate-400 hover:text-amber-600 hover:bg-amber-50'}`}><span>🔒</span><Ic n="plus" s={11}/> เพิ่มเงินที่ถือแทน (เงินฝากคนอื่น)</button>
-        </div>
-      ) : (
+      {custodial.length>0 && (
       <div className={`${card} p-5`}>
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="flex items-center gap-2">
