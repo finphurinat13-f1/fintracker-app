@@ -238,21 +238,14 @@ const CAT_ICON_KEYS = Object.keys(CAT_SVG);
 // spending category.
 const TYPE_SVG = {
   bank:    <><path d="M4.2 10.4h15.6v8.2H4.2z" opacity=".3"/><path d="M11.5 2.6a1 1 0 0 1 1 0l9 4.9a1 1 0 0 1-.48 1.88H2.98A1 1 0 0 1 2.5 7.5z"/><rect x="5.6" y="11" width="2.2" height="6.4" rx="1"/><rect x="10.9" y="11" width="2.2" height="6.4" rx="1"/><rect x="16.2" y="11" width="2.2" height="6.4" rx="1"/><rect x="3" y="18.8" width="18" height="2.4" rx="1.2"/></>,
-  // A stack of coins. Two earlier attempts failed for opposite reasons: a drawn
-  // banknote was 19.6 x 12 in a 24-box, half the height and all of the width, so
-  // it read as a bar; and a ฿ on a disc read as a currency symbol rather than as
-  // money — Fin could not tell what it was meant to be.
+  // Just the ฿. Earlier versions drew it on a disc, and the disc was doing the
+  // job of saying "this is a thing" — which is the job the rounded tile behind
+  // every one of these now does. Two containers is one too many, and the inner
+  // one was eating the room the symbol needed to be read at 24px.
   //
-  // Coins have a silhouette nothing else in this set shares. bank is a building,
-  // credit is a rounded rectangle with a stripe, and a banknote would have been
-  // a third rectangle competing with the card. Three discs seen slightly from
-  // above cannot be confused with any of them at 24px, and the shape survives
-  // shrinking because it has no interior detail to lose.
-  //
-  // Drawn back to front so each coin overlaps the one beneath it, with opacity
-  // stepping up toward the top — that is what separates three discs from one
-  // muddy blob when they are all the same colour.
-  cash:    <><path d="M3.6 16.1v2.3c0 1.9 3.76 3.4 8.4 3.4s8.4-1.5 8.4-3.4v-2.3z" opacity=".45"/><ellipse cx="12" cy="16.1" rx="8.4" ry="3.4" opacity=".45"/><path d="M3.6 10.4v2.3c0 1.9 3.76 3.4 8.4 3.4s8.4-1.5 8.4-3.4v-2.3z" opacity=".72"/><ellipse cx="12" cy="10.4" rx="8.4" ry="3.4" opacity=".72"/><path d="M3.6 4.7v2.3c0 1.9 3.76 3.4 8.4 3.4s8.4-1.5 8.4-3.4V4.7z"/><ellipse cx="12" cy="4.7" rx="8.4" ry="3.4"/></>,
+  // Centred on x=12 by hand: the stem sits left of the bowls and the bowls bulge
+  // right, so an origin-aligned ฿ hangs to one side of the box it is drawn in.
+  cash:    <><rect x="6.6" y="2.6" width="2.8" height="18.8" rx="0.6"/><path d="M9.4 5.6h4.3a3 3 0 0 1 0 6H9.4z"/><path d="M9.4 11.6h4.9a3.2 3.2 0 0 1 0 6.4H9.4z"/></>,
   stock:   <><path d="M3 20.2V13l4.6-3.4 4.4 3 4.6-5.2L21 4.8v15.4z" opacity=".3"/><path d="M2.9 14.2a1 1 0 0 1 .2-1.4l4.6-3.4a1 1 0 0 1 1.16-.02l3.62 2.47 4.03-4.55a1 1 0 1 1 1.5 1.32l-4.6 5.2a1 1 0 0 1-1.31.16L8.3 11.44l-4 2.96a1 1 0 0 1-1.4-.2z"/><circle cx="17.4" cy="7.6" r="1.9"/></>,
   credit:  <><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.6" opacity=".3"/><rect x="2.2" y="4.6" width="19.6" height="14.8" rx="2.6" fill="none" stroke="currentColor" strokeWidth="1.7"/><rect x="2.2" y="8.2" width="19.6" height="2.8"/><rect x="5" y="14" width="5.2" height="2" rx="1"/></>,
   crypto:  <><path d="M12 2.4 20 5.6v6.1c0 4.4-3.1 8.4-8 9.9-4.9-1.5-8-5.5-8-9.9V5.6z" opacity=".3"/><path d="M12 2.4 20 5.6v6.1c0 4.4-3.1 8.4-8 9.9-4.9-1.5-8-5.5-8-9.9V5.6z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M10 8.4h3.1a2.1 2.1 0 0 1 0 4.2H10zm0 4.2h3.4a2.1 2.1 0 0 1 0 4.2H10zm1.1-6.5v2m0 9v2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></>,
@@ -3554,7 +3547,7 @@ const AssetModal = ({open, onClose, onSave, onAssign, onUnlink, onAssetTransfer,
   };
   const defaultWallet = wallets.find(w=>w.id===defaultWalletId);
   const walletTypeFilter = defaultWallet?.type;
-  const WALLET_ASSET_TYPE_MAP = { crypto:['crypto'], bank:['cash'], cash:['cash'], credit:['cash'], stock:['stock','gold'] };
+  const WALLET_ASSET_TYPE_MAP = { crypto:['crypto'], bank:['cash'], cash:['cash'], credit:['cash'], stock:['stock','gold'], gold:['gold','cash'] };
   const allowedAssetTypes = WALLET_ASSET_TYPE_MAP[walletTypeFilter] || null;
   const filtered = assets.filter(a=>{
     if(a.walletId) return false; // already linked to a wallet — hide; show only unassigned assets
@@ -7558,6 +7551,7 @@ const WalletModal = ({ open, onClose, onSave, editData, theme }) => {
     { k:'stock',   l:'พอร์ตหุ้น',     i:'stock' },
     { k:'credit',  l:'บัตรเครดิต',    i:'credit' },
     { k:'crypto',  l:'Crypto Wallet', i:'crypto' },
+    { k:'gold',    l:'ทองคำ',          i:'gold' },
     { k:'ewallet', l:'e-Wallet',      i:'ewallet' },
     { k:'fund',    l:'กองทุนรวม',     i:'fund' },
     { k:'fixed',   l:'ฝากประจำ',      i:'fixed' },
@@ -8561,10 +8555,22 @@ const WalletCardFace = ({ w, meta, balanceText, usdText, hidden, accent }) => (
             body colour and came out as a shape you could tell was there but not
             what it was. TYPE_META's colours were already picked to clear 3.0
             against this exact surface; the icon just was not being given one. */}
-        <div className="w-7 h-7 rounded-md flex items-center justify-center text-base flex-shrink-0 overflow-hidden"
-          style={{color: meta.color || accent}}>
-          {w.type==='bank' ? detectBankIcon(w.name,24) : w.type==='crypto' ? detectCryptoWalletIcon(w.name,24) : (meta.icon || w.icon)}
-        </div>
+        {/* A bank wallet already showed a real app tile — K+ is a green rounded
+            square — while the drawn types floated as bare glyphs beside it, so
+            the row looked like two different icon sets sharing a card. They are
+            all tiles now: the type's own colour as the ground, the glyph knocked
+            back to near-black on top of it. Detected app icons bring their own
+            ground and are only given the same corner radius. */}
+        {w.type==='bank' || w.type==='crypto' ? (
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {w.type==='bank' ? detectBankIcon(w.name,28) : detectCryptoWalletIcon(w.name,28)}
+          </div>
+        ) : (
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-base flex-shrink-0 overflow-hidden"
+            style={{background: meta.color || accent, color:'#14120c'}}>
+            {meta.icon || w.icon}
+          </div>
+        )}
         <div className="text-sm font-semibold truncate" style={{color:'rgba(240,230,205,0.95)'}}>{w.name}</div>
       </div>
 
@@ -8754,6 +8760,10 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
     bank:    { label:'บัญชีธนาคาร',  color:'#e8cf90', icon:<TypeIc n="bank" s={22}/> },
     stock:   { label:'พอร์ตหุ้น',     color:'#c9a94b', icon:<TypeIc n="stock" s={20}/> },
     crypto:  { label:'Crypto Wallet', color:'#a8894a', icon:<TypeIc n="crypto" s={22}/> },
+    // The glyph has been in TYPE_SVG all along; there was simply no wallet type
+    // asking for it. Colour off the same ramp as the rest — a fresh hue would
+    // make this one type look like it belongs to a different app.
+    gold:    { label:'ทองคำ',         color:'#d8bb63', icon:<TypeIc n="gold" s={22}/> },
     // Bright enough to be a glyph colour. #7d6a3f was a step from the old gold
     // ramp — dark by design, which works for a bar on a light track and not at
     // all for an icon on a dark chip, where it came out as a shape you could
@@ -8836,7 +8846,9 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
   // drop silently out of it — which is exactly what happened when e-Wallet,
   // กองทุนรวม, ฝากประจำ, เงินเก็บ and อื่นๆ were added and this line was not.
   // Phrased this way a future type is counted before anyone thinks about it.
-  const CLAIMED_TYPES    = ['bank','cash','credit','crypto','stock'];
+  const CLAIMED_TYPES    = ['bank','cash','credit','crypto','stock','gold'];
+  const goldTotal        = useMemo(()=>walletData.filter(w=>w.type==='gold').reduce((s,w)=>s+w.balance,0),[walletData]);
+  const hasGold          = useMemo(()=>walletData.some(w=>w.type==='gold'),[walletData]);
   const otherTotal       = useMemo(()=>walletData.filter(w=>!CLAIMED_TYPES.includes(w.type)).reduce((s,w)=>s+w.balance,0),[walletData]);
   const hasOtherWallets  = useMemo(()=>walletData.some(w=>!CLAIMED_TYPES.includes(w.type)),[walletData]);
   const stockWalletTotal = useMemo(()=>walletData.filter(w=>w.type==='stock').reduce((s,w)=>s+w.balance,0),[walletData]);
@@ -8870,6 +8882,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                 {key:'cash',   icon:'💵', label:'เงินสด', val:cashTotal,   color:'#cbac33', show:true},
                 {key:'crypto', icon:'🔐', label:'Crypto', val:cryptoTotal, color:'#e9d892', show:hasCrypto},
                 {key:'stock',  icon:'📈', label:'หุ้น',   val:stockTotal,  color:'#f4ecc6', show:hasStocks},
+                {key:'gold',   icon:'🥇', label:'ทองคำ', val:goldTotal,   color:'#d8bb63', show:hasGold},
                 {key:'other',  icon:'👛', label:'อื่นๆ',  val:otherTotal,  color:'#b7941a', show:hasOtherWallets},
               ].filter(c=>c.show).map(c=>{
                 // Must match the headline above, or the chips add up to a
