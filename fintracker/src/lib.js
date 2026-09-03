@@ -62,7 +62,7 @@ export const THEMES = [
     // Lifted from #0c0c0b. Against the old pure-black page that was a ratio of
     // 1.07 — the cards were a slightly different black, not a raised surface,
     // and no amount of edge treatment fixes a step that is not there.
-    card: '#1a1a1f',
+    card: '#141418',
   },
 ];
 

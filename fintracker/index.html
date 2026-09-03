@@ -149,27 +149,26 @@ const db   = firebase.firestore();
     }
   }
 
+  /* Gold moved off the frame and onto the contents.
+     
+     Every card used to carry a gold edge and a gold wash across its top corner,
+     which meant the accent was doing the one job an accent cannot do: appearing
+     everywhere. Twelve cards on a page, twelve gold rectangles, and a figure
+     printed in gold because it was up had nothing left to be brighter than.
+     
+     The frame is a neutral hairline now and the fill is flat. Gold is kept for
+     the things that carry meaning — net worth, an active row, a chart line, a
+     gain — which is where it reads as gold rather than as decoration. Same
+     palette, spent on fewer things. */
   .card-solid {
-    background:
-      linear-gradient(152deg, rgba(212,160,23,0.055) 0%, rgba(212,160,23,0.020) 36%, rgba(212,160,23,0.000) 64%),
-      var(--card-bg, #1a1a1f);
-    /* The hairline was gold at 11%, which composites to #221c0c on this ground:
-       a ratio of 1.16 against the card, meaning it was gold in the stylesheet
-       and invisible on the screen. Every black-and-gold reference earns its look
-       from the edge, not from the fill, so the line has to actually be a line.
-       0.34 lands at 1.90 — clearly drawn, still a hairline. */
-    border: 1px solid rgba(212,160,23,0.34);
-    /* And the top edge brighter than the rest. A uniform outline reads as a
-       drawn rectangle; metal reads as metal because one edge catches the light
-       and the others fall away. One inset line does the whole job. */
-    box-shadow: inset 0 1px 0 rgba(230,200,92,0.22);
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    background: var(--card-bg, #141418);
+    border: 1px solid rgba(255,255,255,0.07);
+    transition: border-color 0.15s ease, background 0.15s ease;
   }
   /* Hover marks the border, not the elevation — nothing moves, so a table of
      figures does not shift under the cursor. */
   .card-solid:hover {
-    border-color: rgba(217,175,43,0.52);
-    box-shadow: inset 0 1px 0 rgba(230,200,92,0.38);
+    border-color: rgba(255,255,255,0.13);
   }
   .glass-light:hover  { border-color: rgba(201,169,75,0.35); }
 

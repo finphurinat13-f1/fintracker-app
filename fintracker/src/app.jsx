@@ -10482,6 +10482,29 @@ const LoginPage = ({ theme }) => {
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const formRef = useRef(null);
+
+  // Google accounts arrive already verified, which is the whole appeal: the
+  // address is proven by somebody who has already proven it, so there is no
+  // click-the-link round trip between deciding to try this and being inside it.
+  // The registry entry is written by /api/autoapprove on the way in, the same
+  // as for an address-and-password account — nothing here needs to know that.
+  const googleIn = async () => {
+    setErr(''); setLoading(true);
+    try {
+      await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    } catch (e) {
+      // Closing the window is a decision, not a failure. Saying "sign-in failed"
+      // to somebody who just changed their mind is the app arguing with them.
+      if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
+        setErr({
+          'auth/operation-not-allowed': 'Google sign-in is not switched on for this project yet',
+          'auth/popup-blocked':         'Your browser blocked the popup — allow it and try again',
+          'auth/unauthorized-domain':   'This address is not on the project’s allowed list',
+        }[e.code] || `Google sign-in failed (${e.code})`);
+      }
+      setLoading(false);
+    }
+  };
   const [resetLoading, setResetLoading] = useState(false);
 
   const switchMode = m => { setMode(m); setErr(''); setResetSent(false); setPw(''); setConfirmPw(''); };
@@ -10706,6 +10729,26 @@ const LoginPage = ({ theme }) => {
             <button onClick={mode==='login'?login:signup} disabled={loading}
               className="mt-2 w-full py-3 rounded-xl bg-orange-400 hover:bg-orange-300 active:bg-orange-500 text-orange-950 text-sm font-bold disabled:opacity-50 transition-colors">
               {loading ? 'Loading...' : mode==='login' ? 'Sign in' : 'Create free account'}
+            </button>
+
+            {/* Only Google. The reference offers Discord beside it, which would
+                mean standing up a second identity provider for an app whose
+                users are not on Discord — a button is not the expensive part. */}
+            <div className="flex items-center gap-3 pt-1">
+              <span className={`flex-1 h-px ${dk?'bg-white/10':'bg-slate-200'}`}/>
+              <span className={`text-[10px] font-semibold uppercase ${dk?'text-slate-500':'text-slate-400'}`}
+                style={{letterSpacing:'0.14em'}}>or continue with</span>
+              <span className={`flex-1 h-px ${dk?'bg-white/10':'bg-slate-200'}`}/>
+            </div>
+            <button onClick={googleIn} disabled={loading}
+              className={`w-full py-3 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2.5 disabled:opacity-50 transition-colors ${dk?'border-white/12 bg-white/5 hover:bg-white/10 text-slate-200':'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'}`}>
+              <svg width="17" height="17" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.2-.4-4.7H24v8.9h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1c4.2-3.8 6.6-9.5 6.6-16.3z"/>
+                <path fill="#34A853" d="M24 46c6 0 11-2 14.6-5.2l-7.1-5.5c-2 1.3-4.5 2.1-7.5 2.1-5.8 0-10.7-3.9-12.4-9.1H4.3v5.7C7.9 41.2 15.4 46 24 46z"/>
+                <path fill="#FBBC05" d="M11.6 28.3c-.4-1.3-.7-2.7-.7-4.3s.3-2.9.7-4.3v-5.7H4.3A22 22 0 0 0 2 24c0 3.6.9 6.9 2.3 9.9l7.3-5.6z"/>
+                <path fill="#EA4335" d="M24 10.6c3.3 0 6.2 1.1 8.5 3.3l6.3-6.3C35 4 30 2 24 2 15.4 2 7.9 6.8 4.3 13.7l7.3 5.7c1.7-5.2 6.6-8.8 12.4-8.8z"/>
+              </svg>
+              Google
             </button>
           </div>
 
