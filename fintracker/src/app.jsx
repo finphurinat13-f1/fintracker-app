@@ -10653,6 +10653,17 @@ const LoginPage = ({ theme }) => {
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const formRef = useRef(null);
+  // Start Free opens the card as a dialog. Scrolling to it was the old
+  // behaviour and it asked the visitor to notice that the page had moved and
+  // infer why.
+  const [authModal, setAuthModal] = useState(false);
+  useEffect(()=>{
+    if(!authModal) return;
+    const esc = e => { if(e.key==='Escape') setAuthModal(false); };
+    const prev = document.body.style.overflow; document.body.style.overflow='hidden';
+    window.addEventListener('keydown', esc);
+    return ()=>{ document.body.style.overflow=prev; window.removeEventListener('keydown', esc); };
+  },[authModal]);
 
   // Google accounts arrive already verified, which is the whole appeal: the
   // address is proven by somebody who has already proven it, so there is no
@@ -10777,8 +10788,7 @@ const LoginPage = ({ theme }) => {
           {/* Was a badge reading "Free forever" — a fact printed in the one
               corner of a landing page every visitor looks to for the way in.
               It says the same thing and now does something with it. */}
-          <button onClick={()=>{ switchMode('signup');
-              requestAnimationFrame(()=>formRef.current&&formRef.current.scrollIntoView({behavior:'smooth', block:'center'})); }}
+          <button onClick={()=>{ switchMode('signup'); setAuthModal(true); }}
             className="px-5 py-2 rounded-full text-sm font-semibold btn-primary transition-transform hover:scale-[1.03] active:scale-100">
             Start Free
           </button>
@@ -10806,7 +10816,29 @@ const LoginPage = ({ theme }) => {
 
         {/* The form. It is the reason the page exists, so it sits directly under
             the headline rather than behind a button that scrolls to it. */}
-        <div ref={formRef} className={`mx-auto w-full max-w-md mt-12 rounded-2xl border p-7 ${dk?'border-white/10 bg-white/[0.03]':'border-slate-200 bg-white shadow-sm'}`}>
+        {/* One card, two places it can be. In the page it sits under the
+            headline, which is where the page wants it. Opened from Start Free
+            it becomes a dialog over everything, because the button used to
+            scroll to it and scrolling is not an answer to "what do I do now" —
+            it moves the page and leaves the visitor to work out that the thing
+            that moved is the thing they are supposed to fill in.
+
+            Wrapping rather than rendering a second copy: two live sets of the
+            same controlled email and password inputs is something a password
+            manager can and does disagree with itself about. */}
+        <div ref={formRef}
+          className={authModal ? 'fixed inset-0 z-[60] overflow-y-auto px-4 py-10 flex items-start justify-center'
+                               : 'mx-auto w-full max-w-md mt-12'}>
+          {authModal && (
+            <div className="fixed inset-0 bg-black/75 backdrop-blur-sm" onClick={()=>setAuthModal(false)}/>
+          )}
+          <div className={`relative w-full max-w-md rounded-2xl border p-7 ${dk?'border-white/10 bg-white/[0.03]':'border-slate-200 bg-white shadow-sm'}`}>
+            {authModal && (
+              <button onClick={()=>setAuthModal(false)} aria-label="ปิด"
+                className={`absolute top-3.5 right-3.5 p-1.5 rounded-lg transition-colors ${dk?'text-slate-500 hover:text-white hover:bg-white/10':'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>
+                <Ic n="x" s={14}/>
+              </button>
+            )}
           <div className="mb-6 text-center">
             <span className={`text-lg font-bold ${dk?'text-white':'text-slate-800'}`}>
               {mode==='signup' ? 'Create your account' : 'Welcome back'}
@@ -10942,6 +10974,7 @@ const LoginPage = ({ theme }) => {
             <span className="w-1.5 h-1.5 rounded-full" style={{background:'#7aab8a'}}/>
             Cloud sync · encrypted in transit
           </p>
+        </div>
         </div>
 
         {/* The picture goes under the form rather than beside it. Beside it, the
