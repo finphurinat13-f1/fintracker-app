@@ -5487,7 +5487,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
   const catTrend = useMemo(()=>{
     const cats={};
     txs.filter(t=>t.type==='expense').forEach(t=>{ const m=ym(t.date), c=t.category||'อื่นๆ'; if(!cats[c]) cats[c]={total:0,m:{}}; cats[c].total+=t.amount; cats[c].m[m]=(cats[c].m[m]||0)+t.amount; });
-    return Object.entries(cats).sort((a,b)=>b[1].total-a[1].total).slice(0,6).map(([c,v])=>{
+    return Object.entries(cats).sort((a,b)=>b[1].total-a[1].total).slice(0,8).map(([c,v])=>{
       const vals=months6.map(m=>v.m[m]||0); const cur=vals[vals.length-1], prev=vals[vals.length-2]||0;
       const chg=prev>0?((cur-prev)/prev*100):(cur>0?null:0); const mx=Math.max(...vals,1);
       return { cat:c, vals, cur, prev, chg, mx };
@@ -5844,92 +5844,99 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
         }
       </div>
 
-      {/* 🎯 Goal Tracker + projection */}
-      <div className={`${card} p-5`}>
-        <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
-          <div>
-            <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>🎯 เป้าหมายเงินเก็บ</div>
-            <div className={sub}>เก็บได้ {fmt(currentSaved)} จาก {fmt(goal)}</div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className={sub}>เป้า ฿</span>
-            <input type="text" inputMode="numeric" value={goal.toLocaleString('en-US')} onChange={e=>setGoal(parseFloat(e.target.value.replace(/[^\d]/g,''))||0)}
-              className={`w-36 px-2.5 py-1.5 rounded-lg border text-sm text-right outline-none ${dk?'bg-white/5 border-white/10 text-white focus:border-emerald-500':'bg-slate-50 border-slate-200 text-slate-700 focus:border-emerald-400'}`}/>
-          </div>
-        </div>
-        <div className={`h-2.5 rounded-full overflow-hidden ${dk?'bg-white/10':'bg-slate-100'}`}>
-          <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{width:`${goalPct}%`}}/>
-        </div>
-        <div className="flex justify-between mt-1.5 text-xs">
-          <span className="text-emerald-400 font-semibold">{goalPct.toFixed(1)}%</span>
-          <span className={sub}>เหลืออีก {fmt(remaining)}</span>
-        </div>
-        <div className="grid grid-cols-3 gap-3 mt-4">
-          {[['เก็บเฉลี่ย/เดือน', fmt(avgNet)],['อีกประมาณ', isFinite(monthsToGoal)?yrMo(monthsToGoal):'—'],['คาดถึงเป้า', etaDate?`${MONTHS_TH[etaDate.getMonth()]} ${(etaDate.getFullYear()+543).toString().slice(2)}`:'—']].map(([l,v])=>(
-            <div key={l} className={`rounded-xl p-3 ${dk?'bg-white/5':'bg-slate-50'}`}>
-              <div className={`text-[10px] uppercase tracking-wide ${dk?'text-slate-500':'text-slate-400'}`}>{l}</div>
-              <div className={`text-sm font-bold mt-0.5 ${dk?'text-white':'text-slate-800'}`}>{v}</div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-4" style={{height:'210px'}}>
-          <GoalChart labels={goalChart.labels} actual={goalChart.actual} forecast={goalChart.forecast} goal={goal} theme={theme}/>
-        </div>
-      </div>
+      {/* The goal and the category trend, side by side rather than stacked. The
+          trend gave the case away on its own: six bars stretched across the whole
+          page came out 230px wide and 32px tall, which is not a bar, it is a
+          stripe. Half the width and they are bars again.
 
-      {/* 📊 Category trend (last 6 months) */}
-      {catTrend.length>0&&(
-        <div className={`${card} p-5`}>
-          <div className={`text-sm font-semibold mb-3 ${dk?'text-gold-300':'text-gold-700'}`}>📊 เทรนด์หมวดรายจ่าย <span className={sub}>(6 เดือนล่าสุด)</span></div>
-          {/* A month row, aligned to the bars by repeating their exact column
-              structure — same widths on both sides, same flex-1 gap-0.5 in the
-              middle. Six bars with nothing naming them is a shape without a
-              scale: "spending rose" is only readable as news if you can see
-              which month it rose in. The last column is marked because "now" is
-              the one a trend is read against. */}
-          <div className="flex items-center gap-3 mb-1.5">
-            <div className="w-24 flex-shrink-0"/>
-            <div className="flex-1 flex gap-0.5">
-              {months6.map((m,i)=>{
-                const [,mo] = m.split('-');
-                const last = i===months6.length-1;
-                return (
-                  <span key={m} className={`flex-1 text-center text-[10px] tabular-nums ${
-                    last ? (dk?'text-gold-300 font-semibold':'text-gold-700 font-semibold')
-                         : (dk?'text-slate-600':'text-slate-400')}`}>
-                    {MONTHS_TH[parseInt(mo)-1]}
-                  </span>
-                );
-              })}
+          The goal keeps the wider half — it carries an input, a progress rule,
+          three figures and a chart. With no expenses to trend it takes the row
+          alone instead of sitting next to a gap. */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7">
+        <div className={`${card} p-5 ${catTrend.length>0?'lg:col-span-3':'lg:col-span-5'}`}>
+          <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+            <div>
+              <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>🎯 เป้าหมายเงินเก็บ</div>
+              <div className={sub}>เก็บได้ {fmt(currentSaved)} จาก {fmt(goal)}</div>
             </div>
-            <div className="w-28 flex-shrink-0"/>
+            <div className="flex items-center gap-2">
+              <span className={sub}>เป้า ฿</span>
+              <input type="text" inputMode="numeric" value={goal.toLocaleString('en-US')} onChange={e=>setGoal(parseFloat(e.target.value.replace(/[^\d]/g,''))||0)}
+                className={`w-36 px-2.5 py-1.5 rounded-lg border text-sm text-right outline-none ${dk?'bg-white/5 border-white/10 text-white focus:border-emerald-500':'bg-slate-50 border-slate-200 text-slate-700 focus:border-emerald-400'}`}/>
+            </div>
           </div>
-          <div className="space-y-2.5">
-            {catTrend.map(({cat,vals,cur,chg,mx})=>(
-              <div key={cat} className="flex items-center gap-3">
-                <div className="w-24 flex-shrink-0 flex items-center gap-1.5 min-w-0">
-                  <CatGlyph v={catIcon(cat)} s={16} color={catClr(cat)}/>
-                  <span className={`text-xs truncate ${dk?'text-slate-300':'text-slate-600'}`}>{cat}</span>
-                </div>
-                <div className="flex-1 flex items-end gap-0.5 h-8">
-                  {vals.map((v,i)=>(
-                    <div key={i} className={`flex-1 rounded-sm transition-all ${i===vals.length-1?'':'opacity-50'}`}
-                      style={{height:`${Math.max(v/mx*100,3)}%`, background:catClr(cat), minHeight:'2px'}} title={fmt(v)}/>
-                  ))}
-                </div>
-                <div className="w-28 flex-shrink-0 text-right">
-                  {/* Up a step from text-xs. This is the figure the row exists to
-                      report — the bars beside it show the shape and the change
-                      underneath gives the direction, but the amount is what gets
-                      read, and it was set smaller than the heading above it. */}
-                  <div className={`text-sm font-semibold tabular-nums ${dk?'text-slate-100':'text-slate-800'}`}>{fmt(cur)}</div>
-                  {chg!==null&&chg!==0&&<div className={`text-[10px] ${chg>0?'text-rose-400':'text-emerald-400'}`}>{chg>0?'▲':'▼'}{Math.abs(chg).toFixed(0)}% จากเดือนก่อน</div>}
-                </div>
+          <div className={`h-2.5 rounded-full overflow-hidden ${dk?'bg-white/10':'bg-slate-100'}`}>
+            <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{width:`${goalPct}%`}}/>
+          </div>
+          <div className="flex justify-between mt-1.5 text-xs">
+            <span className="text-emerald-400 font-semibold">{goalPct.toFixed(1)}%</span>
+            <span className={sub}>เหลืออีก {fmt(remaining)}</span>
+          </div>
+          <div className="grid grid-cols-3 gap-3 mt-4">
+            {[['เก็บเฉลี่ย/เดือน', fmt(avgNet)],['อีกประมาณ', isFinite(monthsToGoal)?yrMo(monthsToGoal):'—'],['คาดถึงเป้า', etaDate?`${MONTHS_TH[etaDate.getMonth()]} ${(etaDate.getFullYear()+543).toString().slice(2)}`:'—']].map(([l,v])=>(
+              <div key={l} className={`rounded-xl p-3 ${dk?'bg-white/5':'bg-slate-50'}`}>
+                <div className={`text-[10px] uppercase tracking-wide ${dk?'text-slate-500':'text-slate-400'}`}>{l}</div>
+                <div className={`text-sm font-bold mt-0.5 ${dk?'text-white':'text-slate-800'}`}>{v}</div>
               </div>
             ))}
           </div>
+          <div className="mt-4" style={{height:'210px'}}>
+            <GoalChart labels={goalChart.labels} actual={goalChart.actual} forecast={goalChart.forecast} goal={goal} theme={theme}/>
+          </div>
         </div>
-      )}
+        {catTrend.length>0&&(
+          <div className={`${card} p-5 lg:col-span-2`}>
+            <div className={`text-sm font-semibold mb-3 ${dk?'text-gold-300':'text-gold-700'}`}>📊 เทรนด์หมวดรายจ่าย <span className={sub}>(6 เดือนล่าสุด)</span></div>
+            {/* A month row, aligned to the bars by repeating their exact column
+                structure — same widths on both sides, same flex-1 gap-0.5 in the
+                middle. Six bars with nothing naming them is a shape without a
+                scale: "spending rose" is only readable as news if you can see
+                which month it rose in. The last column is marked because "now" is
+                the one a trend is read against. */}
+            <div className="flex items-center gap-3 mb-1.5">
+              <div className="w-24 flex-shrink-0"/>
+              <div className="flex-1 flex gap-0.5">
+                {months6.map((m,i)=>{
+                  const [,mo] = m.split('-');
+                  const last = i===months6.length-1;
+                  return (
+                    <span key={m} className={`flex-1 text-center text-[10px] tabular-nums ${
+                      last ? (dk?'text-gold-300 font-semibold':'text-gold-700 font-semibold')
+                           : (dk?'text-slate-600':'text-slate-400')}`}>
+                      {MONTHS_TH[parseInt(mo)-1]}
+                    </span>
+                  );
+                })}
+              </div>
+              <div className="w-28 flex-shrink-0"/>
+            </div>
+            <div className="space-y-2.5">
+              {catTrend.map(({cat,vals,cur,chg,mx})=>(
+                <div key={cat} className="flex items-center gap-3">
+                  <div className="w-24 flex-shrink-0 flex items-center gap-1.5 min-w-0">
+                    <CatGlyph v={catIcon(cat)} s={16} color={catClr(cat)}/>
+                    <span className={`text-xs truncate ${dk?'text-slate-300':'text-slate-600'}`}>{cat}</span>
+                  </div>
+                  <div className="flex-1 flex items-end gap-0.5 h-10">
+                    {vals.map((v,i)=>(
+                      <div key={i} className={`flex-1 rounded-sm transition-all ${i===vals.length-1?'':'opacity-50'}`}
+                        style={{height:`${Math.max(v/mx*100,3)}%`, background:catClr(cat), minHeight:'2px'}} title={fmt(v)}/>
+                    ))}
+                  </div>
+                  <div className="w-28 flex-shrink-0 text-right">
+                    {/* Up a step from text-xs. This is the figure the row exists to
+                        report — the bars beside it show the shape and the change
+                        underneath gives the direction, but the amount is what gets
+                        read, and it was set smaller than the heading above it. */}
+                    <div className={`text-sm font-semibold tabular-nums ${dk?'text-slate-100':'text-slate-800'}`}>{fmt(cur)}</div>
+                    {chg!==null&&chg!==0&&<div className={`text-[10px] ${chg>0?'text-rose-400':'text-emerald-400'}`}>{chg>0?'▲':'▼'}{Math.abs(chg).toFixed(0)}% จากเดือนก่อน</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* The six-month income-and-expense line is gone. It plotted the series
           the dashboard already draws as bars, with fewer ranges — the same
