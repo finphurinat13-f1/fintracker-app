@@ -3275,6 +3275,17 @@ const RECURRING_DEFAULTS = [];
 
 const fmtA  = (n,c) => c==='USD' ? (n<0?'-':'')+'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : (n<0?'-':'')+fmt(n);
 const fmtQty = n => parseFloat(Number(n||0).toFixed(8)).toLocaleString('en-US',{maximumFractionDigits:8});
+// Eight decimals is what a fund's unit count is stored to and nothing anyone can
+// read at a glance. Above one unit, four is past the point any statement prints;
+// below it the digits are the number, so they stay.
+const fmtQtyShort = n => Number(n||0).toLocaleString('en-US',
+  { maximumFractionDigits: Math.abs(Number(n)||0) >= 1 ? 4 : 8 });
+// A history row had no word on it saying what happened — a plus sign and eight
+// decimals, and the reader was expected to infer "this was a purchase".
+const moveKind = m =>
+  m.manual  ? { icon:'✏️', label:'แก้ด้วยมือ', cls:'text-amber-400' } :
+  m.qty < 0 ? { icon:'📤', label:'เอาออก',     cls:'text-rose-400'  } :
+              { icon:'🛒', label:'เติมเข้า',    cls:'text-emerald-500' };
 const typeInfo = v => ASSET_TYPES.find(t=>t.v===v) || ASSET_TYPES[4];
 
 // Crypto quotes on Yahoo carry the pseudo-exchange "CCC" and are priced in USD.
@@ -4164,6 +4175,7 @@ const AssetRelBody = ({a, investTxs, dk, onAddTx, onDeleteTx, onTopUp, wallets=[
               return (
               <div key={m.id} className={`text-[11px] py-1 border-b last:border-b-0 group/mv ${dk?'border-white/5':'border-slate-100'}`}>
                 <div className="flex items-center gap-1.5">
+                  <span className={`flex-shrink-0 font-semibold ${moveKind(m).cls}`}>{moveKind(m).icon} {moveKind(m).label}</span>
                   {editNote?.id===m.id
                     ? <input autoFocus type="text" value={editNote.note} placeholder="ชื่อรายการ"
                         className={`flex-1 min-w-0 px-1.5 py-0.5 rounded-md border outline-none text-[11px] ${dk?'bg-white/10 border-white/20 text-white':'bg-white border-slate-300 text-slate-700'}`}
@@ -4171,7 +4183,7 @@ const AssetRelBody = ({a, investTxs, dk, onAddTx, onDeleteTx, onTopUp, wallets=[
                         onBlur={()=>{ onRenameMove&&onRenameMove(a.id,m.id,editNote.note.trim()); setEditNote(null); }}
                         onKeyDown={e=>{ if(e.key==='Enter'){ onRenameMove&&onRenameMove(a.id,m.id,editNote.note.trim()); setEditNote(null); } if(e.key==='Escape') setEditNote(null); }}/>
                     : <span onClick={()=>onRenameMove&&setEditNote({id:m.id,note:m.note||''})} title={onRenameMove?'คลิกเพื่อแก้ชื่อ':''}
-                        className={`flex-1 min-w-0 truncate ${onRenameMove?'cursor-pointer hover:underline':''} ${m.note?(dk?'text-slate-200':'text-slate-700'):`italic ${dk?'text-slate-600':'text-slate-400'}`}`}>{m.note||'+ ใส่ชื่อรายการ'}</span>}
+                        className={`flex-1 min-w-0 truncate ${onRenameMove?'cursor-pointer hover:underline':''} ${m.note&&!m.manual?(dk?'text-slate-200':'text-slate-700'):`italic ${dk?'text-slate-600':'text-slate-400'}`}`}>{(m.manual&&String(m.note||'').startsWith('แก้ด้วยมือ'))?'':(m.note||'+ ใส่ชื่อรายการ')}</span>}
                   <span className={`flex-shrink-0 tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{m.date}</span>
                   {onDeleteMove&&(
                     <button type="button" onClick={()=>onDeleteMove(a.id,m.id)}
@@ -4180,11 +4192,28 @@ const AssetRelBody = ({a, investTxs, dk, onAddTx, onDeleteTx, onTopUp, wallets=[
                   )}
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`font-bold tabular-nums ${m.qty<0?'text-rose-400':'text-emerald-500'}`}>{m.qty>0?'+':''}{fmtQty(m.qty)}</span>
-                  <span className={`tabular-nums ${dk?'text-slate-400':'text-slate-500'}`}>{m.rate?`@ ${m.rate.toLocaleString('en-US',{maximumFractionDigits:6})}`:'—'}</span>
+                  {/* The money first, because that is the figure anyone
+                      remembers doing — "I put in ฿50,000", never "I acquired
+                      2,060.69148563 units". The units and the rate that produced
+                      them follow it, smaller. */}
+                  {m.rate ? (
+                    <span className={`font-bold tabular-nums ${m.qty<0?'text-rose-400':'text-emerald-500'}`}>
+                      {m.qty>0?'+':'−'}{fmt(Math.abs(m.qty*m.rate))}
+                    </span>
+                  ) : (
+                    <span className={`font-bold tabular-nums ${m.qty<0?'text-rose-400':'text-emerald-500'}`}
+                      title={fmtQty(m.qty)+' หน่วย'}>
+                      {m.qty>0?'+':''}{fmtQtyShort(m.qty)} หน่วย
+                    </span>
+                  )}
+                  <span className={`tabular-nums ${dk?'text-slate-400':'text-slate-500'}`} title={m.rate?fmtQty(m.qty)+' หน่วย':''}>
+                    {m.rate?`${m.qty>0?'+':''}${fmtQtyShort(m.qty)} หน่วย @ ${m.rate.toLocaleString('en-US',{maximumFractionDigits:6})}`:'—'}
+                  </span>
                   {m.realized!==0&&<span className={`font-medium ${m.realized>0?'text-emerald-500':'text-rose-400'}`}>{m.realized>0?'กำไร':'ขาดทุน'} {fmt(Math.abs(m.realized))}</span>}
                 </div>
-                <div className={`tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>เหลือ {fmtQty(m.newQty)} · ทุนเฉลี่ย {m.newAvg}</div>
+                <div className={`tabular-nums ${dk?'text-slate-500':'text-slate-400'}`} title={`เหลือ ${fmtQty(m.newQty)} หน่วย`}>
+                  เหลือ {fmtQtyShort(m.newQty)} · ทุนเฉลี่ย {Number(m.newAvg||0).toLocaleString('en-US',{maximumFractionDigits:4})}
+                </div>
               </div>
               );
             })}
