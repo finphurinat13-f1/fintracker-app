@@ -8553,7 +8553,13 @@ const WalletCardFace = ({ w, meta, balanceText, usdText, hidden, accent }) => (
           <rect x="0.5" y="0.5" width="29" height="22" rx="4" fill="rgba(212,175,69,0.18)" stroke={accent} strokeWidth="0.8" opacity="0.85"/>
           <path d="M0 8h9M0 15h9M21 8h9M21 15h9M9 0v23M21 0v23" stroke={accent} strokeWidth="0.7" opacity="0.55" fill="none"/>
         </svg>
-        <div className="w-6 h-6 rounded-md flex items-center justify-center text-sm flex-shrink-0 overflow-hidden">
+        {/* TypeIc draws in currentColor, and this wrapper never set one — so on a
+            card whose ground is near black the glyph inherited the page's dark
+            body colour and came out as a shape you could tell was there but not
+            what it was. TYPE_META's colours were already picked to clear 3.0
+            against this exact surface; the icon just was not being given one. */}
+        <div className="w-6 h-6 rounded-md flex items-center justify-center text-sm flex-shrink-0 overflow-hidden"
+          style={{color: meta.color || accent}}>
           {w.type==='bank' ? detectBankIcon(w.name,24) : w.type==='crypto' ? detectCryptoWalletIcon(w.name,24) : (meta.icon || w.icon)}
         </div>
         <div className="text-sm font-semibold truncate" style={{color:'rgba(240,230,205,0.95)'}}>{w.name}</div>
