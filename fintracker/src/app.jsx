@@ -5290,6 +5290,71 @@ const PlanTab = ({ dk, card, theme, byType={} }) => {
   );
 };
 
+// ── NET AND SAVING RATE ───────────────────────────────────
+// The one series on this page that was never drawn. The dashboard plots income
+// and expense as two bars; neither of them is the gap between them, and the gap
+// is what the page is about. The rate existed only as a capsule per row of the
+// table — a column you can read down but cannot compare, because a stack of
+// percentages is a list, not a shape.
+//
+// Two axes, because they are different units and one of them is bounded: net is
+// baht and goes negative, rate is a share of income and means nothing above 100.
+// On a shared axis a 68% would sit on the floor beside a six-figure balance.
+const NetRateChart = ({ rows, theme, hide=false }) => {
+  const ref = useRef(); const ch = useRef();
+  useEffect(()=>{
+    if(!ref.current || !rows.length) return;
+    if(ch.current) ch.current.destroy();
+    const dk = theme==='dark';
+    // The table reads newest first, which is right for a table and backwards for
+    // a chart. Twelve at most, so the bars stay wide enough to compare.
+    const r = rows.slice(0,12).reverse();
+    const money = v => Math.abs(v)>=1e6 ? (v/1e6).toFixed(1)+'M' : Math.abs(v)>=1000 ? Math.round(v/1000)+'k' : String(Math.round(v));
+    ch.current = new Chart(ref.current, {
+      data:{ labels:r.map(d=>d.label.replace(/ 25?dd$/,'')), datasets:[
+        // Colour per bar, not per series: a month that spent more than it earned
+        // is the one thing here worth interrupting for, and it is the same
+        // terracotta the expense bars use on the dashboard.
+        { type:'bar', label:'คงเหลือ', data:r.map(d=>d.balance), yAxisID:'y', order:2,
+          backgroundColor:r.map(d=>d.balance>=0
+            ? (dk?'rgba(122,171,138,0.72)':'rgba(122,171,138,0.62)')
+            : (dk?'rgba(201,114,106,0.78)':'rgba(201,114,106,0.68)')),
+          borderRadius:5, borderSkipped:false, maxBarThickness:34 },
+        { type:'line', label:'อัตราออม', data:r.map(d=>d.rate), yAxisID:'y1', order:1,
+          borderColor:'#c9a94b', backgroundColor:'#c9a94b', borderWidth:2, tension:0.35,
+          pointRadius:2.5, pointHoverRadius:4, fill:false },
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{ labels:{ color:dk?'#8b8985':'#6f6d6a', usePointStyle:true, pointStyle:'circle', padding:16, font:{size:11,family:"'Noto Sans Thai',sans-serif"} } },
+          tooltip:{
+            backgroundColor:dk?'rgba(13,27,46,0.95)':'rgba(255,255,255,0.97)',
+            titleColor:dk?'#d5d3d0':'#302f2d', bodyColor:dk?'#8b8985':'#6f6d6a',
+            borderColor:dk?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)',
+            borderWidth:1, padding:10, cornerRadius:10,
+            callbacks:{ label:ctx=>ctx.dataset.yAxisID==='y1'
+              ? ` อัตราออม: ${ctx.parsed.y.toFixed(1)}%`
+              : ` คงเหลือ: ${hide?'฿ •••••':fmt(ctx.parsed.y)}` }
+          }
+        },
+        scales:{
+          x:{ grid:{display:false}, border:{display:false}, ticks:{color:dk?'#8b8985':'#6f6d6a', font:{size:11,family:"'Noto Sans Thai',sans-serif"}} },
+          y:{ position:'left', grid:{color:dk?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)'}, border:{display:false},
+              ticks:{color:dk?'#8b8985':'#6f6d6a', font:{size:11,family:"'Noto Sans Thai',sans-serif"}, callback:v=>hide?'•••':money(v)} },
+          // Pinned 0-100 rather than fitted to the data. A rate axis that rescales
+          // makes 62% and 68% look like a cliff; against the whole range they are
+          // what they are, and the line stays comparable between one visit and the
+          // next.
+          y1:{ position:'right', min:0, max:100, grid:{display:false}, border:{display:false},
+               ticks:{color:'#c9a94b', font:{size:11,family:"'Noto Sans Thai',sans-serif"}, callback:v=>v+'%', stepSize:25} },
+        }
+      }
+    });
+    return ()=>ch.current?.destroy();
+  },[rows,theme,hide]);
+  return <canvas ref={ref}/>;
+};
+
 const SummaryPage = ({ txs, assets=[], theme }) => {
   const dk = theme === 'dark';
   const [view, setView] = useState('monthly');
@@ -5457,26 +5522,21 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
 
   return (
     <div className="space-y-7 fade-up">
+      {/* The tabs had a full-width card to themselves: one line of small grey
+          text at the far left, three buttons at the far right, and the whole
+          middle empty — a band of the page spent on furniture before the page
+          said anything. They sit in the header now, and the line they were
+          paired with became the header supporting line, which is where a
+          sentence describing the page belongs anyway. */}
       <PageHeader theme={theme} lead="Financial" accent="Summary"
-        sub="รายเดือน รายปี และเป้าหมายเงินเก็บ"/>
-      {/* Toggle */}
-      <div className={`${card} px-4 py-3 flex items-center justify-between flex-wrap gap-3`}>
-        {/* The heading that sat here named the tab selected two inches to its
-            right, under a page header that had already said Summary. The gloss
-            stays: it counts what is in view, and on the projection tab it says
-            the figures are not saved anywhere — the one line here that has to
-            be read. */}
-        <div className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>
-            {view==='plan' ? 'คำนวณเพื่อประกอบการวางแผน — ไม่บันทึกและไม่แก้ไขข้อมูลจริง' : `${data.length} ${view==='monthly'?'เดือน':'ปี'} · ${txs.length} รายการทั้งหมด`}
-        </div>
-        {/* The first two tabs look back; this one looks forward — same question,
-            other direction, so it belongs beside them rather than in its own page */}
-        <div className={`flex rounded-xl p-1 gap-1 ${dk?'bg-white/5':'bg-slate-100'}`}>
-          {[['monthly','📅 รายเดือน'],['yearly','📆 รายปี'],['plan','📈 ประมาณการ']].map(([v,l])=>(
-            <button key={v} onClick={()=>setView(v)} className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${view===v?(dk?'bg-gold-500/25 text-gold-200':'bg-gold-500 shadow-sm'):(dk?'text-slate-400 hover:text-white':'text-slate-500')}`}>{l}</button>
-          ))}
-        </div>
-      </div>
+        sub={view==='plan' ? 'คำนวณเพื่อประกอบการวางแผน — ไม่บันทึกและไม่แก้ไขข้อมูลจริง' : `${data.length} ${view==='monthly'?'เดือน':'ปี'} · ${txs.length} รายการทั้งหมด`}
+        right={
+          <div className={`flex rounded-xl p-1 gap-1 ${dk?'bg-white/5':'bg-slate-100'}`}>
+            {[['monthly','📅 รายเดือน'],['yearly','📆 รายปี'],['plan','📈 ประมาณการ']].map(([v,l])=>(
+              <button key={v} onClick={()=>setView(v)} className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${view===v?(dk?'bg-gold-500/25 text-gold-200':'bg-gold-500 shadow-sm'):(dk?'text-slate-400 hover:text-white':'text-slate-500')}`}>{l}</button>
+            ))}
+          </div>
+        }/>
 
       {view==='plan' ? <PlanTab dk={dk} card={card} theme={theme} byType={assetsByType}/> : (<>
 
@@ -5503,77 +5563,108 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
         ))}
       </div>
 
-      {/* Dividend summary. Compact: the card was giving two text-2xl figures a
-          row each and then a two-line block per asset, which came to roughly the
-          height of the P/L card for a total two orders of magnitude smaller. The
-          figures now share one line with the heading, and each asset is one row
-          with its bar in the middle instead of stacked underneath. */}
-      {/* A rule, not a card. Three lines of content in a full-width panel reads
-          as a box someone forgot to fill: the problem was never the height, it
-          was that a section reporting a few thousand baht was given the same
-          frame as the holdings table. The per-asset breakdown folds away with
-          the payments, so the closed state is one line. */}
-      {divTxs.length>0 && (
-        <div className="stat-rule pb-1">
-          {/* Heading and both totals on one line. They were three stacked rows for
-              two numbers, which gave a section reporting a few thousand baht the
-              vertical weight of the P/L card above it. Dividends are worth
-              reporting and are not worth that much of the page. */}
-          <div className="flex items-baseline justify-between gap-x-4 gap-y-1 flex-wrap">
-            <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>
-              💰 เงินปันผลรับ
-              <span className={`ml-2 text-xs font-normal ${dk?'text-slate-500':'text-slate-400'}`}>{divTxs.length} ครั้ง</span>
+      {/* One band in place of five thin ones. The page had a rule for dividends,
+          a row whose entire content was the word ANALYTICS, a card holding two
+          month-on-month figures and a card holding the runway — each a strip the
+          full width of the page carrying two or three numbers, stacked one under
+          the next with the right half of every strip empty. They are four short
+          facts and they belong in a column; the width they were wasting is a
+          chart, and the chart is the thing this page did not have. */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7">
+        <div className={`${card} p-5 lg:col-span-3 flex flex-col`}>
+          <div className="flex items-baseline gap-2.5 flex-wrap mb-3">
+            <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>คงเหลือ &amp; อัตราออม</h3>
+            <p className={`text-xs ${sub}`}>แท่ง = เงินที่เหลือ · เส้น = เก็บได้กี่ % ของรายรับ</p>
+          </div>
+          <div className="flex-1" style={{minHeight:'230px'}}>
+            <NetRateChart rows={data} theme={theme} hide={false}/>
+          </div>
+        </div>
+        <div className={`${card} p-5 lg:col-span-2 flex flex-col`}>
+          <div className="flex flex-col gap-2">
+            {[{label:'รายรับ MoM',val:curInc,mom:momInc,good:true},{label:'รายจ่าย MoM',val:curExp,mom:momExp,good:false}].map(({label,val,mom,good})=>(
+              <div key={label} className="flex items-baseline justify-between gap-2 min-w-0">
+                <span className={`text-[11px] flex-shrink-0 ${dk?'text-slate-500':'text-slate-400'}`}>{label}</span>
+                <span className={`text-sm font-bold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>{fmt(val)}</span>
+                <span className={`text-[11px] font-medium flex items-center gap-0.5 flex-shrink-0 ${mom===0?(dk?'text-slate-600':'text-slate-400'):(mom>0)===good?'text-emerald-400':'text-rose-400'}`}>
+                  {mom!==0&&<Ic n={mom>=0?'up':'down'} s={9}/>}{Math.abs(mom).toFixed(1)}%
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className={`mt-3.5 pt-3.5 border-t ${dk?'border-white/5':'border-slate-100'} flex items-center justify-between flex-wrap gap-3`}>
+            <div>
+              <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>💧 เงินสำรอง (Runway)</div>
+              <div className={sub}>ถ้าหยุดมีรายได้ เงินเก็บปัจจุบันอยู่ได้นานแค่ไหน</div>
             </div>
-            <div className="flex items-baseline gap-x-4">
-              <span className="text-sm font-semibold tabular-nums text-teal-400">+{fmt(divTotal)}</span>
-              <span className={`text-xs tabular-nums ${dk?'text-slate-400':'text-slate-500'}`}>ปีนี้ +{fmt(divYear)}</span>
+            <div className="text-right">
+              <div className={`text-xl font-bold ${runwayMonths>=12?'text-emerald-400':runwayMonths>=6?'text-amber-400':'text-rose-400'}`}>{yrMo(runwayMonths)}</div>
+              <div className={sub}>รายจ่ายเฉลี่ย {fmt(avgExpMo)}/เดือน</div>
             </div>
           </div>
-          {/* No bars. A bar earns its place when the figures are far apart on
-              screen or there are enough rows that the eye has to sweep them —
-              here there are two or three, the amounts sit at the end of each
-              line, and one holding paying ฿7,927 against another paying ฿60 is
-              not a comparison that needs drawing. The bars were saying what the
-              numbers beside them had already said. */}
-          {divOpen && divByAsset.length>0 && (
-            <div className="mt-2 space-y-0.5">
-              {divByAsset.slice(0,3).map((d,i)=>(
-                <div key={i} className="flex items-baseline justify-between gap-3 text-xs">
-                  <span className={`truncate ${dk?'text-slate-300':'text-slate-600'}`}>
-                    {d.name}<span className={`ml-1 ${dk?'text-slate-500':'text-slate-400'}`}>×{d.count}</span>
-                  </span>
-                  <span className="font-semibold text-teal-400 whitespace-nowrap tabular-nums">+{fmt(d.amount)}</span>
+          {divTxs.length>0 && (
+            <div className={`mt-3.5 pt-3.5 border-t ${dk?'border-white/5':'border-slate-100'}`}>
+              {/* Heading and both totals on one line. They were three stacked rows for
+                  two numbers, which gave a section reporting a few thousand baht the
+                  vertical weight of the P/L card above it. Dividends are worth
+                  reporting and are not worth that much of the page. */}
+              <div className="flex items-baseline justify-between gap-x-4 gap-y-1 flex-wrap">
+                <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>
+                  💰 เงินปันผลรับ
+                  <span className={`ml-2 text-xs font-normal ${dk?'text-slate-500':'text-slate-400'}`}>{divTxs.length} ครั้ง</span>
                 </div>
-              ))}
-            </div>
-          )}
-          {/* Every payment, one row each. Folded away by default — the totals are
-              what gets read month to month; the individual rows are for the once
-              -in-a-while check that a specific payment was recorded. */}
-          <button onClick={()=>setDivOpen(o=>!o)}
-            className={`w-full mt-2 pt-2 flex items-center justify-center gap-1.5 text-xs font-medium transition-colors ${dk?'border-white/10 text-slate-400 hover:text-teal-400':'border-slate-100 text-slate-500 hover:text-teal-600'}`}>
-            <span className={`inline-block transition-transform duration-200 ${divOpen?'rotate-90':''}`}>▶</span>
-            {divOpen?'ซ่อนรายการ':`ดูรายการทั้งหมด (${divTxs.length})`}
-          </button>
-          {divOpen && (
-            <div className={`mt-2 rounded-xl overflow-hidden ${dk?'bg-white/[0.03]':'bg-slate-50'}`}>
-              {[...divTxs].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id).map(t=>{
-                const a = assets.find(x=>x.id===t.targetAssetId);
-                return (
-                  <div key={t.id} className={`flex items-center gap-3 px-3 py-2 border-b last:border-0 ${dk?'border-white/5':'border-slate-100'}`}>
-                    <div className={`text-[11px] tabular-nums w-20 flex-shrink-0 ${dk?'text-slate-500':'text-slate-400'}`}>{t.date}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className={`text-xs truncate ${dk?'text-slate-200':'text-slate-700'}`}>{t.title||'ปันผล'}</div>
-                      {a && <div className={`text-[10px] truncate ${dk?'text-slate-500':'text-slate-400'}`}>💰 {a.name}</div>}
+                <div className="flex items-baseline gap-x-4">
+                  <span className="text-sm font-semibold tabular-nums text-teal-400">+{fmt(divTotal)}</span>
+                  <span className={`text-xs tabular-nums ${dk?'text-slate-400':'text-slate-500'}`}>ปีนี้ +{fmt(divYear)}</span>
+                </div>
+              </div>
+              {/* No bars. A bar earns its place when the figures are far apart on
+                  screen or there are enough rows that the eye has to sweep them —
+                  here there are two or three, the amounts sit at the end of each
+                  line, and one holding paying ฿7,927 against another paying ฿60 is
+                  not a comparison that needs drawing. The bars were saying what the
+                  numbers beside them had already said. */}
+              {divOpen && divByAsset.length>0 && (
+                <div className="mt-2 space-y-0.5">
+                  {divByAsset.slice(0,3).map((d,i)=>(
+                    <div key={i} className="flex items-baseline justify-between gap-3 text-xs">
+                      <span className={`truncate ${dk?'text-slate-300':'text-slate-600'}`}>
+                        {d.name}<span className={`ml-1 ${dk?'text-slate-500':'text-slate-400'}`}>×{d.count}</span>
+                      </span>
+                      <span className="font-semibold text-teal-400 whitespace-nowrap tabular-nums">+{fmt(d.amount)}</span>
                     </div>
-                    <div className="text-xs font-semibold text-teal-400 tabular-nums whitespace-nowrap">+{fmt(t.amount)}</div>
-                  </div>
-                );
-              })}
+                  ))}
+                </div>
+              )}
+              {/* Every payment, one row each. Folded away by default — the totals are
+                  what gets read month to month; the individual rows are for the once
+                  -in-a-while check that a specific payment was recorded. */}
+              <button onClick={()=>setDivOpen(o=>!o)}
+                className={`w-full mt-2 pt-2 flex items-center justify-center gap-1.5 text-xs font-medium transition-colors ${dk?'border-white/10 text-slate-400 hover:text-teal-400':'border-slate-100 text-slate-500 hover:text-teal-600'}`}>
+                <span className={`inline-block transition-transform duration-200 ${divOpen?'rotate-90':''}`}>▶</span>
+                {divOpen?'ซ่อนรายการ':`ดูรายการทั้งหมด (${divTxs.length})`}
+              </button>
+              {divOpen && (
+                <div className={`mt-2 rounded-xl overflow-hidden ${dk?'bg-white/[0.03]':'bg-slate-50'}`}>
+                  {[...divTxs].sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id).map(t=>{
+                    const a = assets.find(x=>x.id===t.targetAssetId);
+                    return (
+                      <div key={t.id} className={`flex items-center gap-3 px-3 py-2 border-b last:border-0 ${dk?'border-white/5':'border-slate-100'}`}>
+                        <div className={`text-[11px] tabular-nums w-20 flex-shrink-0 ${dk?'text-slate-500':'text-slate-400'}`}>{t.date}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-xs truncate ${dk?'text-slate-200':'text-slate-700'}`}>{t.title||'ปันผล'}</div>
+                          {a && <div className={`text-[10px] truncate ${dk?'text-slate-500':'text-slate-400'}`}>💰 {a.name}</div>}
+                        </div>
+                        <div className="text-xs font-semibold text-teal-400 tabular-nums whitespace-nowrap">+{fmt(t.amount)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* Table */}
       <div className={`${card} overflow-hidden`}>
@@ -5707,26 +5798,6 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
         </div>
       )}
 
-      {/* ── Analytics section ── */}
-      <div className={`px-1 pt-2 pb-1`}>
-        <div className={`text-xs font-semibold uppercase tracking-widest ${dk?'text-slate-400':'text-slate-500'}`}>วิเคราะห์</div>
-      </div>
-
-      {/* MoM, on one slim row rather than two full cards. A salary does not move
-          month to month, so รายรับ MoM read 0.0% every time it was looked at —
-          two large cards for one figure that changes and one that never does. */}
-      <div className={`${card} px-5 py-3 flex items-center gap-6 flex-wrap`}>
-        {[{label:'รายรับ MoM',val:curInc,mom:momInc,good:true},{label:'รายจ่าย MoM',val:curExp,mom:momExp,good:false}].map(({label,val,mom,good})=>(
-          <div key={label} className="flex items-baseline gap-2 min-w-0">
-            <span className={`text-[11px] flex-shrink-0 ${dk?'text-slate-500':'text-slate-400'}`}>{label}</span>
-            <span className={`text-sm font-bold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>{fmt(val)}</span>
-            <span className={`text-[11px] font-medium flex items-center gap-0.5 flex-shrink-0 ${mom===0?(dk?'text-slate-600':'text-slate-400'):(mom>0)===good?'text-emerald-400':'text-rose-400'}`}>
-              {mom!==0&&<Ic n={mom>=0?'up':'down'} s={9}/>}{Math.abs(mom).toFixed(1)}%
-            </span>
-          </div>
-        ))}
-      </div>
-
       {/* Top spending categories */}
       <div className={`${card} p-5`}>
         <h3 className={`text-sm font-semibold mb-4 ${dk?'text-gold-300':'text-gold-700'}`}>หมวดจ่ายทั้งหมด ({view==='yearly'?'ปีนี้':'เดือนนี้'})</h3>
@@ -5803,18 +5874,6 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
         </div>
         <div className="mt-4" style={{height:'210px'}}>
           <GoalChart labels={goalChart.labels} actual={goalChart.actual} forecast={goalChart.forecast} goal={goal} theme={theme}/>
-        </div>
-      </div>
-
-      {/* 💧 Runway */}
-      <div className={`${card} p-5 flex items-center justify-between flex-wrap gap-3`}>
-        <div>
-          <div className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>💧 เงินสำรอง (Runway)</div>
-          <div className={sub}>ถ้าหยุดมีรายได้ เงินเก็บปัจจุบันอยู่ได้นานแค่ไหน</div>
-        </div>
-        <div className="text-right">
-          <div className={`text-2xl font-bold ${runwayMonths>=12?'text-emerald-400':runwayMonths>=6?'text-amber-400':'text-rose-400'}`}>{yrMo(runwayMonths)}</div>
-          <div className={sub}>รายจ่ายเฉลี่ย {fmt(avgExpMo)}/เดือน</div>
         </div>
       </div>
 
