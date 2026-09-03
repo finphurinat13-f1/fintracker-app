@@ -12521,6 +12521,15 @@ const App = () => {
     {k:'debt',        l:'หนี้สิน',     i:'creditcard'},
     {k:'summary',     l:'สรุป',       i:'chart'},
   ];
+  // Seven names in one column is a list to read; three short ones under headings
+  // is a shape to recognise. The split is by the question each page answers —
+  // how am I doing, what did I spend, what do I hold — which is also the order
+  // somebody moves through them.
+  const NAV_GROUPS = [
+    { g:'ภาพรวม',    keys:['dashboard','summary'] },
+    { g:'รายวัน',     keys:['transactions','budget'] },
+    { g:'ทรัพย์สิน',  keys:['assets','wallet','debt'] },
+  ];
 
   const syncTip  = syncStatus==='saving'?'กำลังซิงค์...':syncStatus==='saved'?'ซิงค์แล้ว':syncStatus==='err'?'ซิงค์ล้มเหลว':'Cloud Sync';
 
@@ -12534,24 +12543,42 @@ const App = () => {
           their names at a readable size, the current page is a filled row
           rather than a slightly different grey, and the top bar is left holding
           only the controls that act on what is on screen. */}
-      <aside className={`hidden lg:flex flex-col fixed inset-y-0 left-0 w-56 z-40 border-r no-print ${dk?'bg-[#0e0e11] border-gold-500/12':'bg-white border-slate-200'}`}>
-        <div className="flex items-center gap-2.5 px-5 h-[61px] flex-shrink-0">
-          <LogoSvg size={30}/>
-          <span className={`font-bold text-base ${dk?'text-white':'text-slate-800'}`}>FinTracker</span>
+      <aside className={`hidden lg:flex flex-col fixed inset-y-0 left-0 w-60 z-40 border-r no-print ${dk?'bg-[#0e0e11] border-gold-500/12':'bg-white border-slate-200'}`}>
+        {/* Name and what the thing is, with a rule under them — the rail's own
+            header rather than a logo floating above a list. */}
+        <div className={`flex items-center gap-3 px-5 py-4 border-b flex-shrink-0 ${dk?'border-white/8':'border-slate-100'}`}>
+          <LogoSvg size={34}/>
+          <span className="min-w-0">
+            <span className={`block font-bold text-base leading-tight ${dk?'text-white':'text-slate-800'}`}>FinTracker</span>
+            <span className={`block text-[11px] leading-tight mt-0.5 ${dk?'text-slate-500':'text-slate-400'}`}>Personal Finance</span>
+          </span>
         </div>
-        <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
-          {nav.map(({k,l,i})=>(
-            <button key={k} onClick={()=>{setPage(k);localStorage.setItem('ft-page',k);}}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${page===k
-                ? (dk?'bg-gold-500/15 text-gold-200':'bg-gold-50 text-gold-700')
-                : (dk?'text-slate-400 hover:bg-white/5 hover:text-slate-200':'text-slate-500 hover:bg-slate-50 hover:text-slate-700')}`}>
-              <Ic n={i} s={16}/><span>{l}</span>
-            </button>))}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+          {NAV_GROUPS.map(({g,keys})=>(
+            <div key={g}>
+              <div className={`px-3 mb-1.5 text-[10px] font-semibold uppercase ${dk?'text-slate-600':'text-slate-400'}`}
+                style={{letterSpacing:'0.14em'}}>{g}</div>
+              <div className="space-y-0.5">
+                {keys.map(k=>{
+                  const it = nav.find(n=>n.k===k);
+                  if (!it) return null;
+                  return (
+                    <button key={k} onClick={()=>{setPage(k);localStorage.setItem('ft-page',k);}}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${page===k
+                        ? (dk?'bg-gold-500/15 text-gold-200':'bg-gold-50 text-gold-700')
+                        : (dk?'text-slate-400 hover:bg-white/5 hover:text-slate-200':'text-slate-500 hover:bg-slate-50 hover:text-slate-700')}`}>
+                      <Ic n={it.i} s={17}/><span>{it.l}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </aside>
 
       {/* ── DESKTOP: Top Navbar (lg+) ── */}
-      <nav className={`hidden lg:block sticky top-0 z-30 lg:pl-56 border-b no-print ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-[#faf9f7]/88 border-gold-100 backdrop-blur-xl'}`}>
+      <nav className={`hidden lg:block sticky top-0 z-30 lg:pl-60 border-b no-print ${dk?'bg-[#101012]/97 border-gold-500/18 backdrop-blur-2xl':'bg-[#faf9f7]/88 border-gold-100 backdrop-blur-xl'}`}>
         <div className="max-w-[1500px] mx-auto px-4 lg:px-7 py-3 flex items-center gap-3">
           <div className="flex-1"/>
           <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -12732,7 +12759,7 @@ const App = () => {
       )}
 
       {/* Content */}
-      <div className="lg:pl-56">
+      <div className="lg:pl-60">
       <main className="max-w-[1500px] mx-auto px-4 lg:px-7 py-6 lg:pb-6 pb-24">
         {showChecklist && (
           <div className={`mb-4 rounded-2xl border p-5 no-print ${dk?'card-solid':'glass-light shadow-sm'}`}>
