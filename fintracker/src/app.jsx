@@ -2887,128 +2887,6 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
   );
 };
 
-// ── ANALYTICS PAGE ─────────────────────────────────────────
-const Analytics = ({ txs, theme }) => {
-  const dk = theme==='dark';
-  const now = new Date();
-  const curM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const lastM = (()=>{ const d=new Date(now.getFullYear(),now.getMonth()-1,1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
-
-  const [localBudgets, setLocalBudgets] = useState(()=>JSON.parse(localStorage.getItem('ft-budgets')||'null')||BUDGET_DEFAULTS);
-  const [editCat, setEditCat] = useState(null);
-  const [editVal, setEditVal] = useState('');
-  const openEdit = (cat, budget) => { setEditCat(cat); setEditVal(String(budget)); };
-  const saveBudget = () => {
-    const val = parseInt(editVal, 10);
-    if (!editCat || isNaN(val) || val <= 0) return;
-    const updated = {...localBudgets, [editCat]: val};
-    setLocalBudgets(updated);
-    localStorage.setItem('ft-budgets', JSON.stringify(updated));
-    setEditCat(null);
-  };
-
-  const months6=useMemo(()=>{ const ms=[]; for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);ms.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);} return ms; },[]);
-  const lineData=useMemo(()=>({ labels:months6.map(m=>{ const[,mo]=m.split('-'); return MONTHS_TH[parseInt(mo)-1]; }), income:months6.map(m=>sumTxMonth(txs,'income',m)), expense:months6.map(m=>sumTxMonth(txs,'expense',m)) }),[txs,months6]);
-
-  const spendSegs=useMemo(()=>{ const byC={}; txs.filter(t=>t.type==='expense'&&t.date.startsWith(curM)).forEach(t=>{ byC[t.category]=(byC[t.category]||0)+t.amount; }); return Object.entries(byC).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([cat,val])=>({cat,val})); },[txs,curM]);
-  const totalExp=spendSegs.reduce((s,{val})=>s+val,0);
-  const budgetCards=useMemo(()=>Object.entries(localBudgets)
-    .map(([cat,budget])=>({ cat, budget, spent:txs.filter(t=>t.type==='expense'&&t.category===cat&&t.date.startsWith(curM)).reduce((s,t)=>s+t.amount,0) }))
-    .sort((a,b)=>(b.spent/b.budget)-(a.spent/a.budget))
-    .slice(0,4)
-  ,[txs,curM,localBudgets]);
-
-  const curInc=sumTxMonth(txs,'income',curM), lstInc=sumTxMonth(txs,'income',lastM);
-  const curExp=sumTxMonth(txs,'expense',curM), lstExp=sumTxMonth(txs,'expense',lastM);
-  const momInc=lstInc>0?((curInc-lstInc)/lstInc*100):0;
-  const momExp=lstExp>0?((curExp-lstExp)/lstExp*100):0;
-
-  const card=`rounded-2xl p-5 fade-up ${dk?'card-solid':'glass-light shadow-sm'}`;
-  const ttl=`text-sm font-semibold mb-4 ${dk?'text-gold-300':'text-gold-700'}`;
-  const sub=`text-xs ${dk?'text-slate-400':'text-slate-500'}`;
-
-  return (
-    <div className="space-y-7 fade-up">
-      <div className="grid grid-cols-2 gap-4">
-        {[{label:'รายรับ MoM',val:curInc,mom:momInc,good:true},{label:'รายจ่าย MoM',val:curExp,mom:momExp,good:false}].map(({label,val,mom,good})=>(
-          <div key={label} className="stat-rule">
-            <div className={`text-[10px] font-medium mb-2 uppercase stat-label ${dk?'text-slate-400':'text-slate-500'}`}>{label}</div>
-            <div className={`text-xl font-semibold mb-1 tabular-nums ${dk?'text-slate-100':'text-slate-800'}`}>{fmt(val)}</div>
-            <div className={`text-xs font-medium flex items-center gap-1 ${mom===0?(dk?'text-slate-500':'text-slate-400'):(mom>0)===good?'text-emerald-400':'text-rose-400'}`}>
-              <Ic n={mom>=0?'up':'down'} s={11}/>{Math.abs(mom).toFixed(1)}% vs เดือนที่แล้ว
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className={card}>
-        <h3 className={ttl}>แนวโน้ม 6 เดือน</h3>
-        <div className="h-64"><LineChart data={lineData} theme={theme}/></div>
-      </div>
-      {/* Stats13 — Spending Segmented Breakdown */}
-      <div className={card}>
-        <p className={`text-sm mb-4 ${dk?'text-slate-400':'text-slate-500'}`}>
-          รายจ่ายเดือนนี้{' '}
-          <span className={`font-semibold tabular-nums ${dk?'text-white':'text-slate-800'}`}>฿{totalExp.toLocaleString('th-TH')}</span>
-          {' '}บาท
-        </p>
-        {spendSegs.length===0
-          ? <p className={`text-sm ${sub}`}>ยังไม่มีรายจ่ายเดือนนี้</p>
-          : <>
-            <div className={`flex h-2.5 w-full overflow-hidden rounded-full mb-4 ${dk?'bg-white/10':'bg-slate-100'}`}>
-              {spendSegs.map(({cat,val})=>(
-                <div key={cat} className="h-full transition-all duration-700"
-                  style={{width:`${totalExp>0?val/totalExp*100:0}%`,background:catClr(cat)}}/>
-              ))}
-            </div>
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-              {spendSegs.map(({cat,val})=>(
-                <div key={cat} className="flex items-center gap-2">
-                  {/* The ring only in the light theme: two of the nine swatches land
-                      near 2.4 against a near-white card, which a hairline fixes without
-                      pushing the palette darker than the dark theme wants it. */}
-                  <span className={`w-3 h-3 rounded-sm flex-shrink-0 ${dk?'':'ring-1 ring-black/15'}`}
-                    style={{background:catClr(cat)}}/>
-                  <span className={`text-sm ${dk?'text-slate-400':'text-slate-500'}`}>{cat}</span>
-                  <span className={`text-sm tabular-nums ${dk?'text-slate-300':'text-slate-600'}`}>฿{val.toLocaleString('th-TH')}</span>
-                </div>
-              ))}
-            </div>
-          </>
-        }
-      </div>
-
-      {/* Stats11 — Budget Metric Cards */}
-      <div>
-        <h3 className={`${ttl} mb-3`}>งบประมาณเดือนนี้</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {budgetCards.map(({cat,spent,budget})=>(
-            <BudgetMetricCard key={cat} cat={cat} spent={spent} budget={budget} dk={dk} onEdit={openEdit}/>
-          ))}
-        </div>
-      </div>
-
-      {/* Budget Edit Modal */}
-      {editCat&&(
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={()=>setEditCat(null)}>
-          <div className={`w-full max-w-sm rounded-2xl p-6 shadow-2xl scale-in ${dk?'bg-[#141418] border border-gold-500/25':'bg-white'}`} onClick={e=>e.stopPropagation()}>
-            <h3 className={`text-base font-semibold mb-1 ${dk?'text-white':'text-slate-800'}`}>Update Budget</h3>
-            <p className={`text-sm mb-5 ${dk?'text-slate-400':'text-slate-500'}`}>งบประมาณสำหรับหมวด <span className="font-medium" style={{color:catClr(editCat)}}>{editCat}</span></p>
-            <div>
-              <label className={`text-sm font-medium mb-1.5 block ${dk?'text-slate-200':'text-slate-700'}`}>งบต่อเดือน (฿)</label>
-              <input type="number" value={editVal} onChange={e=>setEditVal(e.target.value)} onKeyDown={e=>e.key==='Enter'&&saveBudget()}
-                className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-gold-500/20 ${dk?'bg-white/5 border-white/10 text-white':'bg-white border-slate-200 text-slate-800'}`}/>
-            </div>
-            <div className="flex gap-2 mt-5">
-              <button onClick={()=>setEditCat(null)} className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-colors ${dk?'border-white/10 text-slate-300 hover:bg-white/5':'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>Cancel</button>
-              <button onClick={saveBudget} className="flex-1 py-2.5 rounded-xl btn-primary text-sm font-medium transition-colors">Update</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
 // ── SESSION MANAGEMENT ──────────────────────────────────────
 const getDeviceId = () => {
   let id = localStorage.getItem('ft-device-id');
@@ -4436,7 +4314,6 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
   const [priceLoading, setPriceLoad]  = useState(false);
   const [priceUpdAt,   setPriceUpdAt] = useState('');
   const [editingPrice, setEditingPrice]= useState(null);
-  const [walletOpen,   setWalletOpen]  = useState(true);
   const [expandedRelMap, setExpandedRelMap] = useState({});
   const [assetTab, setAssetTab] = useState('all');
   const toggleRel = (id) => setExpandedRelMap(p=>({...p,[id]:!p[id]}));
