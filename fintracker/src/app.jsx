@@ -11048,6 +11048,36 @@ const LoginPage = ({ theme }) => {
         </div>
         </div>
 
+        {/* The one thing the headline above does not say. It promises the app
+            holds everything you own; this says the numbers keep themselves
+            current, which is the difference between a tracker and a spreadsheet
+            and the reason anyone opens it twice.
+
+            Built to the headline's own shape — a plain sentence, then a gold one
+            naming how far it goes — because two sentences a screen apart in the
+            same voice read as one page rather than a page and a feature list. */}
+        <div className="text-center mt-14 sm:mt-16">
+          <h2 className={`text-2xl sm:text-3xl font-bold leading-[1.2] ${dk?'text-white':'text-slate-900'}`}
+            style={{textWrap:'balance', letterSpacing:'-0.02em'}}>
+            Prices update themselves.{' '}
+            <span className={dk?'text-gold-300':'text-gold-600'}>Down to the rate.</span>
+          </h2>
+          <p className={`mt-4 mx-auto max-w-lg text-sm leading-relaxed ${dk?'text-slate-400':'text-slate-500'}`}>
+            Name a ticker and it keeps up — stocks, crypto, and the one USD/THB
+            rate every holding is valued at.
+          </p>
+          {/* Two labels, not two cards. They name the moving parts the sentence
+              above covers in one breath, and a pair of bordered boxes here would
+              outweigh the headline they belong to. */}
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
+            {[['📡','Live tickers'],['💱','One FX rate, everywhere']].map(([i,l])=>(
+              <span key={l} className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-full border ${dk?'border-white/10 text-slate-400':'border-slate-200 text-slate-500'}`}>
+                <span className="text-xs leading-none">{i}</span>{l}
+              </span>
+            ))}
+          </div>
+        </div>
+
         {/* The picture goes under the form rather than beside it. Beside it, the
             two competed for the same glance and the page had no obvious place to
             start reading; under it, the order is: what this is, then do it, then
