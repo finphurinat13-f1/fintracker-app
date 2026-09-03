@@ -4650,9 +4650,10 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7 items-stretch">
         {wallets.length>0&&(
           <div className={`${card} card-hero p-5 lg:col-span-3 flex flex-col justify-center`}>
-            <div className="absolute pointer-events-none select-none" aria-hidden="true"
-              style={{right:'-14px', top:'50%', transform:'translateY(-50%)', opacity:dk?0.09:0.05}}>
-              <LogoSvg size={200}/>
+            <div aria-hidden="true" className="pointer-events-none select-none"
+              style={{position:'absolute', right:'-10px', top:'50%', transform:'translateY(-50%)',
+                      opacity:dk?0.09:0.05}}>
+              <LogoSvg size={150}/>
             </div>
             <div className="relative">
               <div className={`text-xs font-medium uppercase tracking-wide mb-1 ${dk?'text-slate-400':'text-slate-500'}`}>มูลค่าสินทรัพย์รวม</div>
