@@ -10830,9 +10830,10 @@ const LoginPage = ({ theme }) => {
           className={authModal ? 'fixed inset-0 z-[60] overflow-y-auto px-4 py-10 flex items-start justify-center'
                                : 'mx-auto w-full max-w-md mt-12'}>
           {authModal && (
-            <div className="fixed inset-0 bg-black/75 backdrop-blur-sm" onClick={()=>setAuthModal(false)}/>
+            <div className="fixed inset-0 bg-black/85 backdrop-blur-md" onClick={()=>setAuthModal(false)}/>
           )}
-          <div className={`relative w-full max-w-md rounded-2xl border p-7 ${dk?'border-white/10 bg-white/[0.03]':'border-slate-200 bg-white shadow-sm'}`}>
+          <div className={`relative w-full max-w-md rounded-2xl border p-7 ${dk?'border-white/10 bg-white/[0.03]':'border-slate-200 bg-white shadow-sm'}`}
+            style={authModal ? {background:dk?'#15151a':'#ffffff', boxShadow:'0 24px 80px rgba(0,0,0,0.6)'} : undefined}>
             {authModal && (
               <button onClick={()=>setAuthModal(false)} aria-label="ปิด"
                 className={`absolute top-3.5 right-3.5 p-1.5 rounded-lg transition-colors ${dk?'text-slate-500 hover:text-white hover:bg-white/10':'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>
