@@ -5146,7 +5146,7 @@ const GoalChart = ({ labels, actual, forecast, goal, theme }) => {
       ]},
       options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
         plugins:{ legend:{ labels:{ boxWidth:10, padding:14, font:{size:10} } }, tooltip:{ callbacks:{ label:ctx=>` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` } } },
-        scales:{ x:{ grid:{display:false}, ticks:{maxTicksLimit:8} }, y:{ ticks:{ callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':(v/1000).toFixed(0)+'K' } } } } });
+        scales:{ x:{ grid:{display:false}, ticks:{maxTicksLimit:13} }, y:{ ticks:{ callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':(v/1000).toFixed(0)+'K' } } } } });
     return ()=>ch.current?.destroy();
   },[labels,actual,forecast,goal,theme]);
   return <canvas ref={ref}/>;
@@ -5475,7 +5475,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
     const fLabels=[], fVals=[];
     if(isFinite(monthsToGoal) && monthsToGoal>0){
       let c=currentSaved; const start=new Date(); const steps=Math.min(Math.ceil(monthsToGoal),120);
-      for(let i=1;i<=steps;i++){ const d=new Date(start.getFullYear(),start.getMonth()+i,1); c+=avgNet; fLabels.push(MONTHS_TH[d.getMonth()]+' '+(d.getFullYear()+543).toString().slice(2)); fVals.push(Math.min(c,goal)); }
+      for(let i=1;i<=steps;i++){ const d=new Date(start.getFullYear(),start.getMonth()+i,1); c+=avgNet; fLabels.push(MONTHS_TH[d.getMonth()]+' '+d.getFullYear()); fVals.push(Math.min(c,goal)); }
     }
     return {
       labels:[...aLabels, ...fLabels],
@@ -5873,7 +5873,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
             <span className={sub}>เหลืออีก {fmt(remaining)}</span>
           </div>
           <div className="grid grid-cols-3 gap-3 mt-4">
-            {[['เก็บเฉลี่ย/เดือน', fmt(avgNet)],['อีกประมาณ', isFinite(monthsToGoal)?yrMo(monthsToGoal):'—'],['คาดถึงเป้า', etaDate?`${MONTHS_TH[etaDate.getMonth()]} ${(etaDate.getFullYear()+543).toString().slice(2)}`:'—']].map(([l,v])=>(
+            {[['เก็บเฉลี่ย/เดือน', fmt(avgNet)],['อีกประมาณ', isFinite(monthsToGoal)?yrMo(monthsToGoal):'—'],['คาดถึงเป้า', etaDate?`${MONTHS_TH[etaDate.getMonth()]} ${etaDate.getFullYear()}`:'—']].map(([l,v])=>(
               <div key={l} className={`rounded-xl p-3 ${dk?'bg-white/5':'bg-slate-50'}`}>
                 <div className={`text-[10px] uppercase tracking-wide ${dk?'text-slate-500':'text-slate-400'}`}>{l}</div>
                 <div className={`text-sm font-bold mt-0.5 ${dk?'text-white':'text-slate-800'}`}>{v}</div>
