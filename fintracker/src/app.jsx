@@ -12731,6 +12731,34 @@ const App = () => {
   // same glow in view the whole way down. iOS Safari ignores this and falls
   // back to the old scroll behaviour, which is merely what we had before.
   const bgStyle = { background: _th[dk?'dark':'light'], backgroundAttachment:'fixed', '--card-bg': _th.card || '#090908' };
+  // A number beside each name. The rail was 240px of links and nothing else,
+  // and the question it now answers is the one that used to need six page
+  // visits: where does everything stand.
+  //
+  // No two of these are the same figure. Net worth is the whole thing and it
+  // appears once; holdings and wallets are that same total sliced two ways —
+  // what is owned and where it sits — so they show their counts instead of
+  // printing one number three times.
+  const railFigures = useMemo(()=>{
+    const usd = parseFloat(localStorage.getItem('ft-usdrate')||'35') || 35;
+    const now = new Date();
+    const curM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const nw   = netWorthOf(assets, txs, wallets, usd) - debtRemaining(debts);
+    const inc  = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+    const exp  = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+    const mExp = txs.filter(t=>t.type==='expense'&&t.date.startsWith(curM)).reduce((s,t)=>s+t.amount,0);
+    const debt = debtRemaining(debts);
+    return {
+      dashboard:    fmtNW(nw),
+      summary:      inc>0 ? ((inc-exp)/inc*100).toFixed(0)+'%' : null,
+      transactions: mExp>0 ? fmtNW(mExp) : null,
+      budget:       null,
+      assets:       assets.length ? assets.length+' รายการ' : null,
+      wallet:       wallets.length ? wallets.length+' กระเป๋า' : null,
+      debt:         debt>0 ? fmtNW(debt) : null,
+    };
+  },[assets,txs,wallets,debts]);
+
 
   // ── Auth guard ──
   if (kickedOut) return (
@@ -12923,34 +12951,6 @@ const App = () => {
   // is a shape to recognise. The split is by the question each page answers —
   // how am I doing, what did I spend, what do I hold — which is also the order
   // somebody moves through them.
-  // A number beside each name. The rail was 240px of links and nothing else,
-  // and the question it now answers is the one that used to need six page
-  // visits: where does everything stand.
-  //
-  // No two of these are the same figure. Net worth is the whole thing and it
-  // appears once; holdings and wallets are that same total sliced two ways —
-  // what is owned and where it sits — so they show their counts instead of
-  // printing one number three times.
-  const railFigures = useMemo(()=>{
-    const usd = parseFloat(localStorage.getItem('ft-usdrate')||'35') || 35;
-    const now = new Date();
-    const curM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    const nw   = netWorthOf(assets, txs, wallets, usd) - debtRemaining(debts);
-    const inc  = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-    const exp  = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
-    const mExp = txs.filter(t=>t.type==='expense'&&t.date.startsWith(curM)).reduce((s,t)=>s+t.amount,0);
-    const debt = debtRemaining(debts);
-    return {
-      dashboard:    fmtNW(nw),
-      summary:      inc>0 ? ((inc-exp)/inc*100).toFixed(0)+'%' : null,
-      transactions: mExp>0 ? fmtNW(mExp) : null,
-      budget:       null,
-      assets:       assets.length ? assets.length+' รายการ' : null,
-      wallet:       wallets.length ? wallets.length+' กระเป๋า' : null,
-      debt:         debt>0 ? fmtNW(debt) : null,
-    };
-  },[assets,txs,wallets,debts]);
-
   const NAV_GROUPS = [
     { g:'ภาพรวม',    keys:['dashboard','summary'] },
     { g:'รายวัน',     keys:['transactions','budget'] },
