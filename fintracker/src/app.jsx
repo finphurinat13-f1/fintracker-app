@@ -2815,40 +2815,57 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
                     <span className={`text-2xl font-semibold tabular-nums ${dk?'text-slate-100':'text-slate-800'}`}
                       style={{letterSpacing:'-0.015em', lineHeight:1.1}}>{fmt(inc)}</span>
                   </div>
-                  <div className={`mt-3 flex h-9 rounded-lg overflow-hidden ${dk?'bg-white/5':'bg-slate-100'}`}>
-                    <div className="h-full transition-all duration-700 flex-shrink-0"
-                      style={{width:`${pctE}%`, background: dk?'rgba(201,114,106,0.55)':'rgba(201,114,106,0.40)'}}/>
-                    <div className="h-full flex-1 transition-all duration-700 flex items-center justify-end px-3"
+                  {/* The labels go on the blocks. Underneath, ออก and สุทธิ were
+                      two figures at opposite ends of a line with nothing joining
+                      them to the colours above — the reader had to guess which
+                      block was which, and there was no way to guess right.
+
+                      A block narrower than about a fifth cannot hold a label, so
+                      that side falls back to a line under the bar aligned to its
+                      own edge, which is still closer than a legend. */}
+                  <div className={`mt-3 flex h-14 rounded-lg overflow-hidden ${dk?'bg-white/5':'bg-slate-100'}`}>
+                    <div className="h-full transition-all duration-700 flex-shrink-0 flex flex-col justify-center px-3 overflow-hidden"
+                      style={{width:`${pctE}%`, background: dk?'rgba(201,114,106,0.55)':'rgba(201,114,106,0.40)'}}>
+                      {pctE >= 20 && (<>
+                        <span className={`text-[10px] uppercase whitespace-nowrap ${dk?'text-white/60':'text-slate-700/70'}`}
+                          style={{letterSpacing:'0.12em'}}>ออก</span>
+                        <span className={`text-sm font-semibold tabular-nums whitespace-nowrap ${dk?'text-white':'text-slate-800'}`}>
+                          {fmt(filteredExpense)}
+                        </span>
+                      </>)}
+                    </div>
+                    <div className="h-full flex-1 transition-all duration-700 flex flex-col justify-center items-end px-3 overflow-hidden"
                       style={{background: dk?'rgba(122,171,138,0.42)':'rgba(122,171,138,0.30)'}}>
-                      {inc > 0 && 100-pctE >= 12 && (
-                        <span className={`text-sm font-bold tabular-nums ${dk?'text-white':'text-slate-800'}`}>{rate.toFixed(0)}%</span>
-                      )}
+                      {100-pctE >= 20 && (<>
+                        <span className={`text-[10px] uppercase whitespace-nowrap ${dk?'text-white/60':'text-slate-700/70'}`}
+                          style={{letterSpacing:'0.12em'}}>{over ? 'ติดลบ' : 'สุทธิ'}{inc>0?` · ${rate.toFixed(0)}%`:''}</span>
+                        <span className={`text-sm font-semibold tabular-nums whitespace-nowrap ${dk?'text-white':'text-slate-800'}`}>
+                          {fmtSigned(filteredBalance)}
+                        </span>
+                      </>)}
                     </div>
                   </div>
-                  <div className="mt-2.5 flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
-                        style={{letterSpacing:'0.12em'}}>ออก</div>
-                      <div className={`text-lg font-semibold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>{fmt(filteredExpense)}</div>
-                    </div>
-                    <div className="min-w-0 text-right">
-                      <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
-                        style={{letterSpacing:'0.12em'}}>{over ? 'ติดลบ' : 'สุทธิ'}</div>
-                      <div className={`text-lg font-semibold tabular-nums ${over?'text-rose-400':(dk?'text-slate-200':'text-slate-700')}`}>
-                        {fmtSigned(filteredBalance)}
+                  {(pctE < 20 || 100-pctE < 20) && (
+                    <div className="mt-2 flex items-start justify-between gap-4">
+                      <div className={`text-xs tabular-nums ${pctE<20?(dk?'text-slate-300':'text-slate-600'):'invisible'}`}>
+                        ออก {fmt(filteredExpense)}
+                      </div>
+                      <div className={`text-xs tabular-nums text-right ${100-pctE<20?(over?'text-rose-400':(dk?'text-slate-300':'text-slate-600')):'invisible'}`}>
+                        {over ? 'ติดลบ' : 'สุทธิ'} {fmtSigned(filteredBalance)}
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               );
             })()}
-            {/* The parts of that bar, and the one figure it cannot carry: how
-                much of what came in arrived in dollars. */}
-            <div className="lg:col-span-2 grid grid-cols-2 gap-x-6 gap-y-4 content-center">
+            {/* What the bar cannot carry: how much of what came in was dividends
+                rather than plain income, and how much arrived in dollars. รายรับ
+                and รายจ่าย used to sit here as well — the bar prints both, so
+                this column was showing the same ฿831,690 a second time under a
+                different name. */}
+            <div className="lg:col-span-2 flex flex-col justify-center gap-4">
             {[
-              {l:'รายรับ',  v:'+'+fmt(filteredIncome),   c:'text-gold-400',  show:true},
               {l:'ปันผล',   v:'+'+fmt(filteredDividend), c:'text-teal-400',  show:filteredDividend>0},
-              {l:'รายจ่าย', v:'-'+fmt(filteredExpense),  c:'text-rose-400',  show:true},
               // Only when there is any. A currency line reading nothing on a list
               // that never had a foreign row in it is a column of zero pretending
               // to be information.
