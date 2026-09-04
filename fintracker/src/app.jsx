@@ -2630,6 +2630,18 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
     return s;
   },{units:0,baht:0}),[filtered]);
 
+  // Where the money went, from the rows already on screen. Four and a
+  // remainder: a list of every category that saw a baht is the transaction list
+  // over again, and the point of this one is which few the spend went on.
+  const topOut = useMemo(()=>{
+    const by = {};
+    filtered.filter(t=>t.type==='expense').forEach(t=>{ const c=t.category||'อื่นๆ'; by[c]=(by[c]||0)+Math.abs(t.amount); });
+    const all = Object.entries(by).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+    const sum = all.reduce((s,[,v])=>s+v,0);
+    return { rows: all.slice(0,4), restVal: all.slice(4).reduce((s,[,v])=>s+v,0),
+             restCount: Math.max(all.length-4,0), sum };
+  },[filtered]);
+
   const toggleSort=f=>{ if(sortBy===f) setSortDir(d=>d==='asc'?'desc':'asc'); else{setSortBy(f);setSortDir('desc');} };
   const toggleSel=id=>setSel(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id]);
   const selAll=()=>setSel(filtered.length===sel.length?[]:filtered.map(t=>t.id));
@@ -2863,21 +2875,70 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
                 and รายจ่าย used to sit here as well — the bar prints both, so
                 this column was showing the same ฿831,690 a second time under a
                 different name. */}
-            <div className="lg:col-span-2 flex flex-col justify-center gap-4">
-            {[
-              {l:'ปันผล',   v:'+'+fmt(filteredDividend), c:'text-teal-400',  show:filteredDividend>0},
-              // Only when there is any. A currency line reading nothing on a list
-              // that never had a foreign row in it is a column of zero pretending
-              // to be information.
-              {l:'รับเป็น USD', v:fxIn.units>0 ? '$'+fmtQty(fxIn.units) : null,
-                sub: fxIn.units>0 ? '≈ '+fmt(fxIn.baht) : null, c:'text-sky-400', show:fxIn.units>0},
-            ].filter(x=>x.show).map(({l,v,sub,c})=>(
-              <div key={l}>
-                <div className={`text-[11px] ${dk?'text-slate-400':'text-slate-500'}`}>{l}</div>
-                <div className={`text-base font-semibold tabular-nums mt-1 ${c}`}>{v}</div>
-                {sub && <div className={`text-[11px] tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{sub}</div>}
+            <div className="lg:col-span-2 flex flex-col justify-center gap-3">
+            {/* The question the bar leaves you with. Seeing ออก ฿831,690 the next
+                thing wanted is what it went on, and this page says that nowhere —
+                the list below is every row in date order, which answers a
+                different question entirely.
+
+                Built from the same filtered array the bar is, so it narrows with
+                the filters: pick one wallet and this is what that wallet was
+                spent on. */}
+            {topOut.rows.length>0 && (
+              <div>
+                <div className={`text-[11px] mb-2 ${dk?'text-slate-400':'text-slate-500'}`}>จ่ายไปกับอะไร</div>
+                <div className="space-y-1">
+                  {topOut.rows.map(([cat,val])=>(
+                    <div key={cat} className="flex items-center gap-2.5">
+                      <span className={`text-xs truncate flex-1 min-w-0 ${dk?'text-slate-300':'text-slate-600'}`}>{cat}</span>
+                      <span className={`h-1.5 rounded-full overflow-hidden w-14 flex-shrink-0 ${dk?'bg-white/6':'bg-slate-100'}`}>
+                        <span className="block h-full rounded-full"
+                          style={{width:`${topOut.sum>0?val/topOut.sum*100:0}%`, background:catClr(cat)}}/>
+                      </span>
+                      <span className={`text-xs tabular-nums w-9 text-right flex-shrink-0 ${dk?'text-slate-400':'text-slate-500'}`}>
+                        {topOut.sum>0?Math.round(val/topOut.sum*100):0}%
+                      </span>
+                      <span className={`text-xs font-semibold tabular-nums w-20 text-right flex-shrink-0 ${dk?'text-slate-200':'text-slate-700'}`}>
+                        {fmtNW(val)}
+                      </span>
+                    </div>
+                  ))}
+                  {topOut.restVal>0 && (
+                    <div className="flex items-center gap-2.5">
+                      <span className={`text-xs truncate flex-1 min-w-0 ${dk?'text-slate-500':'text-slate-400'}`}>อื่นๆ {topOut.restCount} หมวด</span>
+                      <span className={`h-1.5 rounded-full overflow-hidden w-14 flex-shrink-0 ${dk?'bg-white/6':'bg-slate-100'}`}>
+                        <span className="block h-full rounded-full"
+                          style={{width:`${topOut.sum>0?topOut.restVal/topOut.sum*100:0}%`, background:dk?'#585654':'#a5a29c'}}/>
+                      </span>
+                      <span className={`text-xs tabular-nums w-9 text-right flex-shrink-0 ${dk?'text-slate-500':'text-slate-400'}`}>
+                        {topOut.sum>0?Math.round(topOut.restVal/topOut.sum*100):0}%
+                      </span>
+                      <span className={`text-xs tabular-nums w-20 text-right flex-shrink-0 ${dk?'text-slate-400':'text-slate-500'}`}>
+                        {fmtNW(topOut.restVal)}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
-            ))}
+            )}
+            {/* Dividends and dollars sit under it as one line each — neither is
+                part of the spend above, and neither needs a heading of its own to
+                say what it is. */}
+            {(filteredDividend>0 || fxIn.units>0) && (
+              <div className={`flex flex-wrap items-baseline gap-x-5 gap-y-1 text-xs ${topOut.rows.length>0?`pt-3 border-t ${dk?'border-white/8':'border-slate-100'}`:''}`}>
+                {filteredDividend>0 && (
+                  <span className={dk?'text-slate-400':'text-slate-500'}>
+                    ปันผล <b className="text-teal-400 tabular-nums">+{fmt(filteredDividend)}</b>
+                  </span>
+                )}
+                {fxIn.units>0 && (
+                  <span className={dk?'text-slate-400':'text-slate-500'}>
+                    รับเป็น USD <b className="text-sky-400 tabular-nums">${fmtQty(fxIn.units)}</b>
+                    <span className="opacity-70"> ≈ {fmtNW(fxIn.baht)}</span>
+                  </span>
+                )}
+              </div>
+            )}
             </div>
           </div>
         </div>
