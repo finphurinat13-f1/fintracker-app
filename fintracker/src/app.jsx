@@ -1446,7 +1446,11 @@ const UnrealizedPL = ({ assets, txs, usdRate, theme, hide=false, nwHistory=[], c
 // more. Which is why both are here rather than one of them.
 const DailySpendTrend = ({ days, budget, dk }) => {
   const [hov, setHov] = useState(null);
-  const [mode, setMode] = useState('cum');
+  // Daily by default. Cumulative answers "how much so far", which the total
+  // beside the chart already prints; daily answers the one the chart is for —
+  // which days were heavy. The choice is remembered like the panel's own.
+  const [mode, setMode] = useState(()=>localStorage.getItem('ft-daymode')||'day');
+  useEffect(()=>{ try{ localStorage.setItem('ft-daymode', mode); }catch{} },[mode]);
   const isCum = mode==='cum';
   const [yr, mo] = days[0].date.split('-').map(Number);
   const monthLen = new Date(yr, mo, 0).getDate();
@@ -6627,7 +6631,13 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
   const daysLeft    = daysInMonth - daysPassed + 1;
   const dailyAllowance = daysLeft>0 ? (totBudget-totSpent)/daysLeft : 0;
 
-  const [dayExpOpen, setDayExpOpen] = useState(false);
+  // Opened once, open next time. It was useState(false), so every reload and
+  // every trip to another page shut it again — a panel that has to be reopened
+  // on arrival is one somebody stops opening.
+  const [dayExpOpen, setDayExpOpen] = useState(()=>localStorage.getItem('ft-dayexp')==='1');
+  useEffect(()=>{ try{
+    localStorage.setItem('ft-dayexp', dayExpOpen?'1':'0');
+  }catch{} },[dayExpOpen]);
   const [unsetOpen, setUnsetOpen] = useState(false);
   const todayStr    = today();
   const todayTxs    = useMemo(()=>txs.filter(t=>t.type==='expense'&&t.date===todayStr&&isDailyRelevant(t)),[txs,todayStr]);
