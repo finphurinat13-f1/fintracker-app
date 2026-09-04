@@ -2187,7 +2187,7 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
               <div className="flex items-baseline justify-between gap-3 flex-wrap">
                 <span className={`text-[10px] font-medium uppercase ${dk?'text-slate-400':'text-slate-500'}`}
                   style={{letterSpacing:'0.16em'}}>รายรับเดือนนี้</span>
-                <span className={`text-[1.65rem] font-semibold tabular-nums ${dk?'text-slate-100':'text-slate-800'}`}
+                <span className={`text-2xl font-semibold tabular-nums ${dk?'text-slate-100':'text-slate-800'}`}
                   style={{letterSpacing:'-0.015em', lineHeight:1.1}}>{mask(fmt(inc))}</span>
               </div>
 
@@ -2203,20 +2203,20 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
               <div className="mt-2.5 flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
-                    style={{letterSpacing:'0.12em'}}>จ่ายไป</div>
-                  <div className={`text-sm font-semibold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>
+                    style={{letterSpacing:'0.12em'}}>รายจ่าย</div>
+                  <div className={`text-lg font-semibold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>
                     {mask(fmt(exp))}
                   </div>
                 </div>
                 <div className="min-w-0 text-right">
                   <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
-                    style={{letterSpacing:'0.12em'}}>{over ? 'เกินรายรับ' : 'เก็บได้'}</div>
+                    style={{letterSpacing:'0.12em'}}>{over ? 'เกินรายรับ' : 'คงเหลือ'}</div>
                   <div className="flex items-baseline gap-2 justify-end">
-                    <span className={`text-sm font-semibold tabular-nums ${over
+                    <span className={`text-lg font-semibold tabular-nums ${over
                       ? 'text-rose-400' : (dk?'text-slate-200':'text-slate-700')}`}>
                       {mask(fmt(Math.abs(net)))}
                     </span>
-                    <span className="text-sm font-bold tabular-nums" style={{color:tone}}>
+                    <span className="text-lg font-bold tabular-nums" style={{color:tone}}>
                       {inc > 0 ? `${rate.toFixed(0)}%` : '—'}
                     </span>
                   </div>
@@ -2232,8 +2232,8 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
               </div>
 
               <div className={`mt-3 pt-3 border-t text-xs ${dk?'border-white/8 text-slate-400':'border-slate-100 text-slate-500'}`}>
-                ตลอด · รับ {mask(fmt(income))} · จ่าย {mask(fmt(expense))} ·
-                {' '}เก็บ {mask(fmt(balance))} ({savRate.toFixed(1)}%)
+                Total · รายรับ {mask(fmt(income))} · รายจ่าย {mask(fmt(expense))} ·
+                {' '}คงเหลือ {mask(fmt(balance))} ({savRate.toFixed(1)}%)
               </div>
             </div>
           );
