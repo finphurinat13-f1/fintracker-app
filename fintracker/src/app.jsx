@@ -9525,7 +9525,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
           {/* The five buckets again, named and priced. The bar beside them is
               the same division drawn; neither is much use without the other,
               which is why they sit in one band rather than stacked. */}
-          <div className="lg:col-span-2 flex flex-wrap items-center content-center gap-2">
+          <div className="lg:col-span-2 flex flex-col justify-center">
               {[
                 // Same colours ASSET_TYPES uses for the same four words. They were an
                 // olive, a raspberry, a cyan and a brown — four hues invented here and
@@ -9552,12 +9552,11 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                 const grand = totalBalance;
                 const pct = grand>0 ? (c.val/grand*100) : 0;
                 return (
-                  <div key={c.key} className={`flex items-center gap-2 px-3 py-2 rounded-xl ${dk?'bg-white/5 border border-white/10':'bg-slate-50 border border-slate-200'}`}>
-                    <span className="text-base leading-none">{c.icon}</span>
-                    <div className="min-w-0">
-                      <div className={`text-xs font-bold ${dk?'text-slate-100':'text-slate-700'}`}>{fmt(c.val)}</div>
-                      <div className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{c.label} · {pct.toFixed(1)}%</div>
-                    </div>
+                  <div key={c.key} className={`flex items-center gap-2.5 py-1.5 border-b last:border-0 ${dk?'border-white/5':'border-slate-100'}`}>
+                    <span className="text-sm leading-none flex-shrink-0">{c.icon}</span>
+                    <span className={`text-xs flex-1 min-w-0 truncate ${dk?'text-slate-400':'text-slate-500'}`}>{c.label}</span>
+                    <span className={`text-xs font-semibold tabular-nums flex-shrink-0 ${dk?'text-slate-100':'text-slate-700'}`}>{fmt(c.val)}</span>
+                    <span className={`text-xs tabular-nums w-12 text-right flex-shrink-0 ${dk?'text-slate-500':'text-slate-400'}`}>{pct.toFixed(1)}%</span>
                   </div>
                 );
               })}
