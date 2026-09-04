@@ -4916,23 +4916,109 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
       </div>
 
       {/* Summary Cards */}
-      {/* Four across, full width. In a two-fifths column they were a 2x2 block
-          the height of the hero beside it, and whichever of the two ran short
-          left a rectangle of empty page — first on the right, then on the left
-          when a card was added to even it up. Stacked bands cannot do that. */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
-        {[
-          {label:'มูลค่าพอร์ต (฿)', val:fmt(totVal),    cls:dk?'text-2xl font-bold tracking-wide tg-white':'text-2xl font-bold tracking-wide text-slate-800',                                        note:'ราคาปัจจุบันรวม',    extra:wallets.length>0?'':(dk?'card-hero':'')},
-          {label:'ต้นทุนรวม (฿)',   val:fmt(totCost),   cls:`text-2xl font-bold tracking-wide ${dk?'text-slate-300':'text-slate-600'}`,                                                  note:'เงินที่ลงทุนไป',     extra:''},
-          {label:'กำไร/ขาดทุน (฿)',val:(totPL>=0?'+':'')+fmt(totPL), cls:dk?`text-2xl font-bold tracking-wide ${totPL>=0?'tg-emerald':'tg-red'}`:`text-2xl font-bold tracking-wide ${totPL>=0?'text-emerald-500':'text-rose-500'}`, note:totPL>=0?'✓ กำไร':'⚠ ขาดทุน'},
-          {label:'% เปลี่ยนแปลง', val:`${totPLPct>=0?'+':''}${totPLPct.toFixed(2)}%`, cls:dk?`text-2xl font-bold tracking-wide ${totPLPct>=0?'tg-emerald':'tg-red'}`:`text-2xl font-bold tracking-wide ${totPLPct>=0?'text-emerald-500':'text-rose-500'}`, note:`จากต้นทุน ${fmt(totCost)}`},
-        ].map(({label,val,cls,note,extra})=>(
-          <div key={label} className={`${card} ${extra} p-5`}>
-            <div className={`text-xs font-medium mb-2 uppercase tracking-wide ${dk?'text-slate-400':'text-slate-500'}`}>{label}</div>
-            <div className={cls}>{val}</div>
-            <div className={`mt-1 ${sub}`}>{note}</div>
-          </div>
-        ))}
+      {/* The last four figures on the app that were one sum in four boxes:
+          มูลค่า minus ต้นทุน is กำไร/ขาดทุน, and the percentage is that over the
+          cost. Every other page draws this as a bar; this one was still asking
+          the reader to do the subtraction, in four full cards each carrying a
+          single number. */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7">
+        {(()=>{
+          // Whichever is larger sets the width, and the smaller one fills it, so
+          // the remainder is the gain on a good day and the loss on a bad one
+          // without the bar ever needing a negative width. The left label says
+          // which of the two is doing the filling, because on a loss it is the
+          // value and on a gain it is the cost.
+          const gain = totPL >= 0;
+          const whole = Math.max(totVal, totCost) || 1;
+          const base  = Math.min(totVal, totCost);
+          const pct   = Math.min(base / whole * 100, 100);
+          return (
+            <div className="lg:col-span-3">
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <span className={`text-[10px] font-medium uppercase ${dk?'text-slate-400':'text-slate-500'}`}
+                  style={{letterSpacing:'0.16em'}}>มูลค่าพอร์ต</span>
+                <span className={`text-2xl font-semibold tabular-nums ${dk?'tg-white':'text-slate-800'}`}
+                  style={{letterSpacing:'-0.015em', lineHeight:1.1}}>{fmt(totVal)}</span>
+              </div>
+
+              <div className={`mt-3 flex h-14 rounded-lg overflow-hidden ${dk?'bg-white/5':'bg-slate-100'}`}>
+                <div className="h-full transition-all duration-700 flex-shrink-0 flex flex-col justify-center px-3 overflow-hidden"
+                  style={{width:`${pct}%`, background: dk?'rgba(217,175,43,0.32)':'rgba(217,175,43,0.24)'}}>
+                  {pct >= 20 && (<>
+                    <span className={`text-[10px] uppercase whitespace-nowrap ${dk?'text-white/60':'text-slate-700/70'}`}
+                      style={{letterSpacing:'0.12em'}}>{gain ? 'ต้นทุนรวม' : 'มูลค่าตอนนี้'}</span>
+                    <span className={`text-sm font-semibold tabular-nums whitespace-nowrap ${dk?'text-white':'text-slate-800'}`}>
+                      {fmt(base)}
+                    </span>
+                  </>)}
+                </div>
+                <div className="h-full flex-1 transition-all duration-700 flex flex-col justify-center items-end px-3 overflow-hidden"
+                  style={{background: gain
+                    ? (dk?'rgba(122,171,138,0.42)':'rgba(122,171,138,0.30)')
+                    : (dk?'rgba(201,114,106,0.50)':'rgba(201,114,106,0.36)')}}>
+                  {100-pct >= 14 && (<>
+                    <span className={`text-[10px] uppercase whitespace-nowrap ${dk?'text-white/60':'text-slate-700/70'}`}
+                      style={{letterSpacing:'0.12em'}}>{gain ? 'กำไร' : 'ขาดทุน'} · {totPLPct>=0?'+':''}{totPLPct.toFixed(2)}%</span>
+                    <span className={`text-sm font-semibold tabular-nums whitespace-nowrap ${dk?'text-white':'text-slate-800'}`}>
+                      {totPL>=0?'+':''}{fmtSigned(totPL)}
+                    </span>
+                  </>)}
+                </div>
+              </div>
+
+              {100-pct < 14 && (
+                <div className={`mt-2 text-xs tabular-nums text-right ${gain?'text-emerald-400':'text-rose-400'}`}>
+                  {gain ? 'กำไร' : 'ขาดทุน'} {totPL>=0?'+':''}{fmtSigned(totPL)} · {totPLPct>=0?'+':''}{totPLPct.toFixed(2)}%
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Which kinds of holding are carrying it. The headline says the portfolio
+            is up; it does not say that the gold is up thirty percent while the
+            crypto is down, and that is the part worth acting on. Nothing else on
+            this page groups the gain by type. */}
+        <div className="lg:col-span-2 flex flex-col justify-center">
+          {(()=>{
+            const by = {};
+            enriched.forEach(a=>{
+              const t = a.type || 'other';
+              if (!by[t]) by[t] = { pl:0, cost:0 };
+              by[t].pl += a.plTHB; by[t].cost += a.costTHB;
+            });
+            const rows = Object.entries(by)
+              .filter(([,v])=>Math.abs(v.pl) > 0.005 || v.cost > 0)
+              .sort((a,b)=>b[1].pl-a[1].pl);
+            if (!rows.length) return null;
+            return (<>
+              <div className={`text-[10px] font-medium uppercase mb-2.5 ${dk?'text-slate-400':'text-slate-500'}`}
+                style={{letterSpacing:'0.16em'}}>กำไร/ขาดทุน ตามประเภท</div>
+              <div className="space-y-1">
+                {rows.map(([t,v])=>{
+                  const ti = ASSET_TYPES.find(x=>x.v===t) || ASSET_TYPES[4];
+                  const pc = v.cost > 0 ? v.pl / v.cost * 100 : 0;
+                  return (
+                    <div key={t} className="flex items-baseline justify-between gap-3">
+                      <span className="flex items-baseline gap-2 min-w-0">
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 self-center" style={{background:ti.c}}/>
+                        <span className={`text-xs truncate ${dk?'text-slate-300':'text-slate-600'}`}>{ti.l}</span>
+                      </span>
+                      <span className="flex items-baseline gap-2.5 flex-shrink-0">
+                        <span className={`text-xs font-semibold tabular-nums ${v.pl>=0?'text-emerald-400':'text-rose-400'}`}>
+                          {v.pl>=0?'+':''}{fmtSigned(v.pl)}
+                        </span>
+                        <span className={`text-[11px] tabular-nums w-14 text-right ${v.pl>=0?'text-emerald-400/70':'text-rose-400/70'}`}>
+                          {v.cost>0 ? `${pc>=0?'+':''}${pc.toFixed(1)}%` : '—'}
+                        </span>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>);
+          })()}
+        </div>
       </div>
 
       {/* สัดส่วนตามประเภท used to sit here, with a donut and a per-type table of
