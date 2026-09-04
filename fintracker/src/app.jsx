@@ -4893,8 +4893,21 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
               70vh rather than a pixel figure: the table should use most of
               whatever screen it is on, with the headings in view throughout. */}
           <table className="w-full">
-            <thead><tr className={`border-b ${dk?'border-white/5':'border-slate-100'}`}>
-              {[{h:'สินทรัพย์',f:'name'},{h:'จำนวน',f:'qty'},{h:'ทุน/หน่วย',f:'avgCost',tip:'ราคาต้นทุนเฉลี่ยต่อหน่วยที่ซื้อมา'},{h:'ราคาตลาด',f:'currentPrice',tip:'ราคาล่าสุดต่อหน่วย'},{h:'วันที่ซื้อ',f:'purchaseDate'},{h:'ต้นทุนรวม',f:'costTHB',tip:'จำนวน × ต้นทุนเฉลี่ย = เงินที่ลงทุนไปทั้งหมด'},{h:'กำไร/ขาดทุน',f:'plTHB',tip:'มูลค่าปัจจุบัน − ต้นทุนรวม (ยังไม่ขาย = กำไรบนกระดาษ)'},{h:'ต่อปี',f:'cagr',tip:'ผลตอบแทนต่อปีแบบทบต้น — หารเวลาที่ถือออก จึงเทียบข้ามรายการที่ซื้อคนละเวลาได้ · ถือไม่ถึง 3 เดือนจะไม่คำนวณ'},{h:'มูลค่าปัจจุบัน',f:'valTHB',tip:'ต้นทุนรวม + กำไร/ขาดทุน = มูลค่าตอนนี้'}].map(({h,f,tip})=>(
+            <thead>
+              <tr className={`border-b ${dk?'border-white/5':'border-slate-100'}`}>
+                {[
+                  {g:'สินทรัพย์', n:3},
+                  {g:'ราคา / หน่วย', n:2},
+                  {g:'ยอดรวม', n:4},
+                  {g:'', n:1},
+                ].map(({g,n},i)=>(
+                  <th key={i} colSpan={n}
+                    className={`sticky top-0 z-10 px-4 pt-3 pb-1 text-left text-[10px] font-semibold uppercase ${i>0?(dk?'border-l border-white/5':'border-l border-slate-100'):''} ${dk?'text-slate-600':'text-slate-400'}`}
+                    style={{background: dk ? '#14140f' : '#e8e6e1', letterSpacing:'0.16em'}}>{g}</th>
+                ))}
+              </tr>
+              <tr className={`border-b ${dk?'border-white/5':'border-slate-100'}`}>
+              {[{h:'สินทรัพย์',f:'name'},{h:'จำนวน',f:'qty'},{h:'วันที่ซื้อ',f:'purchaseDate'},{h:'ทุน/หน่วย',f:'avgCost',tip:'ราคาต้นทุนเฉลี่ยต่อหน่วยที่ซื้อมา'},{h:'ราคาตลาด',f:'currentPrice',tip:'ราคาล่าสุดต่อหน่วย'},{h:'ต้นทุนรวม',f:'costTHB',tip:'จำนวน × ต้นทุนเฉลี่ย = เงินที่ลงทุนไปทั้งหมด'},{h:'กำไร/ขาดทุน',f:'plTHB',tip:'มูลค่าปัจจุบัน − ต้นทุนรวม (ยังไม่ขาย = กำไรบนกระดาษ)'},{h:'ต่อปี',f:'cagr',tip:'ผลตอบแทนต่อปีแบบทบต้น — หารเวลาที่ถือออก จึงเทียบข้ามรายการที่ซื้อคนละเวลาได้ · ถือไม่ถึง 3 เดือนจะไม่คำนวณ'},{h:'มูลค่าปัจจุบัน',f:'valTHB',tip:'ต้นทุนรวม + กำไร/ขาดทุน = มูลค่าตอนนี้'}].map(({h,f,tip})=>(
                 // Pinned. Reading the twentieth of thirty-four holdings meant
                 // having scrolled the column names off the top, so ทุน/หน่วย and
                 // มูลค่า became two unlabelled columns of baht that look alike.
@@ -4903,7 +4916,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                 // the solid colour rather than the tint it carried before.
                 <th key={h} title={tip||undefined} onClick={()=>toggleSort(f)}
                   className={`sticky top-0 z-10 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer select-none whitespace-nowrap ${dk?'text-slate-200 hover:text-white':'text-slate-700 hover:text-slate-900'}`}
-                  style={{background: dk ? '#14140f' : '#e8e6e1'}}>{h}{tip&&<span className="ml-0.5 opacity-40 normal-case">ⓘ</span>}<SI f={f}/></th>
+                  style={{background: dk ? '#14140f' : '#e8e6e1', top:'26px'}}>{h}{tip&&<span className="ml-0.5 opacity-40 normal-case">ⓘ</span>}<SI f={f}/></th>
               ))}
               {/* The actions heading is not in the sortable list, so it missed
                   the sticky treatment the others got and stayed on the old
@@ -4911,7 +4924,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                   neighbours held, and a translucent patch in a bar that is
                   otherwise opaque. */}
               <th className={`sticky top-0 z-10 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${dk?'text-slate-200':'text-slate-700'}`}
-                style={{background: dk ? '#14140f' : '#e8e6e1'}}>จัดการ</th>
+                style={{background: dk ? '#14140f' : '#e8e6e1', top:'26px'}}>จัดการ</th>
             </tr></thead>
             <tbody>
               {enriched.length===0&&<tr><td colSpan={10} className="py-14 text-center">
@@ -4960,12 +4973,16 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                       </div>
                     </td>
                     <td className={`px-4 py-4 text-sm ${dk?'text-slate-300':'text-slate-600'}`}>{fmtQty(a.qty)}</td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className={`text-sm ${dk?'text-slate-400':'text-slate-500'}`}>{a.purchaseDate||'—'}</div>
+                      {a.holdDays!==null&&<div className={`text-[11px] tabular-nums mt-0.5 ${dk?'text-slate-500':'text-slate-400'}`}>{fmtHold(a.holdDays)}</div>}
+                    </td>
                     {/* Both money columns are per unit, which for a collection is
                         an average across things that are not alike: nine amulets
                         of ฿1.5M showed ฿166,666.67 twice, a figure no amulet has.
                         Collections print the totals instead. Gated on having
                         pieces, so every other holding keeps its unit price. */}
-                    <td className={`px-4 py-4 text-sm ${dk?'text-slate-300':'text-slate-600'}`}
+                    <td className={`ft-group-edge px-4 py-4 text-sm ${dk?'text-slate-300':'text-slate-600'}`}
                       title={(a.items||[]).length?'ทุนรวมทั้งหมด':''}>
                       {a.type==='cash'?'—':fmtA((a.items||[]).length?a.avgCost*a.qty:a.avgCost, a.currency)}
                     </td>
@@ -4995,11 +5012,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                         return <div className={`text-[10px] mt-0.5 font-normal ${stale?(dk?'text-amber-500/80':'text-amber-600/80'):(dk?'text-slate-500':'text-slate-400')}`}>{priceAge(a.priceAt)}</div>;
                       })()}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className={`text-sm ${dk?'text-slate-400':'text-slate-500'}`}>{a.purchaseDate||'—'}</div>
-                      {a.holdDays!==null&&<div className={`text-[11px] tabular-nums mt-0.5 ${dk?'text-slate-500':'text-slate-400'}`}>{fmtHold(a.holdDays)}</div>}
-                    </td>
-                    <td className="px-4 py-4">
+                    <td className="ft-group-edge px-4 py-4">
                       {/* Green only ever meant "not negative" on the cash line. A cash
                           balance being positive is the ordinary state of a cash balance,
                           not a gain, and colouring every one of them put the loudest

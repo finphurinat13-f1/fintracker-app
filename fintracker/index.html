@@ -207,6 +207,10 @@ const db   = firebase.firestore();
 
      Used INSTEAD of the card class, never alongside it — card-solid owns its
      own ::before, and two of them would fight. */
+  /* Column-group boundary inside the holdings table. A hairline rather than
+     a heavier rule: it separates three groups, it is not a border round each. */
+  .ft-group-edge { border-left: 1px solid rgba(255,255,255,0.05); }
+  :root:not([data-theme="dark"]) .ft-group-edge { border-left-color: rgba(15,23,42,0.06); }
   .stat-rule {
     position: relative;
     background: none !important;
