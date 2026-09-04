@@ -7139,7 +7139,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 const unusedBudget = unused.reduce((s,[,b])=>s+(Number(b)||0),0);
                 return (<>
                   {used.length>0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                       {used.map(renderCard)}
                     </div>
                   )}
@@ -7151,7 +7151,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                         ยังไม่ได้ใช้ {unused.length} หมวด · {fmtNW(unusedBudget)}
                       </button>
                       {openUnused && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mt-3">
                           {unused.map(renderCard)}
                         </div>
                       )}
