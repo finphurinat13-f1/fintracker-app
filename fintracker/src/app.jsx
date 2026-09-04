@@ -6484,6 +6484,10 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
 
   const [editing, setEditing] = useState(null);
   const [expandedCat, setExpandedCat] = useState(null);
+  // Per group, because the answer is per group: the fixed costs being all
+  // spent says something different from the investment bucket being untouched.
+  const [unusedOpen, setUnusedOpen] = useState(()=>{ try{ return JSON.parse(localStorage.getItem('ft-budget-unused')||'[]'); }catch{ return []; } });
+  useEffect(()=>{ try{ localStorage.setItem('ft-budget-unused', JSON.stringify(unusedOpen)); }catch{} },[unusedOpen]);
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState('');
   const [newAmt, setNewAmt] = useState('');
@@ -6700,65 +6704,79 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
               + เพิ่มหมวด
             </button>
           : <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${dk?'bg-white/8 text-slate-400':'bg-slate-100 text-slate-500'}`}>ดูย้อนหลัง · แก้ไขไม่ได้</span>}</>}/>
-      <div className="grid grid-cols-3 gap-x-8 gap-y-6">
-        {[{l:'Budget รวม',v:fmt(totBudget),c:dk?'tg-gold':'text-gold-600',
-           // The split used to hang under this figure. Three lines of it made
-           // this column taller than the two beside it, and a row of summary
-           // figures that does not sit on one baseline reads as broken rather
-           // than as detailed. The allocation bar above the sections says the
-           // same thing with room for a bar, so the note goes.
-           note: null},
-          // money moved into investments is excluded on purpose — it is still yours.
-          // Say so, or this total silently disagrees with the one on Transactions
-          // and there is no way to tell which is wrong.
-          {l:'ใช้ไปแล้ว',v:fmt(totSpent),c:totSpent>totBudget?'text-rose-400':'text-emerald-400',
-           note: nonSpendTotal>0 ? `ไม่รวมลงทุน ${fmt(nonSpendTotal)}` : null},
-          // Was clamped at zero, which turned the one figure that answers "how far
-          // past am I" into a flat ฿0.00 the moment the answer stopped being
-          // comfortable. Budget 145,000 against 149,336 spent read as nothing
-          // left rather than as 4,336 over, and the amount was nowhere on the
-          // row. fmtSigned rather than fmt because fmt takes an absolute value,
-          // so the minus has to be put back deliberately.
-          {l:'คงเหลือ',v:fmtSigned(totBudget-totSpent),
-           c:totBudget-totSpent<0?'text-rose-400':'text-gold-400'}].map(({l,v,c,note})=>(
-          <div key={l} className="stat-rule">
-            <div className={`text-[10px] font-medium mb-2 uppercase ${dk?'text-slate-400':'text-slate-500'}`} style={{letterSpacing:'0.16em'}}>{l}</div>
-            <div className={`text-lg sm:text-xl font-semibold leading-tight break-words tabular-nums ${c}`}>{v}</div>
-            {note&&<div className={`text-[10px] mt-1 whitespace-pre-line leading-relaxed ${dk?'text-slate-500':'text-slate-400'}`}>{note}</div>}
-          </div>))}
-      </div>
-      {/* What survived of the "ภาพรวมเดือนนี้" card. The card held five things
-          and three of them were the row above it read back: ฿spent / ฿budget
-          are literally the ใช้ไปแล้ว and Budget รวม figures, and the heading
-          named what the reader was already looking at. Only the bar said
-          something the numbers could not — the shape of the month at a glance —
-          so only the bar stayed, tucked under the row it summarises. */}
-      <div className="flex items-center gap-3" style={{marginTop:'0.5rem'}}>
-        <div className={`flex-1 h-1.5 rounded-full ${dk?'bg-white/5':'bg-slate-100'} overflow-hidden`}>
-          <div className="h-full rounded-full transition-all duration-700" style={{width:`${Math.min(totPct,100)}%`,background:totPct>=100?'#d4574a':totPct>=80?'#d9af2b':'#7aab8a'}}/>
-        </div>
-        <span className="text-[10px] font-semibold tabular-nums" style={{color:totPct>=100?'#d4574a':totPct>=80?'#d9af2b':'#7aab8a'}}>{totPct.toFixed(1)}%</span>
-      </div>
-      {/* Insight row — today-relative, only meaningful for the current month */}
-      {isCurM&&(
-      <div className="grid grid-cols-3 gap-x-8 gap-y-6">
-        <div className="stat-rule">
-          <div className={`text-[10px] font-medium mb-2 uppercase stat-label ${dk?'text-slate-400':'text-slate-500'}`}>ใช้ได้อีก/วัน</div>
-          <div className={`text-lg sm:text-xl font-semibold leading-tight break-words tabular-nums ${dailyAllowance>=0?'text-emerald-400':'text-rose-400'}`}>{fmt(Math.max(dailyAllowance,0))}</div>
-          <div className={`text-xs mt-1 ${sub}`}>เหลืออีก {daysLeft} วัน (จาก {daysInMonth} วัน)</div>
-        </div>
-        <div className="stat-rule">
-          <div className={`text-[10px] font-medium mb-2 uppercase stat-label ${dk?'text-slate-400':'text-slate-500'}`}>📦 รวมรายจ่ายไม่ประจำ</div>
-          <div className={`text-lg sm:text-xl font-semibold leading-tight break-words tabular-nums ${dk?'text-white':'text-slate-800'}`}>{fmt(irregularSpentTotal)}</div>
-          <div className={`text-xs mt-1 ${sub}`}>เดือนนี้</div>
-        </div>
-        <div className="stat-rule">
-          <div className={`text-[10px] font-medium mb-2 uppercase stat-label ${dk?'text-slate-400':'text-slate-500'}`}>ใช้จ่ายวันนี้</div>
-          <div className={`text-lg sm:text-xl font-semibold leading-tight break-words tabular-nums text-rose-400`}>{fmt(todaySpent)}</div>
-          <div className={`text-xs mt-1 ${sub}`}>{todayTxs.length>0?`${todayTxs.length} รายการ`:'ยังไม่มีรายจ่ายวันนี้'}</div>
-        </div>
-      </div>
-      )}
+      {/* Six figures in two rows of three, and the first three were one sum
+          written out longhand: Budget รวม minus ใช้ไปแล้ว is คงเหลือ. The reader
+          did the subtraction to find out the only thing the row was for.
+
+          One bar instead. The budget is the width, what has gone is the filled
+          part, what is left is the rest — and the pace mark shows where an even
+          spend would have reached by today, so "28% used" answers "is that a
+          lot" without a second figure. Same device as the dashboard, because it
+          is the same shape of question. */}
+      {(()=>{
+        const left  = totBudget - totSpent;
+        const over  = totSpent > totBudget;
+        const pct   = totBudget > 0 ? Math.min(totSpent / totBudget * 100, 100) : 0;
+        const pace  = isCurM && daysInMonth > 0 ? Math.min(daysPassed / daysInMonth * 100, 100) : null;
+        const tone  = over ? '#d4574a' : totPct >= 80 ? '#d9af2b' : '#7aab8a';
+        return (
+          <div>
+            <div className="flex items-baseline justify-between gap-3 flex-wrap">
+              <span className={`text-[10px] font-medium uppercase ${dk?'text-slate-400':'text-slate-500'}`}
+                style={{letterSpacing:'0.16em'}}>Budget รวม</span>
+              <span className={`text-2xl font-semibold tabular-nums ${dk?'tg-gold':'text-gold-600'}`}
+                style={{letterSpacing:'-0.015em', lineHeight:1.1}}>{fmt(totBudget)}</span>
+            </div>
+
+            <div className={`relative mt-3 flex h-9 rounded-lg overflow-hidden ${dk?'bg-white/5':'bg-slate-100'}`}>
+              <div className="h-full transition-all duration-700 flex-shrink-0"
+                style={{width:`${pct}%`, background: over
+                  ? (dk?'rgba(212,87,74,0.55)':'rgba(212,87,74,0.40)')
+                  : (dk?'rgba(217,175,43,0.45)':'rgba(217,175,43,0.35)')}}/>
+              <div className="h-full flex-1 transition-all duration-700"
+                style={{background: dk?'rgba(122,171,138,0.30)':'rgba(122,171,138,0.22)'}}/>
+              {/* Where an even spend would have reached today. Without it the
+                  filled share is a number with nothing to be judged against. */}
+              {pace !== null && (
+                <span className="absolute top-0 bottom-0 pointer-events-none"
+                  style={{left:`${pace}%`, width:'2px', background: dk?'rgba(255,255,255,0.55)':'rgba(15,23,42,0.45)'}}
+                  title={`ผ่านมาแล้ว ${daysPassed} วัน`}/>
+              )}
+            </div>
+
+            <div className="mt-2.5 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
+                  style={{letterSpacing:'0.12em'}}>ใช้ไปแล้ว</div>
+                <div className="flex items-baseline gap-2">
+                  <span className={`text-lg font-semibold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>{fmt(totSpent)}</span>
+                  <span className="text-lg font-bold tabular-nums" style={{color:tone}}>{totPct.toFixed(0)}%</span>
+                </div>
+              </div>
+              <div className="min-w-0 text-right">
+                <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
+                  style={{letterSpacing:'0.12em'}}>{over ? 'เกินงบ' : 'คงเหลือ'}</div>
+                <div className={`text-lg font-semibold tabular-nums ${over?'text-rose-400':(dk?'text-slate-200':'text-slate-700')}`}>
+                  {fmtSigned(left)}
+                </div>
+              </div>
+            </div>
+
+            {/* The three figures that are not part of that sum. They were a
+                second row of three cards; they are one line, because each is a
+                single number and none of them needs a card. */}
+            <div className={`mt-3 pt-3 border-t flex flex-wrap items-baseline gap-x-5 gap-y-1.5 text-xs ${dk?'border-white/8 text-slate-400':'border-slate-100 text-slate-500'}`}>
+              {isCurM && (
+                <span>ใช้ได้อีก <b className={dailyAllowance>0?(dk?'text-slate-200':'text-slate-700'):'text-rose-400'}>{fmt(dailyAllowance)}</b>/วัน · เหลือ {daysLeft} วัน</span>
+              )}
+              {isCurM && (
+                <span>วันนี้ใช้ไป <b className={todaySpent>0?'text-rose-400':(dk?'text-slate-300':'text-slate-600')}>{fmt(todaySpent)}</b>{todayTxs.length>0?` · ${todayTxs.length} รายการ`:''}</span>
+              )}
+              {nonSpendTotal>0 && <span>ไม่รวมลงทุน {fmt(nonSpendTotal)}</span>}
+            </div>
+          </div>
+        );
+      })()}
 
       <div className={`${card} p-5`}>
         <button onClick={()=>setDayExpOpen(o=>!o)} className="w-full flex items-center justify-between text-left">
@@ -7101,9 +7119,46 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {entries.map(renderCard)}
-              </div>
+              {/* Ordered by how full each one is, so whatever is closest to its
+                  limit sits first and the eye finds it without looking. Ties go
+                  to the larger budget, which is the one worth watching.
+
+                  Categories with nothing spent fold away. Early in the month
+                  that is most of them — eleven of fourteen on the fifth — and
+                  eleven cards all reading ฿0.00 are eleven copies of one fact,
+                  filling two thirds of the page with it. They are still there
+                  behind one line, because "what have I not touched yet" is a
+                  real question, just not the one the page opens with. */}
+              {(()=>{
+                const pctOf = ([cat,bgt]) => (Number(bgt)>0 ? (spent[cat]||0)/Number(bgt) : 0);
+                const used   = entries.filter(([cat])=>(spent[cat]||0) > 0)
+                                      .sort((a,b)=>pctOf(b)-pctOf(a) || Number(b[1])-Number(a[1]));
+                const unused = entries.filter(([cat])=>!((spent[cat]||0) > 0))
+                                      .sort((a,b)=>Number(b[1])-Number(a[1]));
+                const openUnused = unusedOpen.includes(g.id);
+                const unusedBudget = unused.reduce((s,[,b])=>s+(Number(b)||0),0);
+                return (<>
+                  {used.length>0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {used.map(renderCard)}
+                    </div>
+                  )}
+                  {unused.length>0 && (
+                    <>
+                      <button onClick={()=>setUnusedOpen(o=>o.includes(g.id)?o.filter(x=>x!==g.id):[...o,g.id])}
+                        className={`flex items-center gap-1.5 text-xs mt-${used.length>0?'3':'0'} ${dk?'text-slate-500 hover:text-slate-300':'text-slate-400 hover:text-slate-600'} transition-colors`}>
+                        <span className={`inline-block transition-transform duration-200 ${openUnused?'rotate-90':''}`}>▸</span>
+                        ยังไม่ได้ใช้ {unused.length} หมวด · {fmtNW(unusedBudget)}
+                      </button>
+                      {openUnused && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
+                          {unused.map(renderCard)}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>);
+              })()}
             </div>
           );
 
