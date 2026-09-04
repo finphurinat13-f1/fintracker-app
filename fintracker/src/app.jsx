@@ -5688,45 +5688,64 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
       {view==='plan' ? <PlanTab dk={dk} card={card} theme={theme} byType={assetsByType}/> : (<>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
-        {/* One colour across the row, matching the dashboard's. These four are the
-            same span measured four ways and they are read together; a gold
-            figure beside a red one beside a green one turns a summary into a
-            scoreboard, and the labels already say which is which.
+      {/* The same opening as every other page: the figure the page is about on
+          the left as a bar, its parts on the right.
 
-            Two exceptions earn their colour. The net goes terracotta when it is
-            negative, which is the one fact here worth interrupting for, and the
-            saving rate stays gold because it is the figure the page is about. */}
-        {[
-          { label:'รายรับรวม',   val:totInc, cls:dk?'text-slate-100':'text-slate-800' },
-          { label:'รายจ่ายรวม',  val:totExp, cls:dk?'text-slate-100':'text-slate-800' },
-          { label:'คงเหลือสุทธิ',val:totBal, cls:totBal>=0?(dk?'text-slate-100':'text-slate-800'):'text-rose-400' },
-          { label:'อัตราออมเฉลี่ย',val:null, cls:dk?'text-gold-300':'text-gold-700', custom:`${totRate.toFixed(1)}%` },
-        ].map(({label,val,cls,custom})=>(
-          <div key={label} className="stat-rule">
-            <div className={`text-[10px] font-medium mb-2 uppercase stat-label ${dk?'text-slate-400':'text-slate-500'}`}>{label}</div>
-            <div className={`text-xl font-semibold tabular-nums ${cls}`}>{custom || fmt(val)}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* One band in place of five thin ones. The page had a rule for dividends,
-          a row whose entire content was the word ANALYTICS, a card holding two
-          month-on-month figures and a card holding the runway — each a strip the
-          full width of the page carrying two or three numbers, stacked one under
-          the next with the right half of every strip empty. They are four short
-          facts and they belong in a column; the width they were wasting is a
-          chart, and the chart is the thing this page did not have. */}
+          These four were already one arithmetic written out four times —
+          รายรับ minus รายจ่าย is คงเหลือ, and อัตราออม is that remainder over
+          รายรับ — laid out as four equal rules so nothing said which of them
+          the page was for. The bar says all four and says which. */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7">
-        <div className={`${card} p-5 lg:col-span-3 flex flex-col`}>
-          <div className="flex items-baseline gap-2.5 flex-wrap mb-3">
-            <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>คงเหลือ &amp; อัตราออม</h3>
-            <p className={`text-xs ${sub}`}>แท่ง = เงินที่เหลือ · เส้น = เก็บได้กี่ % ของรายรับ</p>
-          </div>
-          <div className="flex-1" style={{minHeight:'230px'}}>
-            <NetRateChart rows={data} theme={theme} hide={false}/>
-          </div>
-        </div>
+        {(()=>{
+          const over = totExp > totInc;
+          const pctE = totInc > 0 ? Math.min(totExp / totInc * 100, 100) : (totExp > 0 ? 100 : 0);
+          const tone = over ? '#c9726a' : '#7aab8a';
+          return (
+            <div className="lg:col-span-3">
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <span className={`text-[10px] font-medium uppercase ${dk?'text-slate-400':'text-slate-500'}`}
+                  style={{letterSpacing:'0.16em'}}>รายรับรวม</span>
+                <span className={`text-2xl font-semibold tabular-nums ${dk?'text-slate-100':'text-slate-800'}`}
+                  style={{letterSpacing:'-0.015em', lineHeight:1.1}}>{fmt(totInc)}</span>
+              </div>
+
+              <div className={`mt-3 flex h-9 rounded-lg overflow-hidden ${dk?'bg-white/5':'bg-slate-100'}`}>
+                <div className="h-full transition-all duration-700 flex-shrink-0 flex items-center justify-end px-3 overflow-hidden"
+                  style={{width:`${pctE}%`, background: dk?'rgba(201,114,106,0.55)':'rgba(201,114,106,0.40)'}}/>
+                <div className="h-full flex-1 transition-all duration-700 flex items-center justify-end px-3"
+                  style={{background: dk?'rgba(122,171,138,0.42)':'rgba(122,171,138,0.30)'}}>
+                  {totInc > 0 && 100-pctE >= 12 && (
+                    <span className={`text-sm font-bold tabular-nums whitespace-nowrap ${dk?'text-white':'text-slate-800'}`}>
+                      {totRate.toFixed(0)}%
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-2.5 flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
+                    style={{letterSpacing:'0.12em'}}>รายจ่ายรวม</div>
+                  <div className={`text-lg font-semibold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>
+                    {fmt(totExp)}
+                  </div>
+                </div>
+                <div className="min-w-0 text-right">
+                  <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
+                    style={{letterSpacing:'0.12em'}}>{over ? 'ติดลบ' : 'คงเหลือสุทธิ'}</div>
+                  <div className={`text-lg font-semibold tabular-nums ${over?'text-rose-400':(dk?'text-slate-200':'text-slate-700')}`}>
+                    {fmtSigned(totBal)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* The facts that are not part of that sum, which used to be a band of
+            their own beside the chart. The chart takes the full width below
+            instead — twelve points read better across the page than in three
+            fifths of it, and this page now opens the way the rest do. */}
         <div className={`${card} p-5 lg:col-span-2 flex flex-col`}>
           <div className="flex flex-col gap-2">
             {[{label:'รายรับ MoM',val:curInc,mom:momInc,good:true},{label:'รายจ่าย MoM',val:curExp,mom:momExp,good:false}].map(({label,val,mom,good})=>(
@@ -5810,6 +5829,21 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
               )}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* The chart takes the whole width. It shared a band with the four short
+          facts beside it — dividends, month on month, the runway — and those
+          have moved up into the opening, where they are the supporting half of
+          the figure they support. Twelve points read better across the page
+          than in three fifths of it. */}
+      <div className={`${card} p-5 flex flex-col`}>
+        <div className="flex items-baseline gap-2.5 flex-wrap mb-3">
+          <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>คงเหลือ &amp; อัตราออม</h3>
+          <p className={`text-xs ${sub}`}>แท่ง = เงินที่เหลือ · เส้น = เก็บได้กี่ % ของรายรับ</p>
+        </div>
+        <div className="flex-1" style={{minHeight:'230px'}}>
+          <NetRateChart rows={data} theme={theme} hide={false}/>
         </div>
       </div>
 
@@ -7871,16 +7905,76 @@ const DebtPage = ({ theme, debts, setDebts }) => {
                 <Ic n="plus" s={14}/> เพิ่มหนี้
               </button>
         }/>
+      {/* The same opening every other page now has: the figure the page is about
+          on the left as a bar, its supporting numbers on the right. Four equal
+          rules gave หนี้คงเหลือ the same weight as ดอกเบี้ยรวม, and on a page
+          called หนี้สิน one of those is the answer and the others are detail.
+
+          A loan is the same shape as a budget and a month's income — a whole,
+          a part done, a part left — so it gets the same bar. */}
       {debts.length>0&&(
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
-          {[{l:'หนี้คงเหลือ',v:fmt(totals.remaining),c:dk?'tg-red':'text-rose-500'},
-            {l:'ผ่อนรวม/เดือน',v:fmt(totals.monthly),c:dk?'text-slate-100':'text-slate-800'},
-            {l:'จ่ายไปแล้ว',v:fmt(totals.paid),c:dk?'tg-emerald':'text-emerald-600'},
-            {l:'ดอกเบี้ยรวม',v:fmt(totals.interest),c:dk?'tg-gold':'text-amber-500'}].map(({l,v,c})=>(
-            <div key={l} className="stat-rule">
-              <div className={`text-[10px] font-medium mb-2 uppercase ${dk?'text-slate-400':'text-slate-500'}`} style={{letterSpacing:'0.16em'}}>{l}</div>
-              <div className={`text-xl font-semibold tabular-nums ${c}`}>{v}</div>
-            </div>))}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7">
+          {(()=>{
+            const payable = totals.paid + totals.remaining;
+            const pct = payable > 0 ? Math.min(totals.paid / payable * 100, 100) : 0;
+            return (
+              <div className="lg:col-span-3">
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <span className={`text-[10px] font-medium uppercase ${dk?'text-slate-400':'text-slate-500'}`}
+                    style={{letterSpacing:'0.16em'}}>หนี้คงเหลือ</span>
+                  <span className={`text-2xl font-semibold tabular-nums ${dk?'tg-red':'text-rose-500'}`}
+                    style={{letterSpacing:'-0.015em', lineHeight:1.1}}>{fmt(totals.remaining)}</span>
+                </div>
+
+                <div className={`mt-3 flex h-9 rounded-lg overflow-hidden ${dk?'bg-white/5':'bg-slate-100'}`}>
+                  <div className="h-full transition-all duration-700 flex-shrink-0 flex items-center justify-end px-3 overflow-hidden"
+                    style={{width:`${pct}%`, background: dk?'rgba(122,171,138,0.42)':'rgba(122,171,138,0.30)'}}>
+                    {pct >= 12 && (
+                      <span className={`text-sm font-bold tabular-nums whitespace-nowrap ${dk?'text-white':'text-slate-800'}`}>
+                        {pct.toFixed(0)}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="h-full flex-1 transition-all duration-700 flex items-center px-3"
+                    style={{background: dk?'rgba(201,114,106,0.40)':'rgba(201,114,106,0.28)'}}>
+                    {pct < 12 && (
+                      <span className="text-sm font-bold tabular-nums" style={{color:'#7aab8a'}}>{pct.toFixed(0)}%</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-2.5 flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
+                      style={{letterSpacing:'0.12em'}}>จ่ายไปแล้ว</div>
+                    <div className={`text-lg font-semibold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>
+                      {fmt(totals.paid)}
+                    </div>
+                  </div>
+                  <div className="min-w-0 text-right">
+                    <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
+                      style={{letterSpacing:'0.12em'}}>ยอดผ่อนทั้งหมด</div>
+                    <div className={`text-lg font-semibold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>
+                      {fmt(payable)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* The three that are not the headline. Stacked rather than spread, so
+              the eye reads down them instead of across four equal columns. */}
+          <div className="lg:col-span-2 flex flex-col justify-center gap-3">
+            {[{l:'ผ่อนรวม / เดือน', v:fmt(totals.monthly), c:dk?'text-slate-100':'text-slate-800'},
+              {l:'ดอกเบี้ยที่จ่ายไป', v:fmt(totals.interest), c:dk?'tg-gold':'text-amber-500'},
+              {l:'จำนวนสัญญา',     v:`${debts.length} รายการ`, c:dk?'text-slate-300':'text-slate-600'}].map(({l,v,c})=>(
+              <div key={l} className={`flex items-baseline justify-between gap-3 pb-3 border-b last:border-0 last:pb-0 ${dk?'border-white/8':'border-slate-100'}`}>
+                <span className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{l}</span>
+                <span className={`text-lg font-semibold tabular-nums ${c}`}>{v}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
