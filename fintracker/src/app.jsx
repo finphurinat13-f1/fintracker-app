@@ -6730,12 +6730,26 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
             </div>
 
             <div className={`relative mt-3 flex h-9 rounded-lg overflow-hidden ${dk?'bg-white/5':'bg-slate-100'}`}>
-              <div className="h-full transition-all duration-700 flex-shrink-0"
+              <div className="h-full transition-all duration-700 flex-shrink-0 flex items-center justify-end px-3 overflow-hidden"
                 style={{width:`${pct}%`, background: over
                   ? (dk?'rgba(212,87,74,0.55)':'rgba(212,87,74,0.40)')
-                  : (dk?'rgba(217,175,43,0.45)':'rgba(217,175,43,0.35)')}}/>
-              <div className="h-full flex-1 transition-all duration-700"
-                style={{background: dk?'rgba(122,171,138,0.30)':'rgba(122,171,138,0.22)'}}/>
+                  : (dk?'rgba(217,175,43,0.45)':'rgba(217,175,43,0.35)')}}>
+                {pct >= 12 && (
+                  <span className={`text-sm font-bold tabular-nums whitespace-nowrap ${dk?'text-white':'text-slate-800'}`}>
+                    {totPct.toFixed(0)}%
+                  </span>
+                )}
+              </div>
+              {/* Inside the fill while there is room to sit there — below about
+                  an eighth the label is wider than the block it would sit in, so
+                  it steps out onto the empty part and changes colour to stay
+                  readable against it. */}
+              <div className="h-full flex-1 transition-all duration-700 flex items-center px-3"
+                style={{background: dk?'rgba(122,171,138,0.30)':'rgba(122,171,138,0.22)'}}>
+                {pct < 12 && (
+                  <span className="text-sm font-bold tabular-nums" style={{color:tone}}>{totPct.toFixed(0)}%</span>
+                )}
+              </div>
               {/* Where an even spend would have reached today. Without it the
                   filled share is a number with nothing to be judged against. */}
               {pace !== null && (
@@ -6751,7 +6765,6 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                   style={{letterSpacing:'0.12em'}}>ใช้ไปแล้ว</div>
                 <div className="flex items-baseline gap-2">
                   <span className={`text-lg font-semibold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>{fmt(totSpent)}</span>
-                  <span className="text-lg font-bold tabular-nums" style={{color:tone}}>{totPct.toFixed(0)}%</span>
                 </div>
               </div>
               <div className="min-w-0 text-right">
