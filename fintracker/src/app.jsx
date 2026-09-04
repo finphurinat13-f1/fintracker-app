@@ -4641,20 +4641,20 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
               {(assetSearch||searchTags.length>0)&&<button onClick={()=>{setAssetSearch('');setSearchTags([]);}} className={`text-xs flex-shrink-0 ${dk?'text-slate-500 hover:text-slate-300':'text-slate-400'}`}><Ic n="x" s={11}/></button>}
             </div>
           </div>
-          {/* Was one wrap row: a bordered rate box standing taller than the two
-              buttons beside it, the three packed to the left with the right of
-              the column empty and the bottom empty under that. Stacked now — the
-              rate on a rule of its own, the buttons splitting the width in half
-              — and the column spreads them down the height it is given rather
-              than bunching them against the top. */}
+          {/* Everything on this line packs to the left, because the button at the
+              end of it is pressed together with อัปเดตราคา directly below, and
+              those two were at opposite edges of the column: press right, then
+              press left. The rate is also the number this whole page is priced
+              through, so it is set at the size of a figure rather than of a
+              form field. */}
           <div
-            className={`flex items-baseline justify-between gap-2 pt-3 border-t ${dk?'border-white/8':'border-slate-100'}`}>
+            className={`flex items-baseline gap-2.5 pt-3 border-t ${dk?'border-white/8':'border-slate-100'}`}>
             <span className={`text-xs font-medium ${dk?'text-slate-400':'text-slate-500'}`}>USD/THB</span>
-            <div className="flex items-baseline gap-1.5">
+            <div className="flex items-baseline gap-2">
               <input type="number" value={usdRate} onChange={e=>{ setUsdRate(parseFloat(e.target.value)||35); markRateFetched(); }}
-                className={`w-14 text-sm text-right outline-none bg-transparent font-semibold ${dk?'text-white':'text-slate-700'}`}/>
+                className={`w-[4.5rem] text-lg text-left tabular-nums outline-none bg-transparent font-semibold ${dk?'text-white':'text-slate-700'}`}/>
               <button onClick={fetchRate} disabled={rateLoading} title="ดึงอัตราแลกเปลี่ยนล่าสุด"
-                className={`text-xs transition-all ${rateLoading?'animate-spin':'hover:scale-110'} ${dk?'text-slate-500 hover:text-gold-400':'text-slate-400 hover:text-gold-500'}`}>
+                className={`text-sm transition-all ${rateLoading?'animate-spin':'hover:scale-110'} ${dk?'text-slate-500 hover:text-gold-400':'text-slate-400 hover:text-gold-500'}`}>
                 🔄
               </button>
               {(()=>{ // shown, not tooltipped: this rate multiplies every USD holding
