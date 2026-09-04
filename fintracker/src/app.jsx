@@ -2594,6 +2594,15 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
   const saveRec=data=>{if(recModal.editData){setRecList(ls=>ls.map(r=>r.id===recModal.editData.id?{...data,id:r.id}:r));}else{setRecList(ls=>[...ls,{...data,id:'r_'+uid()}]);}};
   const pendingRec=recList.filter(r=>r.enabled&&!doneIds.has(r.id));
   const totalPendingRec=pendingRec.reduce((s,r)=>s+r.amount,0);
+  // What the enabled recurring items commit to in a month, and how many of
+  // them this month has already seen. Enabled only: a switched-off row is a
+  // template being kept, not money that is going to leave.
+  const recMonthly = useMemo(()=>{
+    const on = recList.filter(r=>r.enabled);
+    return { total: on.reduce((s,r)=>s+(Number(r.amount)||0),0),
+             count: on.length,
+             done:  on.filter(r=>doneIds.has(r.id)).length };
+  },[recList, doneIds]);
 
   const today = new Date().toISOString().slice(0,10);
   const setToday = () => { setFDateFrom(today); setFDateTo(today); setDRange('today'); };
@@ -2956,7 +2965,21 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
             <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>รายการประจำ</span>
             <span className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{recList.length} รายการ · {MONTHS_TH[rNow.getMonth()]} {rNow.getFullYear()}</span>
           </div>
-          {pendingRec.length>0&&<span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-400">{pendingRec.length} ยังไม่บันทึก</span>}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {recMonthly.total>0 && (
+              <div className="text-right hidden sm:block">
+                <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
+                  style={{letterSpacing:'0.12em'}}>ผูกไว้เดือนละ</div>
+                <div className="flex items-baseline gap-1.5 justify-end">
+                  <span className={`text-sm font-semibold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>{fmt(recMonthly.total)}</span>
+                  <span className={`text-[11px] tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>
+                    บันทึกแล้ว {recMonthly.done}/{recMonthly.count}
+                  </span>
+                </div>
+              </div>
+            )}
+            {pendingRec.length>0&&<span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-400 flex-shrink-0">{pendingRec.length} ยังไม่บันทึก</span>}
+          </div>
         </div>
         {recOpen&&(
           <>
