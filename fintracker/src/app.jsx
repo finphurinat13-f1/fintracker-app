@@ -2801,14 +2801,50 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
       {/* ── Filtered Summary Bar ── */}
       {filtered.length>0&&(
         <div className={`rounded-2xl px-5 py-4 ${dk?'card-solid':'glass-light shadow-sm'}`}>
-          <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-4 items-end">
-            <div className="col-span-2 lg:col-span-1">
-              <div className={`text-[11px] font-medium ${dk?'text-slate-400':'text-slate-500'}`}>สุทธิ · {filtered.length} รายการ</div>
-              <div className={`flex items-baseline gap-1.5 text-2xl font-bold tabular-nums leading-none mt-1 ${filteredBalance>=0?(dk?'tg-emerald':'text-emerald-600'):(dk?'tg-red':'text-rose-500')}`}>
-                <span className="text-sm font-semibold">{filteredBalance>=0?'▲':'▼'}</span>
-                {filteredBalance>=0?'+':'-'}{fmt(Math.abs(filteredBalance))}
-              </div>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7">
+            {(()=>{
+              const inc = filteredIncome + filteredDividend;
+              const over = filteredExpense > inc;
+              const pctE = inc > 0 ? Math.min(filteredExpense / inc * 100, 100) : (filteredExpense > 0 ? 100 : 0);
+              const rate = inc > 0 ? filteredBalance / inc * 100 : 0;
+              return (
+                <div className="lg:col-span-3">
+                  <div className="flex items-baseline gap-3 flex-wrap">
+                    <span className={`text-[10px] font-medium uppercase ${dk?'text-slate-400':'text-slate-500'}`}
+                      style={{letterSpacing:'0.16em'}}>เข้า · {filtered.length} รายการ</span>
+                    <span className={`text-2xl font-semibold tabular-nums ${dk?'text-slate-100':'text-slate-800'}`}
+                      style={{letterSpacing:'-0.015em', lineHeight:1.1}}>{fmt(inc)}</span>
+                  </div>
+                  <div className={`mt-3 flex h-9 rounded-lg overflow-hidden ${dk?'bg-white/5':'bg-slate-100'}`}>
+                    <div className="h-full transition-all duration-700 flex-shrink-0"
+                      style={{width:`${pctE}%`, background: dk?'rgba(201,114,106,0.55)':'rgba(201,114,106,0.40)'}}/>
+                    <div className="h-full flex-1 transition-all duration-700 flex items-center justify-end px-3"
+                      style={{background: dk?'rgba(122,171,138,0.42)':'rgba(122,171,138,0.30)'}}>
+                      {inc > 0 && 100-pctE >= 12 && (
+                        <span className={`text-sm font-bold tabular-nums ${dk?'text-white':'text-slate-800'}`}>{rate.toFixed(0)}%</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-2.5 flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
+                        style={{letterSpacing:'0.12em'}}>ออก</div>
+                      <div className={`text-lg font-semibold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>{fmt(filteredExpense)}</div>
+                    </div>
+                    <div className="min-w-0 text-right">
+                      <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
+                        style={{letterSpacing:'0.12em'}}>{over ? 'ติดลบ' : 'สุทธิ'}</div>
+                      <div className={`text-lg font-semibold tabular-nums ${over?'text-rose-400':(dk?'text-slate-200':'text-slate-700')}`}>
+                        {fmtSigned(filteredBalance)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+            {/* The parts of that bar, and the one figure it cannot carry: how
+                much of what came in arrived in dollars. */}
+            <div className="lg:col-span-2 grid grid-cols-2 gap-x-6 gap-y-4 content-center">
             {[
               {l:'รายรับ',  v:'+'+fmt(filteredIncome),   c:'text-gold-400',  show:true},
               {l:'ปันผล',   v:'+'+fmt(filteredDividend), c:'text-teal-400',  show:filteredDividend>0},
@@ -2825,6 +2861,7 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
                 {sub && <div className={`text-[11px] tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{sub}</div>}
               </div>
             ))}
+            </div>
           </div>
         </div>
       )}
@@ -9460,9 +9497,8 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                   opacity:dk?0.07:0.05}}>
           <LogoSvg size={155}/>
         </div>
-        <div className="flex flex-col gap-3">
-          {/* Hero total + breakdown chips (same visual language as the Net Worth card) */}
-          <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7">
+          <div className="lg:col-span-3 flex flex-col justify-center">
             <div>
               <p className={`text-xs font-medium uppercase tracking-widest mb-1 ${dk?'text-slate-400':'text-slate-500'}`}>ยอดรวมกระเป๋าเงิน</p>
               <div className={`text-2xl lg:text-3xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`}>{fmt(totalBalance)}</div>
@@ -9470,7 +9506,26 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                   that already said 16 กระเป๋า. The asset count was the only new
                   thing in it, so that moved up and the line went. */}
             </div>
-            <div className="flex flex-wrap gap-2 justify-end">
+            {/* The same five buckets as the chips beside it, from the same figures.
+                This bar was drawing three of them against a total made of those
+                same three, so it always read as 100% of a number that was not the
+                one printed above it. */}
+            <SegmentedProgress
+              segments={[
+                {type:'cash', val:Math.max(cashTotal,0), label:'เงินสด'},
+                ...(hasCrypto?[{type:'crypto', val:cryptoTotal, label:'Crypto'}]:[]),
+                ...(hasStocks?[{type:'stock', val:stockWalletTotal, label:'หุ้น'}]:[]),
+                ...(hasGold?[{type:'gold', val:goldTotal, label:'ทองคำ'}]:[]),
+                ...(hasOtherWallets?[{type:'other', val:otherTotal, label:'อื่นๆ'}]:[]),
+              ]}
+              total={totalBalance}
+              theme={theme}
+            />
+          </div>
+          {/* The five buckets again, named and priced. The bar beside them is
+              the same division drawn; neither is much use without the other,
+              which is why they sit in one band rather than stacked. */}
+          <div className="lg:col-span-2 flex flex-wrap items-center content-center gap-2">
               {[
                 // Same colours ASSET_TYPES uses for the same four words. They were an
                 // olive, a raspberry, a cyan and a brown — four hues invented here and
@@ -9506,23 +9561,9 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
                   </div>
                 );
               })}
-            </div>
           </div>
-          {/* The same five buckets as the chips above, from the same figures.
-              This bar was drawing three of them against a total made of those
-              same three, so it always read as 100% of a number that was not the
-              one printed above it. */}
-          <SegmentedProgress
-            segments={[
-              {type:'cash', val:Math.max(cashTotal,0), label:'เงินสด'},
-              ...(hasCrypto?[{type:'crypto', val:cryptoTotal, label:'Crypto'}]:[]),
-              ...(hasStocks?[{type:'stock', val:stockWalletTotal, label:'หุ้น'}]:[]),
-              ...(hasGold?[{type:'gold', val:goldTotal, label:'ทองคำ'}]:[]),
-              ...(hasOtherWallets?[{type:'other', val:otherTotal, label:'อื่นๆ'}]:[]),
-            ]}
-            total={totalBalance}
-            theme={theme}
-          />
+        </div>
+        <div className="mt-4">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             {/* Filter pills — left */}
             <div className="flex gap-1.5 flex-wrap">
