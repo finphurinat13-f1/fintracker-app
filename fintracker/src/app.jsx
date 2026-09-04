@@ -6720,8 +6720,9 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
         const pace  = isCurM && daysInMonth > 0 ? Math.min(daysPassed / daysInMonth * 100, 100) : null;
         const tone  = over ? '#d4574a' : totPct >= 80 ? '#d9af2b' : '#7aab8a';
         return (
-          <div>
-            <div className="flex items-baseline justify-between gap-3 flex-wrap">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7">
+            <div className="lg:col-span-3">
+            <div className="flex items-baseline gap-3 flex-wrap">
               <span className={`text-[10px] font-medium uppercase ${dk?'text-slate-400':'text-slate-500'}`}
                 style={{letterSpacing:'0.16em'}}>Budget รวม</span>
               <span className={`text-2xl font-semibold tabular-nums ${dk?'tg-gold':'text-gold-600'}`}
@@ -6773,6 +6774,52 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 <span>วันนี้ใช้ไป <b className={todaySpent>0?'text-rose-400':(dk?'text-slate-300':'text-slate-600')}>{fmt(todaySpent)}</b>{todayTxs.length>0?` · ${todayTxs.length} รายการ`:''}</span>
               )}
               {nonSpendTotal>0 && <span>ไม่รวมลงทุน {fmt(nonSpendTotal)}</span>}
+            </div>
+            </div>
+
+            {/* Where the money actually went, which the bar beside it cannot say.
+                That bar is one budget against one total; this is the total broken
+                into the categories it came from — and it is spending, not budget,
+                so it answers a question no other panel on the page does. The jar
+                split further down is the budget's shape; this is the month's. */}
+            <div className="lg:col-span-2">
+              <div className={`text-[10px] font-medium uppercase mb-3 ${dk?'text-slate-400':'text-slate-500'}`}
+                style={{letterSpacing:'0.16em'}}>รายจ่ายเดือนนี้ · แยกหมวด</div>
+              {(()=>{
+                const rows = Object.entries(spent)
+                  .filter(([,v])=>v>0)
+                  .sort((a,b)=>b[1]-a[1]);
+                const sum = rows.reduce((s,[,v])=>s+v,0);
+                if (!rows.length) return (
+                  <p className={`text-xs ${sub}`}>ยังไม่มีรายจ่ายเดือนนี้ค่ะ</p>
+                );
+                // Five, then the rest as one. A list of every category that saw a
+                // baht is the cards below again; the point here is which few of
+                // them the month actually went on.
+                const top = rows.slice(0,5);
+                const restVal = rows.slice(5).reduce((s,[,v])=>s+v,0);
+                const Row = ({label, val, clr}) => (
+                  <div className="flex items-center gap-2.5 py-1">
+                    <span className={`text-xs truncate flex-1 min-w-0 ${dk?'text-slate-300':'text-slate-600'}`}>{label}</span>
+                    <span className={`h-1.5 rounded-full overflow-hidden w-16 flex-shrink-0 ${dk?'bg-white/6':'bg-slate-100'}`}>
+                      <span className="block h-full rounded-full"
+                        style={{width:`${sum>0?val/sum*100:0}%`, background:clr}}/>
+                    </span>
+                    <span className={`text-xs font-semibold tabular-nums w-10 text-right flex-shrink-0 ${dk?'text-slate-200':'text-slate-700'}`}>
+                      {sum>0?Math.round(val/sum*100):0}%
+                    </span>
+                    <span className={`text-xs tabular-nums w-24 text-right flex-shrink-0 ${dk?'text-slate-500':'text-slate-400'}`}>
+                      {fmtNW(val)}
+                    </span>
+                  </div>
+                );
+                return (
+                  <div>
+                    {top.map(([cat,val])=><Row key={cat} label={cat} val={val} clr={catClr(cat)}/>)}
+                    {restVal>0 && <Row label={`อื่นๆ ${rows.length-5} หมวด`} val={restVal} clr={dk?'#585654':'#a5a29c'}/>}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         );
