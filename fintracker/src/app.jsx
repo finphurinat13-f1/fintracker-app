@@ -2196,10 +2196,26 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
               </div>
 
               <div className={`mt-3 flex h-9 rounded-lg overflow-hidden ${dk?'bg-white/5':'bg-slate-100'}`}>
-                <div className="h-full transition-all duration-700 flex-shrink-0"
-                  style={{width:`${pctExp}%`, background: dk?'rgba(201,114,106,0.55)':'rgba(201,114,106,0.40)'}}/>
-                <div className="h-full flex-1 transition-all duration-700"
-                  style={{background: dk?'rgba(122,171,138,0.42)':'rgba(122,171,138,0.30)'}}/>
+                <div className="h-full transition-all duration-700 flex-shrink-0 flex items-center justify-end px-3 overflow-hidden"
+                  style={{width:`${pctExp}%`, background: dk?'rgba(201,114,106,0.55)':'rgba(201,114,106,0.40)'}}>
+                  {inc > 0 && 100-pctExp < 12 && (
+                    <span className="text-sm font-bold tabular-nums whitespace-nowrap" style={{color:tone}}>
+                      {rate.toFixed(0)}%
+                    </span>
+                  )}
+                </div>
+                {/* The rate belongs on the block it measures. Inside it while
+                    there is room; below about an eighth the label is wider than
+                    that block, so it steps across onto the spent side, where the
+                    state colour keeps it readable. */}
+                <div className="h-full flex-1 transition-all duration-700 flex items-center justify-end px-3"
+                  style={{background: dk?'rgba(122,171,138,0.42)':'rgba(122,171,138,0.30)'}}>
+                  {inc > 0 && 100-pctExp >= 12 && (
+                    <span className={`text-sm font-bold tabular-nums whitespace-nowrap ${dk?'text-white':'text-slate-800'}`}>
+                      {rate.toFixed(0)}%
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* The two figures sit under the blocks they belong to rather than
@@ -2215,13 +2231,10 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
                 <div className="min-w-0 text-right">
                   <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
                     style={{letterSpacing:'0.12em'}}>{over ? 'เกินรายรับ' : 'คงเหลือ'}</div>
-                  <div className="flex items-baseline gap-2 justify-end">
+                  <div className="flex items-baseline justify-end">
                     <span className={`text-lg font-semibold tabular-nums ${over
                       ? 'text-rose-400' : (dk?'text-slate-200':'text-slate-700')}`}>
                       {mask(fmt(Math.abs(net)))}
-                    </span>
-                    <span className="text-lg font-bold tabular-nums" style={{color:tone}}>
-                      {inc > 0 ? `${rate.toFixed(0)}%` : '—'}
                     </span>
                   </div>
                 </div>
