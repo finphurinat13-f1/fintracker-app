@@ -2886,7 +2886,7 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
                 spent on. */}
             {topOut.rows.length>0 && (
               <div>
-                <div className={`text-[11px] mb-2 ${dk?'text-slate-400':'text-slate-500'}`}>จ่ายไปกับอะไร</div>
+                <div className={`text-[11px] mb-2 ${dk?'text-slate-400':'text-slate-500'}`}>รายจ่ายตามหมวด</div>
                 <div className="space-y-1">
                   {topOut.rows.map(([cat,val])=>(
                     <div key={cat} className="flex items-center gap-2.5">
@@ -6096,7 +6096,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
 
       {/* Top spending categories */}
       <div className={`${card} p-5`}>
-        <h3 className={`text-sm font-semibold mb-4 ${dk?'text-gold-300':'text-gold-700'}`}>หมวดจ่ายทั้งหมด ({view==='yearly'?'ปีนี้':'เดือนนี้'})</h3>
+        <h3 className={`text-sm font-semibold mb-4 ${dk?'text-gold-300':'text-gold-700'}`}>รายจ่ายตามหมวด ({view==='yearly'?'ปีนี้':'เดือนนี้'})</h3>
         {topCats.length===0
           ? <div className={`text-sm ${sub}`}>ยังไม่มีรายจ่าย{view==='yearly'?'ปีนี้':'เดือนนี้'}</div>
           : <>
@@ -7120,7 +7120,7 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 split further down is the budget's shape; this is the month's. */}
             <div className="lg:col-span-2">
               <div className={`text-[10px] font-medium uppercase mb-3 ${dk?'text-slate-400':'text-slate-500'}`}
-                style={{letterSpacing:'0.16em'}}>รายจ่ายเดือนนี้ · แยกหมวด</div>
+                style={{letterSpacing:'0.16em'}}>รายจ่ายตามหมวด (เดือนนี้)</div>
               {(()=>{
                 const rows = Object.entries(spent)
                   .filter(([,v])=>v>0)
