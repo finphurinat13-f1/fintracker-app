@@ -4381,6 +4381,10 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
   const [assetSearch, setAssetSearch] = useState('');
   const [searchTags, setSearchTags] = useState([]);
   const [walletFilter, setWalletFilter] = useState('all');
+  // Which holding the panel is showing. Held by id rather than by object, so
+  // the panel follows a price update or an edit instead of displaying the copy
+  // it was opened with.
+  const [selId, setSelId] = useState(null);
   const searchInputRef = useRef(null);
   const usdRateMounted = useRef(false);
   useEffect(()=>{
@@ -4578,6 +4582,10 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
     return mapped;
   },[assets,txs,usdRate,sortBy,sortDir,assetSearch,searchTags,assetTab,walletFilter]);
 
+  // From enriched, not from assets: the panel prints costTHB, plPct and cagr,
+  // which only exist after the row has been worked out. Taking it from the raw
+  // list would mean computing them a second time, differently.
+  const selected = selId!=null ? enriched.find(a=>a.id===selId) || null : null;
   const totCost   = enriched.reduce((s,a)=>s+a.costTHB,0);
   const totVal    = enriched.reduce((s,a)=>s+a.valTHB,0);
   const totPL     = totVal-totCost;
@@ -4767,8 +4775,12 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
           the same P/L already — the two panels were one table split across two
           pages, each having to be kept correct separately. */}
 
-      {/* Table - full width */}
-      <div className={`${card} overflow-hidden`}>
+      {/* Table and the detail panel share a row. The table keeps whatever the
+          panel does not take, and takes it all back when nothing is selected —
+          a 384px column standing empty beside the list would be worse than the
+          modal it replaces. */}
+      <div className={selected ? 'flex flex-col xl:flex-row gap-5 items-start' : ''}>
+      <div className={`${card} overflow-hidden ${selected ? 'flex-1 min-w-0 w-full' : ''}`}>
         <div className={`flex items-center justify-between gap-3 px-5 py-3 border-b flex-wrap ${dk?'border-white/5':'border-slate-100'}`}>
           <span className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>รายการสินทรัพย์ทั้งหมด</span>
           <div className="flex items-center gap-2 flex-wrap">
@@ -4952,7 +4964,8 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
                       colour rather than as grouping, so the rule is the one
                       worth keeping. Dark mode keeps its striping: on near-black
                       the bands are what carry across a wide row. */}
-                  <tr className={`row-mod border-b transition-colors group ${dk?(i%2===0?'border-white/5 bg-white/[0.01] hover:bg-white/[0.05]':'border-white/5 bg-black/[0.08] hover:bg-white/[0.04]'):'border-slate-100 bg-white hover:bg-slate-50'}`}>
+                  <tr onClick={e=>{ if(e.target.closest('button,input,select,a,textarea')) return; setSelId(s=>s===a.id?null:a.id); }}
+                    className={`row-mod border-b transition-colors group cursor-pointer ${selId===a.id?(dk?'ring-1 ring-inset ring-gold-500/40':'ring-1 ring-inset ring-gold-300'):''} ${dk?(i%2===0?'border-white/5 bg-white/[0.01] hover:bg-white/[0.05]':'border-white/5 bg-black/[0.08] hover:bg-white/[0.04]'):'border-slate-100 bg-white hover:bg-slate-50'}`}>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
                         <AssetIcon a={a} ti={ti}/>
@@ -5124,6 +5137,113 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
             )}
           </table>
         </div>
+        )}
+      </div>
+        {/* The holding you are looking at, beside the list rather than on top of
+            it. Pressing a row used to open a full-screen modal, which covers the
+            one thing you were comparing it against — so checking NVDA against
+            TSMC meant open, read, remember, close, open, read. The list stays;
+            pressing another row swaps what is in here. */}
+        {selected && (
+          <aside className={`${card} p-5 w-full xl:w-96 xl:flex-shrink-0 xl:sticky xl:top-20`}>
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <AssetIcon a={selected} ti={(ASSET_TYPES.find(t=>t.v===selected.type)||ASSET_TYPES[4])}/>
+                <div className="min-w-0">
+                  <div className={`text-sm font-semibold truncate ${dk?'text-white':'text-slate-800'}`}>{selected.name}</div>
+                  <div className={`text-[11px] truncate ${sub}`}>
+                    {(ASSET_TYPES.find(t=>t.v===selected.type)||ASSET_TYPES[4]).l}
+                    {(()=>{ const w=wallets.find(x=>x.id===selected.walletId); return w?` · ${w.name}`:''; })()}
+                  </div>
+                </div>
+              </div>
+              <button onClick={()=>setSelId(null)} aria-label="ปิด"
+                className={`p-1.5 rounded-lg flex-shrink-0 transition-colors ${dk?'text-slate-500 hover:text-white hover:bg-white/10':'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}>
+                <Ic n="x" s={13}/>
+              </button>
+            </div>
+
+            <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
+              style={{letterSpacing:'0.14em'}}>มูลค่าปัจจุบัน</div>
+            <div className={`text-2xl font-semibold tabular-nums ${dk?'text-white':'text-slate-800'}`}
+              style={{letterSpacing:'-0.015em'}}>{fmt(selected.valTHB)}</div>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className={`text-sm font-semibold tabular-nums ${selected.plTHB>=0?'text-emerald-400':'text-rose-400'}`}>
+                {selected.plTHB>=0?'+':''}{fmtSigned(selected.plTHB)}
+              </span>
+              <span className={`text-xs tabular-nums ${selected.plPct>=0?'text-emerald-400/80':'text-rose-400/80'}`}>
+                {selected.plPct>=0?'+':''}{selected.plPct.toFixed(2)}%
+              </span>
+            </div>
+
+            {/* The same figures the row carries, stacked instead of spread across
+                a metre of screen. Nothing new is computed here — a second way of
+                working these out is a second answer waiting to disagree. */}
+            <div className={`mt-4 pt-4 border-t space-y-2 ${dk?'border-white/8':'border-slate-100'}`}>
+              {[
+                ['จำนวน',        fmtQty(selected.qty)],
+                ['ทุน / หน่วย',  selected.type==='cash' ? '—' : fmtA((selected.items||[]).length?selected.avgCost*selected.qty:selected.avgCost, selected.currency)],
+                ['ราคาตลาด',     fmtA((selected.items||[]).length?selected.currentPrice*selected.qty:selected.currentPrice, selected.currency)],
+                ['ต้นทุนรวม',    fmt(selected.costTHB)],
+                ['ต่อปี',        selected.cagr==null ? '—' : `${selected.cagr>=0?'+':''}${selected.cagr.toFixed(1)}%`],
+                ['วันที่ซื้อ',    selected.purchaseDate || '—'],
+                ['ถือมา',        selected.holdDays==null ? '—' : `${selected.holdDays} วัน`],
+              ].map(([l,v])=>(
+                <div key={l} className="flex items-baseline justify-between gap-3">
+                  <span className={`text-xs ${dk?'text-slate-400':'text-slate-500'}`}>{l}</span>
+                  <span className={`text-xs font-semibold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>{v}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* What actually happened to it. The row cannot show this at all —
+                there is no column wide enough for a history — and it is the thing
+                most often wanted after "how much is it worth". */}
+            {(selected.moves||[]).length>0 && (
+              <div className={`mt-4 pt-4 border-t ${dk?'border-white/8':'border-slate-100'}`}>
+                <div className={`text-[10px] uppercase mb-2 ${dk?'text-slate-500':'text-slate-400'}`}
+                  style={{letterSpacing:'0.14em'}}>ความเคลื่อนไหวล่าสุด</div>
+                <div className="space-y-1.5">
+                  {[...(selected.moves||[])].slice(0,5).map((m,i)=>(
+                    <div key={m.id||i} className="flex items-baseline justify-between gap-3">
+                      <span className={`text-[11px] truncate ${dk?'text-slate-400':'text-slate-500'}`}>
+                        {m.date}{m.note?` · ${m.note}`:''}
+                      </span>
+                      <span className={`text-[11px] font-semibold tabular-nums flex-shrink-0 ${Number(m.qty)>=0?'text-emerald-400':'text-rose-400'}`}>
+                        {Number(m.qty)>=0?'+':''}{fmtQty(Math.abs(Number(m.qty)||0))}
+                      </span>
+                    </div>
+                  ))}
+                  {(selected.moves||[]).length>5 && (
+                    <div className={`text-[10px] pt-1 ${dk?'text-slate-600':'text-slate-400'}`}>
+                      และอีก {(selected.moves||[]).length-5} รายการ — ดูทั้งหมดในหน้าแก้ไข
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className={`mt-4 pt-4 border-t flex gap-2 ${dk?'border-white/8':'border-slate-100'}`}>
+              <button onClick={()=>onEdit(selected)}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl btn-primary text-xs font-semibold">
+                <Ic n="edit" s={13}/> แก้ไข
+              </button>
+              {onDCA && selected.type!=='cash' && (
+                <button onClick={()=>onDCA(selected)} title="คำนวณ DCA"
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-colors ${dk?'border-white/10 text-slate-300 hover:bg-white/5':'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                  🧮
+                </button>
+              )}
+              {/* Delete stays a border button rather than a red one. The list is
+                  right beside it and the panel changes as you move down it, so a
+                  filled red button would be under the cursor on every holding
+                  you glanced at. */}
+              <button onClick={()=>{ onDelete(selected.id); setSelId(null); }} title="ลบสินทรัพย์"
+                className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-colors ${dk?'border-white/10 text-slate-400 hover:border-rose-500/40 hover:text-rose-400':'border-slate-200 text-slate-500 hover:border-rose-300 hover:text-rose-600'}`}>
+                <Ic n="trash" s={13}/>
+              </button>
+            </div>
+          </aside>
         )}
       </div>
     </div>
