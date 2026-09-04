@@ -1,5 +1,5 @@
 import {
-  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, GOLD_RAMP, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, assetTaggedNet, dataHealth, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, byNewest, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, annualisedReturn, assetTotalReturn, encryptBackup, decryptBackup, isEncryptedBackup
+  THEMES, _uidCounter, uid, INCOME_CATS, getExpenseCats, MONTHS_TH, CAT_CLR, setCatMeta, renameCatMeta, delCatMeta, catIcon, catIconSmart, catClr, CAT_PALETTE, GOLD_RAMP, getImportCatMemory, rememberImportCat, guessImportCat, isAssetTxOut, isAssetTxIn, assetTagged, assetTaggedNet, dataHealth, today, ym, txSign, txAmtCls, txBarClr, txBadgeCls, txLabel, sumTxType, sumTxMonth, assetVal, walletCash, byNewest, mergeArrById, walletBal, exportCSV, impliedTicker, priceAge, PRICE_STALE_MS, catOptions, renameCatInStores, runningBalances, systemCashByDay, revertMove, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, tickerClr, realizedByYear, assetCashFlow, whoAmI, annualisedReturn, assetTotalReturn, encryptBackup, decryptBackup, isEncryptedBackup, netWorthOf, debtRemaining, holdingsTotal, walletsTotal
 } from "./lib.js";
 
 
@@ -1875,21 +1875,12 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
   // this card and the one up there cannot disagree.
   const mask = v => hideAmt ? '฿ •••••' : v;
   const usdRate = parseFloat(localStorage.getItem('ft-usdrate')||'35');
-  // canonical net worth = every asset (incl. tags) + every wallet's cash (cash-asset dedup)
-  const walletCashTotal = useMemo(()=>wallets.reduce((s,w)=>s+walletCash(w,txs,assets),0),[wallets,txs,assets]);
-  const netWorth = useMemo(()=>
-    assets.reduce((s,a)=>s+assetVal(a,txs,usdRate),0) + walletCashTotal
-  ,[assets,txs,usdRate,walletCashTotal]);
-  const totalDebtRemaining = useMemo(()=>{
-    try{
-      return debts.reduce((sum,d)=>{
-        const totalPayable=d.monthlyPayment*d.totalMonths;
-        const start=new Date(d.startDate); const now=new Date();
-        const monthsPaid=Math.max(0,(now.getFullYear()-start.getFullYear())*12+(now.getMonth()-start.getMonth()));
-        return sum+Math.max(totalPayable-Math.min(monthsPaid*d.monthlyPayment,totalPayable),0);
-      },0);
-    }catch{return 0;}
-  },[debts]);
+  // One definition, in lib.js, called by the rail and by every page that prints
+  // a headline. Three copies of this sum is how two pages came to disagree by
+  // ฿60.94 once already.
+  const walletCashTotal    = useMemo(()=>walletsTotal(wallets,txs,assets),[wallets,txs,assets]);
+  const netWorth           = useMemo(()=>netWorthOf(assets,txs,wallets,usdRate),[assets,txs,wallets,usdRate]);
+  const totalDebtRemaining = useMemo(()=>debtRemaining(debts),[debts]);
   // เงินที่ถือแทน (custodial) is informational only — shown separately, not subtracted from Net Worth
   const totalCustodial = useMemo(()=>custodial.filter(c=>!c.returned).reduce((s,c)=>s+(c.amount||0),0),[custodial]);
   const trueNetWorth = netWorth - totalDebtRemaining;
@@ -12932,6 +12923,34 @@ const App = () => {
   // is a shape to recognise. The split is by the question each page answers —
   // how am I doing, what did I spend, what do I hold — which is also the order
   // somebody moves through them.
+  // A number beside each name. The rail was 240px of links and nothing else,
+  // and the question it now answers is the one that used to need six page
+  // visits: where does everything stand.
+  //
+  // No two of these are the same figure. Net worth is the whole thing and it
+  // appears once; holdings and wallets are that same total sliced two ways —
+  // what is owned and where it sits — so they show their counts instead of
+  // printing one number three times.
+  const railFigures = useMemo(()=>{
+    const usd = parseFloat(localStorage.getItem('ft-usdrate')||'35') || 35;
+    const now = new Date();
+    const curM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const nw   = netWorthOf(assets, txs, wallets, usd) - debtRemaining(debts);
+    const inc  = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+    const exp  = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+    const mExp = txs.filter(t=>t.type==='expense'&&t.date.startsWith(curM)).reduce((s,t)=>s+t.amount,0);
+    const debt = debtRemaining(debts);
+    return {
+      dashboard:    fmtNW(nw),
+      summary:      inc>0 ? ((inc-exp)/inc*100).toFixed(0)+'%' : null,
+      transactions: mExp>0 ? fmtNW(mExp) : null,
+      budget:       null,
+      assets:       assets.length ? assets.length+' รายการ' : null,
+      wallet:       wallets.length ? wallets.length+' กระเป๋า' : null,
+      debt:         debt>0 ? fmtNW(debt) : null,
+    };
+  },[assets,txs,wallets,debts]);
+
   const NAV_GROUPS = [
     { g:'ภาพรวม',    keys:['dashboard','summary'] },
     { g:'รายวัน',     keys:['transactions','budget'] },
@@ -12978,7 +12997,18 @@ const App = () => {
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${page===k
                         ? (dk?'bg-gold-500/15 text-gold-200':'bg-gold-50 text-gold-700')
                         : (dk?'text-slate-400 hover:bg-white/5 hover:text-slate-200':'text-slate-500 hover:bg-slate-50 hover:text-slate-700')}`}>
-                      <Ic n={it.i} s={17}/><span>{it.l}</span>
+                      <Ic n={it.i} s={17}/>
+                      <span className="flex-1 text-left truncate">{it.l}</span>
+                      {/* Masked with the rest of the app: this is on screen on
+                          every page, so it would be the one number left showing
+                          when everything else is hidden. */}
+                      {railFigures[k] && (
+                        <span className={`text-[11px] font-semibold tabular-nums shrink-0 ${page===k
+                          ? (dk?'text-gold-300/90':'text-gold-600')
+                          : (dk?'text-slate-600':'text-slate-400')}`}>
+                          {privacy ? '•••' : railFigures[k]}
+                        </span>
+                      )}
                     </button>
                   );
                 })}

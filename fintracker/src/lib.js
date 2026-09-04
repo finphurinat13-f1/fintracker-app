@@ -1102,3 +1102,34 @@ export const realizedByYear = (assets = [], txs = [], usdRate = 35) => {
   });
   return years;
 };
+
+// ── ONE DEFINITION OF THE HEADLINE FIGURES ────────────────
+// The dashboard called its own version "canonical" in a comment, the holdings
+// page arrived at the same number by a different route (totVal + wallet
+// balances, where the cash-asset overlap cancels), and the rail was about to be
+// a third. Three copies of one formula is how the two pages came to disagree by
+// ฿60.94 once already. Here instead, with tests, so a change lands everywhere.
+//
+// Assets carry what is owned; wallets carry the cash beside it. walletCash
+// already drops the transactions tagged to a wallet's own cash assets, so the
+// two sums do not overlap.
+export const holdingsTotal = (assets=[], txs=[], usdRate=1) =>
+  assets.reduce((s,a)=>s+assetVal(a,txs,usdRate), 0);
+export const walletsTotal = (wallets=[], txs=[], assets=[]) =>
+  wallets.reduce((s,w)=>s+walletCash(w,txs,assets), 0);
+export const netWorthOf = (assets=[], txs=[], wallets=[], usdRate=1) =>
+  holdingsTotal(assets,txs,usdRate) + walletsTotal(wallets,txs,assets);
+
+// What is still owed across every loan. Elapsed months against the schedule,
+// clamped at both ends: a loan cannot have been paid for longer than it runs,
+// and what remains cannot go below zero.
+export const debtRemaining = (debts=[], now=new Date()) =>
+  debts.reduce((sum,d)=>{
+    const payable = (Number(d.monthlyPayment)||0) * (Number(d.totalMonths)||0);
+    if (!(payable > 0)) return sum;
+    const start = new Date(d.startDate);
+    if (isNaN(start)) return sum;
+    const elapsed = Math.max(0, (now.getFullYear()-start.getFullYear())*12 + (now.getMonth()-start.getMonth()));
+    const paid = Math.min(elapsed*(Number(d.monthlyPayment)||0), payable);
+    return sum + Math.max(payable - paid, 0);
+  }, 0);

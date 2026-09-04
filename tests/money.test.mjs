@@ -17,6 +17,7 @@ globalThis.localStorage = {
 
 const {
   walletCash, assetVal, assetTaggedNet, dataHealth, walletDelta, runningBalances, mergeArrById, systemCashByDay, txSign, txAmtCls, revertMove,
+  holdingsTotal, walletsTotal, netWorthOf, debtRemaining,
   isUntouchedBudgets, chooseBudgets, mergeKeyedMap, itemTotals, itemsToAsset, splitBudget, monthlyRate, projectFV, requiredPMT, makeSalt, hashPin, realizedByYear,
   encryptBackup, decryptBackup, isEncryptedBackup, assetCashFlow, whoAmI,
   impliedTicker, catOptions, renameCatInStores, priceAge, annualisedReturn, assetTotalReturn,
@@ -1146,4 +1147,27 @@ test('รายการที่ไม่มี fxUnits ยังนับเ�
   const txs = [{ id: 't1', type: 'income', amount: 5000, date: '2026-09-04', walletId: 'w1', targetAssetId: 'a1' }];
   assert.equal(assetTaggedNet(cash, txs), 5000, 'พฤติกรรมเดิมต้องไม่เปลี่ยน');
   assert.equal(walletCash(w, txs, [cash]), 0);
+});
+
+// ── ยอดหลักที่ทุกหน้าต้องตรงกัน ────────────────────────────
+test('netWorthOf = สินทรัพย์ + เงินในกระเป๋า และไม่นับสินทรัพย์เงินสดซ้ำ', () => {
+  const wallets = [{ id:'w1', initialBalance: 1000 }];
+  // เงินสดที่ผูกกระเป๋า: ยอดอยู่ที่สินทรัพย์ walletCash ต้องไม่นับ tx ที่ผูกไว้ซ้ำ
+  const cash  = { id:'a1', type:'cash',  walletId:'w1', qty:1, currentPrice:500, avgCost:500, currency:'THB' };
+  const stock = { id:'a2', type:'stock', walletId:'w1', qty:10, currentPrice:100, avgCost:80, currency:'THB' };
+  const txs = [{ id:'t1', type:'income', amount:300, date:'2026-09-01', walletId:'w1', targetAssetId:'a1' }];
+  // สินทรัพย์: เงินสด 500+300 = 800 · หุ้น 1000 → 1800 · กระเป๋า: 1000 (tx ถูกตัดออก)
+  assert.equal(holdingsTotal([cash,stock], txs, 1), 1800);
+  assert.equal(walletsTotal(wallets, txs, [cash,stock]), 1000);
+  assert.equal(netWorthOf([cash,stock], txs, wallets, 1), 2800);
+});
+
+test('debtRemaining: หนี้ที่ผ่อนครบแล้วเหลือศูนย์ ไม่ติดลบ', () => {
+  const now = new Date('2026-09-05');
+  const done = { monthlyPayment:1000, totalMonths:12, startDate:'2020-01-01' };
+  const half = { monthlyPayment:1000, totalMonths:48, startDate:'2026-03-05' };  // 6 งวด
+  assert.equal(debtRemaining([done], now), 0, 'ผ่อนเกินกำหนดต้องไม่ติดลบ');
+  assert.equal(debtRemaining([half], now), 42000);
+  assert.equal(debtRemaining([done,half], now), 42000);
+  assert.equal(debtRemaining([], now), 0);
 });
