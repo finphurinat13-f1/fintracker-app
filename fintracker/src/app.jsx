@@ -7564,28 +7564,54 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
             // different amount of the same thing.
             clr: g.counted ? JAR_GOLD[goldStep++ % JAR_GOLD.length] : '#6d8299',
           })).filter(j=>j.total>0);
-          const allocation = grandBudget>0 && jars.length>1 && (
-            <div>
-              <div className={`flex h-2.5 rounded-full overflow-hidden gap-px ${dk?'bg-white/5':'bg-slate-100'}`}>
-                {jars.map(j=>(
-                  <div key={j.label} title={`${j.label} · ${fmtNW(j.total)}`}
-                    style={{width:`${j.total/grandBudget*100}%`, background:j.clr}}/>
-                ))}
+          // The legend row under the bar was three items packed to the left of a
+          // page-wide strip: about six hundred pixels used out of sixteen hundred,
+          // and the reader matching a colour above to a word below.
+          //
+          // The labels go on the segments, which is what the segments are for and
+          // what the two other bars on this app already do. A segment under about
+          // an eighth cannot hold a label, so it keeps its colour and its name
+          // moves to a line underneath — where there is now at most one of them
+          // rather than all three.
+          const allocation = grandBudget>0 && jars.length>1 && (()=>{
+            const wide = j => j.total/grandBudget*100 >= 12;
+            const narrow = jars.filter(j=>!wide(j));
+            return (
+              <div>
+                <div className={`flex h-14 rounded-lg overflow-hidden gap-px ${dk?'bg-white/5':'bg-slate-100'}`}>
+                  {jars.map(j=>{
+                    const pct = j.total/grandBudget*100;
+                    return (
+                      <div key={j.label} title={`${j.label} · ${fmtNW(j.total)}`}
+                        className="flex flex-col justify-center px-3 overflow-hidden"
+                        style={{width:`${pct}%`, background:j.clr}}>
+                        {wide(j) && (<>
+                          <span className="text-[10px] uppercase whitespace-nowrap"
+                            style={{letterSpacing:'0.12em', color:inkOn(j.clr), opacity:0.7}}>{j.label}</span>
+                          <span className="text-sm font-semibold tabular-nums whitespace-nowrap"
+                            style={{color:inkOn(j.clr)}}>{Math.round(pct)}% · {fmtNW(j.total)}</span>
+                        </>)}
+                      </div>
+                    );
+                  })}
+                </div>
+                {narrow.length>0 && (
+                  <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2">
+                    {narrow.map(j=>(
+                      <span key={j.label} className="flex items-baseline gap-1.5 text-[11px]">
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 self-center" style={{background:j.clr}}/>
+                        <span className={dk?'text-slate-400':'text-slate-500'}>{j.label}</span>
+                        <span className={`font-semibold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>
+                          {Math.round(j.total/grandBudget*100)}%
+                        </span>
+                        <span className={`tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{fmtNW(j.total)}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2.5">
-                {jars.map(j=>(
-                  <span key={j.label} className="flex items-baseline gap-1.5 text-[11px]">
-                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 self-center" style={{background:j.clr}}/>
-                    <span className={dk?'text-slate-400':'text-slate-500'}>{j.label}</span>
-                    <span className={`font-semibold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>
-                      {Math.round(j.total/grandBudget*100)}%
-                    </span>
-                    <span className={`tabular-nums ${dk?'text-slate-500':'text-slate-400'}`}>{fmtNW(j.total)}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          );
+            );
+          })();
 
           return (
             <>
