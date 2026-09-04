@@ -7726,13 +7726,26 @@ const BudgetPage = ({txs, theme, onEdit, onRenameCategory}) => {
                 travel of a thumb that had already committed to pressing save.
                 A rule and forty pixels make it a different part of the dialog
                 rather than the next thing down, and it still asks first. */}
-            {groupEdit.id && groups.length>1 && (
+            {/* The last group cannot be deleted: its categories would have
+                nowhere to be moved to and the page would have no section to
+                show them in. The block used to be hidden entirely in that case,
+                so the control somebody was looking for had simply gone, with
+                nothing to say why. It stays, disabled, and says the rule. */}
+            {groupEdit.id && (
               <div className={`mt-7 pt-4 border-t ${dk?'border-white/8':'border-slate-100'}`}>
-                <button onClick={()=>{ const g = groups.find(x=>x.id===groupEdit.id);
-                                       setGroupEdit(null); if (g) deleteGroup(g); }}
-                  className="w-full py-2 rounded-xl text-xs font-medium text-rose-400 hover:text-rose-300 transition-colors">
+                <button disabled={groups.length<=1}
+                  onClick={()=>{ const g = groups.find(x=>x.id===groupEdit.id);
+                    setGroupEdit(null); if (g) deleteGroup(g); }}
+                  className={`w-full py-2 rounded-xl text-xs font-medium transition-colors ${groups.length<=1
+                    ? (dk?'text-slate-600 cursor-not-allowed':'text-slate-400 cursor-not-allowed')
+                    : 'text-rose-400 hover:text-rose-300'}`}>
                   ลบกลุ่มนี้
                 </button>
+                {groups.length<=1 && (
+                  <p className={`mt-1 text-center text-[11px] ${dk?'text-slate-600':'text-slate-400'}`}>
+                    ลบไม่ได้ค่ะ — เหลือกลุ่มเดียว หมวดในกลุ่มจะไม่มีที่ไป
+                  </p>
+                )}
               </div>
             )}
           </div>
