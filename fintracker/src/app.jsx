@@ -2013,22 +2013,29 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
   // What is left carries the weight: a small letterspaced label, a large figure,
   // and a hairline that fades as it travels. The icon plate is gone — a coloured
   // square behind a coloured glyph stated the same thing twice.
-  const StatCard = ({ icon, label, val, sub, extra='', valCls='' }) => (
-    <div className={`relative pt-4 pr-4 ${extra}`}>
-      <span className="absolute top-0 left-0 right-4" aria-hidden="true"
-        style={{height:'2px', background: dk
-          ? 'linear-gradient(90deg, rgba(217,175,43,0.70) 0%, rgba(217,175,43,0.16) 72%, transparent 100%)'
-          : 'linear-gradient(90deg, rgba(154,120,16,0.60) 0%, rgba(154,120,16,0.12) 72%, transparent 100%)'}}/>
-      <div className="flex items-center gap-1.5 mb-2.5">
-        <span className="opacity-70">{icon}</span>
-        <span className={`text-[10px] font-medium uppercase ${dk?'text-slate-400':'text-slate-500'}`}
-          style={{letterSpacing:'0.16em'}}>{label}</span>
-      </div>
-      <div className={`text-[1.65rem] font-semibold tabular-nums ${valCls||(dk?'text-slate-100':'text-slate-800')}`}
-        style={{letterSpacing:'-0.015em', lineHeight:1.1}}>{val}</div>
-      {sub&&<div className={subTx+' mt-1.5'}>{sub}</div>}
-    </div>
-  );
+  const MiniSpark = ({ vals=[], dk }) => {
+    const pts = vals.filter(v=>isFinite(v));
+    if (pts.length < 2) return null;
+    const lo = Math.min(...pts, 0), hi = Math.max(...pts, 0);
+    const span = hi - lo || 1;
+    const x = i => i / (pts.length - 1) * 100;
+    const y = v => 26 - (v - lo) / span * 24;
+    const line = pts.map((v,i)=>`${x(i).toFixed(2)},${y(v).toFixed(2)}`).join(" ");
+    // Where zero sits, so a month below the line reads as below it rather than
+    // just lower than the one before.
+    const zero = y(0);
+    const last = pts[pts.length-1];
+    return (
+      <svg viewBox="0 0 100 28" preserveAspectRatio="none" className="w-full" style={{height:"30px"}}>
+        <line x1="0" y1={zero} x2="100" y2={zero} strokeWidth="0.5"
+          stroke={dk?"rgba(255,255,255,0.14)":"rgba(0,0,0,0.12)"} vectorEffect="non-scaling-stroke"/>
+        <polyline points={line} fill="none" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"
+          stroke={last>=0?"#7aab8a":"#c9726a"} vectorEffect="non-scaling-stroke"/>
+        <circle cx={x(pts.length-1)} cy={y(last)} r="1.6" fill={last>=0?"#7aab8a":"#c9726a"}
+          vectorEffect="non-scaling-stroke"/>
+      </svg>
+    );
+  };
 
 
   return (
@@ -2156,37 +2163,81 @@ const Dashboard = ({ txs, assets, theme, nwHistory=[], wallets=[], user=null, de
             own for four short cards. Side by side they fill one band, and the
             reading order is the one that was always intended: the total, then
             what it is made of. */}
-        <div className="lg:col-span-2">
-        <div className="grid grid-cols-2 gap-x-7 gap-y-6 content-start">
-        {/* Income vs expense used to be stated five ways on one card: figure
-            colour, glyph colour, glyph backing, border tint, outer halo. The
-            label already says which is which, and these four are read as a row
-            — a green figure beside a red one turns a row of related numbers
-            into a scoreboard. The glyph keeps the distinction; the figures are
-            one colour so the row reads as one thing. */}
-        {/* Two rows became one. They were the same four figures at two scopes —
-            all-time above, this month below — and a page that spends two full
-            bands showing income and expense twice is describing one thing twice
-            rather than two things once.
+        <div className="lg:col-span-2 flex flex-col justify-center">
+        {/* Four boxes became one picture. รายรับ, รายจ่าย, ยอดคงเหลือ and
+            อัตราออม are not four facts — they are one arithmetic: what came in,
+            what left, what is left of it, and that remainder as a share. Set out
+            as four equal cards the relationship between them is invisible and
+            the reader does the subtraction.
 
-            This month leads because that is the question the page is opened
-            with; the running total goes underneath in the line that was already
-            there for context. The month sparklines go with the band that held
-            them: three charts of a figure printed directly above them, at a size
-            that showed the shape and not the numbers. */}
-        <StatCard label="ยอดคงเหลือ" val={mask(fmt(balance))}
-          sub={<>{balance<0&&<span className="text-rose-400">⚠ ติดลบ · </span>}เดือนนี้ {mask(fmt(statsCards.cn))}</>}
-          icon={<Ic n="wallet" s={14} cls="text-gold-400"/>}/>
-        <StatCard label="รายรับ" val={mask(fmt(statsCards.ci))}
-          sub={<>ตลอด {mask(fmt(income))} · {txs.filter(t=>t.type==='income').length} รายการ</>}
-          icon={<Ic n="up" s={14} cls="text-gold-400"/>}/>
-        <StatCard label="รายจ่าย" val={mask(fmt(statsCards.ce))}
-          sub={<>ตลอด {mask(fmt(expense))} · {txs.filter(t=>t.type==='expense').length} รายการ</>}
-          icon={<Ic n="down" s={14} cls="text-gold-400"/>}/>
-        <StatCard label="อัตราออม" val={hideAmt?'••%':`${savRate.toFixed(1)}%`}
-          sub={savRate>=20?'✓ ดีมาก':'↑ เพิ่มได้อีก'}
-          icon={<Ic n="chart" s={14} cls="text-gold-400"/>} valCls={dk?'tg-gold':'text-slate-800'}/>
-      </div>
+            As a bar, income is the whole width and the other three are places
+            on it. Nothing to work out: if the right-hand block is the larger
+            one, the month went well. */}
+        {(()=>{
+          const inc = statsCards.ci, exp = statsCards.ce, net = inc - exp;
+          const over = exp > inc;                       // spent more than came in
+          // Two of the three months on screen can be degenerate — a salary that
+          // has not landed yet makes income zero, and a bar divided by zero is a
+          // blank strip that looks broken rather than early.
+          const pctExp = inc > 0 ? Math.min(exp / inc * 100, 100) : (exp > 0 ? 100 : 0);
+          const rate   = inc > 0 ? net / inc * 100 : 0;
+          const tone   = over ? '#c9726a' : '#d9af2b';
+          return (
+            <div>
+              <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                <span className={`text-[10px] font-medium uppercase ${dk?'text-slate-400':'text-slate-500'}`}
+                  style={{letterSpacing:'0.16em'}}>รายรับเดือนนี้</span>
+                <span className={`text-[1.65rem] font-semibold tabular-nums ${dk?'text-slate-100':'text-slate-800'}`}
+                  style={{letterSpacing:'-0.015em', lineHeight:1.1}}>{mask(fmt(inc))}</span>
+              </div>
+
+              <div className={`mt-3 flex h-9 rounded-lg overflow-hidden ${dk?'bg-white/5':'bg-slate-100'}`}>
+                <div className="h-full transition-all duration-700 flex-shrink-0"
+                  style={{width:`${pctExp}%`, background: dk?'rgba(201,114,106,0.55)':'rgba(201,114,106,0.40)'}}/>
+                <div className="h-full flex-1 transition-all duration-700"
+                  style={{background: dk?'rgba(122,171,138,0.42)':'rgba(122,171,138,0.30)'}}/>
+              </div>
+
+              {/* The two figures sit under the blocks they belong to rather than
+                  in a legend, so nothing has to be matched up by colour. */}
+              <div className="mt-2.5 flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
+                    style={{letterSpacing:'0.12em'}}>จ่ายไป</div>
+                  <div className={`text-sm font-semibold tabular-nums ${dk?'text-slate-200':'text-slate-700'}`}>
+                    {mask(fmt(exp))}
+                  </div>
+                </div>
+                <div className="min-w-0 text-right">
+                  <div className={`text-[10px] uppercase ${dk?'text-slate-500':'text-slate-400'}`}
+                    style={{letterSpacing:'0.12em'}}>{over ? 'เกินรายรับ' : 'เก็บได้'}</div>
+                  <div className="flex items-baseline gap-2 justify-end">
+                    <span className={`text-sm font-semibold tabular-nums ${over
+                      ? 'text-rose-400' : (dk?'text-slate-200':'text-slate-700')}`}>
+                      {mask(fmt(Math.abs(net)))}
+                    </span>
+                    <span className="text-sm font-bold tabular-nums" style={{color:tone}}>
+                      {inc > 0 ? `${rate.toFixed(0)}%` : '—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* B: the shape behind the figure. A month on its own says nothing
+                  about whether it is a good one — twelve of them do. */}
+              <div className="mt-4">
+                <div className={`text-[10px] uppercase mb-1.5 ${dk?'text-slate-500':'text-slate-400'}`}
+                  style={{letterSpacing:'0.12em'}}>คงเหลือ 12 เดือน</div>
+                <MiniSpark vals={statsCards.netD} dk={dk}/>
+              </div>
+
+              <div className={`mt-3 pt-3 border-t text-xs ${dk?'border-white/8 text-slate-400':'border-slate-100 text-slate-500'}`}>
+                ตลอด · รับ {mask(fmt(income))} · จ่าย {mask(fmt(expense))} ·
+                {' '}เก็บ {mask(fmt(balance))} ({savRate.toFixed(1)}%)
+              </div>
+            </div>
+          );
+        })()}
         </div>
       </div>
 
