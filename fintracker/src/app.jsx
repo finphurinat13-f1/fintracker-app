@@ -4586,6 +4586,34 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
   // which only exist after the row has been worked out. Taking it from the raw
   // list would mean computing them a second time, differently.
   const selected = selId!=null ? enriched.find(a=>a.id===selId) || null : null;
+
+  // Arrow keys walk the list once something is selected. The panel is built for
+  // comparing one holding against the next, and reaching for the mouse between
+  // each one is most of the work it was meant to remove. Escape closes it.
+  //
+  // Bound to the document rather than to a row, because the click that selects
+  // moves focus nowhere in particular, and a table of ten columns has no
+  // obvious element to have put it on.
+  useEffect(()=>{
+    if(selId==null) return;
+    const onKey = e => {
+      if(e.key==='Escape'){ setSelId(null); return; }
+      if(e.key!=='ArrowDown' && e.key!=='ArrowUp') return;
+      // Not while something is being typed into: the price cell and the search
+      // box both use the same keys to mean something else.
+      const t = e.target;
+      if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable)) return;
+      e.preventDefault();
+      setSelId(cur=>{
+        const i = enriched.findIndex(a=>a.id===cur);
+        if(i<0) return cur;
+        const next = i + (e.key==='ArrowDown' ? 1 : -1);
+        return next>=0 && next<enriched.length ? enriched[next].id : cur;
+      });
+    };
+    window.addEventListener('keydown', onKey);
+    return ()=>window.removeEventListener('keydown', onKey);
+  },[selId, enriched]);
   const totCost   = enriched.reduce((s,a)=>s+a.costTHB,0);
   const totVal    = enriched.reduce((s,a)=>s+a.valTHB,0);
   const totPL     = totVal-totCost;
