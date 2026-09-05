@@ -4825,7 +4825,7 @@ const AssetsPage = ({assets, onEdit, onDelete, onAdd, onInvest, onPriceUpdate, o
             </div>
             <div className="relative">
               <div className={`text-xs font-medium uppercase tracking-wide mb-1 ${dk?'text-slate-400':'text-slate-500'}`}>มูลค่าสินทรัพย์รวม</div>
-              <div className={`text-3xl font-bold tracking-tight ${dk?'tg-white':'text-slate-800'}`}>{fmtNW(heroPortfolioVal+heroWalletVal+otherAssetsTotal)}</div>
+              <div className={`text-2xl sm:text-3xl font-bold tracking-tight ${dk?'tg-white':'text-slate-800'}`}>{fmtNW(heroPortfolioVal+heroWalletVal+otherAssetsTotal)}</div>
             </div>
             <div className="relative flex flex-wrap gap-2 mt-4">
               {[
@@ -9735,7 +9735,7 @@ const WalletPage = ({ wallets, txs, assets=[], onAdd, onEdit, onDelete, onAddTx,
           <div className="lg:col-span-3 flex flex-col justify-center">
             <div>
               <p className={`text-xs font-medium uppercase tracking-widest mb-1 ${dk?'text-slate-400':'text-slate-500'}`}>ยอดรวมกระเป๋าเงิน</p>
-              <div className={`text-2xl lg:text-3xl font-bold tracking-tight ${dk?'text-white':'text-slate-800'}`}>{fmt(totalBalance)}</div>
+              <div className={`text-2xl sm:text-3xl font-bold tracking-tight ${dk?'tg-white':'text-slate-800'}`}>{fmtNW(totalBalance)}</div>
               {/* "16 กระเป๋า · 35 สินทรัพย์" went here, one line under a page header
                   that already said 16 กระเป๋า. The asset count was the only new
                   thing in it, so that moved up and the line went. */}
@@ -11843,6 +11843,21 @@ const LoginPage = ({ theme }) => {
 // devtools, in the synced copy, and in any downloaded backup. So it is called
 // ซ่อน everywhere and never ปลอดภัย, and the way out of a forgotten PIN is
 // stated up front rather than left to be discovered in a panic.
+// What follows the account rather than the browser. The rule for being on this
+// list is that it describes how the owner wants the app, not where this copy of
+// it happens to be: masking, saved views, filters, which panels are open.
+//
+// Deliberately absent: ft-device-id, which is the whole point of a device id;
+// ft-lock-until and the failed-attempt counters, which are this device saying
+// how recently it was in your hand; ft-page and ft-last-backup, which are about
+// this session rather than about you.
+const SYNCED_PREFS = [
+  'ft-privacy', 'ft-hideamt',
+  'ft-tx-views', 'ft-tx-filters', 'ft-tx-range',
+  'ft-dayexp', 'ft-daymode', 'ft-budget-unused',
+  'ft-checklist-done', 'ft-health-ok', 'ft-onboard-done',
+];
+
 const LOCK = { on:'ft-lock-on', salt:'ft-lock-salt', hash:'ft-lock-hash' };
 const lockVerify = async pin => {
   try {
@@ -12254,6 +12269,9 @@ const App = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [authLoading,setAuthL]   = useState(true);
   const [dataLoading,setDataL]   = useState(true); // waiting for Firebase data
+  // Watchdog for the snapshot below: a connection that hangs rather than
+  // fails would otherwise leave the skeleton up until the tab is closed.
+  const loadGuard = useRef(null);
   const [syncStatus,setSyncSt]   = useState('idle');
   const [dataKey,setDataKey]     = useState(0);
   const [sidebarOpen,setSidebarOpen] = useState(false);
@@ -12262,7 +12280,7 @@ const App = () => {
   // screen can be shown to somebody, and asking for a passcode to undo that
   // would make every screenshot cost three steps.
   const [hideAmt,setHideAmt]     = useState(_hideAmt);
-  const toggleHideAmt = () => { const v=!_hideAmt; _hideAmt=v; try{localStorage.setItem('ft-hideamt',v?'1':'0');}catch{} setHideAmt(v); };
+  const toggleHideAmt = () => { const v=!_hideAmt; _hideAmt=v; try{localStorage.setItem('ft-hideamt',v?'1':'0');}catch{} setHideAmt(v); syncToCloud(); };
   const [lockOn,setLockOn]       = useState(_locked);
   const [pinGate,setPinGate]     = useState(null);   // 'unlock' | 'set' | 'off'
   // The padlock is the security control, not the one used to tidy a screen for
@@ -12274,6 +12292,7 @@ const App = () => {
     try{localStorage.setItem('ft-privacy',on?'1':'0');}catch{}
     if(on) lockDrop(); else lockTouch();
     setPrivacy(on);
+    syncToCloud();
   };
   // Hiding never asks; only revealing does. A lock that got in the way of
   // putting the numbers away would be one people stop using.
@@ -12576,6 +12595,8 @@ const App = () => {
     if (firestoreUnsub.current) { firestoreUnsub.current(); firestoreUnsub.current=null; }
     if (!user) return;
     setDataL(true);
+    clearTimeout(loadGuard.current);
+    loadGuard.current = setTimeout(()=>setDataL(false), 12000);
     firestoreUnsub.current = db.collection('users').doc(user.uid).onSnapshot(snap=>{
       if (!snap.exists) {
         setDataL(false);
@@ -12588,85 +12609,105 @@ const App = () => {
         setDataL(false);
         return;
       }
-      // Cloud-first: apply remote data
-      let cnt = 0;
-      if (d.txs) cnt++; if (d.assets) cnt++; if (d.wallets) cnt++; if (Array.isArray(d.debts)) cnt++; if (Array.isArray(d.custodial)) cnt++; if (Array.isArray(d.trash)) cnt++;
-      downloadPending.current = cnt;
-      if (d.txs)       { setTxs(d.txs);         localStorage.setItem('ft-txs',          JSON.stringify(d.txs)); }
-      if (d.assets)    { setAssets(d.assets);    localStorage.setItem('ft-assets',       JSON.stringify(d.assets)); }
-      if (d.wallets)   { setWallets(d.wallets);  localStorage.setItem('ft-wallets',      JSON.stringify(d.wallets)); }
-      if (Array.isArray(d.trash)) { setTrash(d.trash); localStorage.setItem('ft-trash', JSON.stringify(d.trash)); }
-      if (d.nwHistory) { setNwHistory(d.nwHistory); localStorage.setItem('ft-nw-history',JSON.stringify(d.nwHistory)); }
-      // budgets/irregularCats: local is always authoritative (matches uploadNow, which makes the cloud copy match
-      // local exactly). Skip applying a remote snapshot here if a local edit is still pending upload — otherwise a
-      // delete-then-immediate-refresh can have the stale remote value overwrite localStorage moments before
-      // uploadNow reads it, silently reverting the very deletion that upload was about to push.
-      if (d.budgets && !pendingSync.current) {
-        localStorage.setItem('ft-budgets', JSON.stringify(d.budgets));
-      }
-      if (d.irregularCats && !pendingSync.current) {
-        localStorage.setItem('ft-cat-irregular', JSON.stringify(d.irregularCats));
-      }
-      // Groups carry both the list and each category's membership, and follow
-      // budgets exactly: local wins, and a remote copy is not applied while a
-      // local edit is still on its way up.
-      if (d.budgetGroups && Array.isArray(d.budgetGroups.groups) && !pendingSync.current) {
-        localStorage.setItem('ft-budget-groups', JSON.stringify(d.budgetGroups));
-      }
-      // per-month budget snapshots — merged, never replaced, so a month this device
-      // recorded is not dropped by a cloud copy that never saw it
-      const mergeDown = (key, remote) => {
-        if (!remote) return;
-        const local = (()=>{try{return JSON.parse(localStorage.getItem(key)||'null')||{};}catch{return {};}})();
-        localStorage.setItem(key, JSON.stringify(mergeKeyedMap(local, remote)));
-      };
-      mergeDown('ft-budget-history',    d.budgetHistory);
-      mergeDown('ft-cat-meta',          d.catMeta);
-      mergeDown('ft-import-cat-memory', d.importCatMemory);
-      if (d.colorTheme) localStorage.setItem('ft-color-theme', d.colorTheme);
-      if (d.goals)     localStorage.setItem('ft-goals',     JSON.stringify(d.goals));
-      if (d.recurring) localStorage.setItem('ft-recurring', JSON.stringify(d.recurring));
-      if (d.usdrate)   localStorage.setItem('ft-usdrate',   String(d.usdrate));
-      if (d.theme)     { setTheme(d.theme); localStorage.setItem('ft-theme', d.theme); }
-      if (d.walletOrder){ setWalletOrder(d.walletOrder); localStorage.setItem('ft-wallet-order',JSON.stringify(d.walletOrder)); }
-      // Applied to state as well as storage: _locked is read once when the
-      // module loads, which is long before the first download arrives.
-      if (d.lock) {
-        if (d.lock.on && d.lock.salt && d.lock.hash) {
-          localStorage.setItem('ft-lock-on','1');
-          localStorage.setItem('ft-lock-salt', d.lock.salt);
-          localStorage.setItem('ft-lock-hash', d.lock.hash);
-          setLockOn(true);
-        } else if (d.lock.on === false) {
-          ['ft-lock-on','ft-lock-salt','ft-lock-hash'].forEach(k=>{ try{localStorage.removeItem(k);}catch{} });
-          setLockOn(false);
+      try {
+        // Cloud-first: apply remote data
+        let cnt = 0;
+        if (d.txs) cnt++; if (d.assets) cnt++; if (d.wallets) cnt++; if (Array.isArray(d.debts)) cnt++; if (Array.isArray(d.custodial)) cnt++; if (Array.isArray(d.trash)) cnt++;
+        downloadPending.current = cnt;
+        if (d.txs)       { setTxs(d.txs);         localStorage.setItem('ft-txs',          JSON.stringify(d.txs)); }
+        if (d.assets)    { setAssets(d.assets);    localStorage.setItem('ft-assets',       JSON.stringify(d.assets)); }
+        if (d.wallets)   { setWallets(d.wallets);  localStorage.setItem('ft-wallets',      JSON.stringify(d.wallets)); }
+        if (Array.isArray(d.trash)) { setTrash(d.trash); localStorage.setItem('ft-trash', JSON.stringify(d.trash)); }
+        if (d.nwHistory) { setNwHistory(d.nwHistory); localStorage.setItem('ft-nw-history',JSON.stringify(d.nwHistory)); }
+        // budgets/irregularCats: local is always authoritative (matches uploadNow, which makes the cloud copy match
+        // local exactly). Skip applying a remote snapshot here if a local edit is still pending upload — otherwise a
+        // delete-then-immediate-refresh can have the stale remote value overwrite localStorage moments before
+        // uploadNow reads it, silently reverting the very deletion that upload was about to push.
+        if (d.budgets && !pendingSync.current) {
+          localStorage.setItem('ft-budgets', JSON.stringify(d.budgets));
         }
-      }
-      if (Array.isArray(d.debts)) { setDebts(d.debts); localStorage.setItem('ft-debts', JSON.stringify(d.debts)); }
-      if (Array.isArray(d.custodial)) { setCustodial(d.custodial); localStorage.setItem('ft-custodial', JSON.stringify(d.custodial)); }
-      // cloud is now the baseline for future merges (use cloud where present, else keep current)
-      syncedRef.current = {
-        txs:     d.txs     ? d.txs     : txsRef.current,
-        assets:  d.assets  ? d.assets  : assetsRef.current,
-        wallets: d.wallets ? d.wallets : walletsRef.current,
-        debts:   Array.isArray(d.debts) ? d.debts : debtsRef.current,
-        custodial: Array.isArray(d.custodial) ? d.custodial : custodialRef.current,
-        trash:   Array.isArray(d.trash) ? d.trash : trashRef.current,
-      };
-      setDataL(false);
-      setDataKey(k=>k+1);
-      // Daily backup (ครั้งแรกของวัน)
-      const today = new Date().toISOString().slice(0,10);
-      if (localStorage.getItem('ft-last-backup') !== today) {
-        db.collection('users').doc(user.uid).collection('backups').doc(today)
-          .set({ ...d, savedAt: new Date().toISOString() })
-          .then(async()=>{
-            localStorage.setItem('ft-last-backup', today);
-            const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-7);
-            const old = await db.collection('users').doc(user.uid).collection('backups')
-              .where(firebase.firestore.FieldPath.documentId(), '<', cutoff.toISOString().slice(0,10)).get();
-            old.docs.forEach(doc=>doc.ref.delete());
-          }).catch(()=>{});
+        if (d.irregularCats && !pendingSync.current) {
+          localStorage.setItem('ft-cat-irregular', JSON.stringify(d.irregularCats));
+        }
+        // Groups carry both the list and each category's membership, and follow
+        // budgets exactly: local wins, and a remote copy is not applied while a
+        // local edit is still on its way up.
+        if (d.budgetGroups && Array.isArray(d.budgetGroups.groups) && !pendingSync.current) {
+          localStorage.setItem('ft-budget-groups', JSON.stringify(d.budgetGroups));
+        }
+        // per-month budget snapshots — merged, never replaced, so a month this device
+        // recorded is not dropped by a cloud copy that never saw it
+        const mergeDown = (key, remote) => {
+          if (!remote) return;
+          const local = (()=>{try{return JSON.parse(localStorage.getItem(key)||'null')||{};}catch{return {};}})();
+          localStorage.setItem(key, JSON.stringify(mergeKeyedMap(local, remote)));
+        };
+        mergeDown('ft-budget-history',    d.budgetHistory);
+        mergeDown('ft-cat-meta',          d.catMeta);
+        mergeDown('ft-import-cat-memory', d.importCatMemory);
+        if (d.colorTheme) localStorage.setItem('ft-color-theme', d.colorTheme);
+        if (d.goals)     localStorage.setItem('ft-goals',     JSON.stringify(d.goals));
+        if (d.recurring) localStorage.setItem('ft-recurring', JSON.stringify(d.recurring));
+        if (d.usdrate)   localStorage.setItem('ft-usdrate',   String(d.usdrate));
+        if (d.theme)     { setTheme(d.theme); localStorage.setItem('ft-theme', d.theme); }
+        if (d.walletOrder){ setWalletOrder(d.walletOrder); localStorage.setItem('ft-wallet-order',JSON.stringify(d.walletOrder)); }
+        if (d.prefs) {
+          Object.entries(d.prefs).forEach(([k,v])=>{
+            if (SYNCED_PREFS.includes(k) && typeof v === 'string') { try{ localStorage.setItem(k,v); }catch{} }
+          });
+          // The two that are already held in React state have to be told; the
+          // rest are read by their own page when it next mounts, and Budget and
+          // Wallet remount on the dataKey bump at the end of this handler.
+          if (typeof d.prefs['ft-privacy'] === 'string') applyPrivacy(d.prefs['ft-privacy'] === '1');
+          if (typeof d.prefs['ft-hideamt'] === 'string') { _hideAmt = d.prefs['ft-hideamt'] === '1'; setHideAmt(_hideAmt); }
+        }
+        // Applied to state as well as storage: _locked is read once when the
+        // module loads, which is long before the first download arrives.
+        if (d.lock) {
+          if (d.lock.on && d.lock.salt && d.lock.hash) {
+            localStorage.setItem('ft-lock-on','1');
+            localStorage.setItem('ft-lock-salt', d.lock.salt);
+            localStorage.setItem('ft-lock-hash', d.lock.hash);
+            setLockOn(true);
+          } else if (d.lock.on === false) {
+            ['ft-lock-on','ft-lock-salt','ft-lock-hash'].forEach(k=>{ try{localStorage.removeItem(k);}catch{} });
+            setLockOn(false);
+          }
+        }
+        if (Array.isArray(d.debts)) { setDebts(d.debts); localStorage.setItem('ft-debts', JSON.stringify(d.debts)); }
+        if (Array.isArray(d.custodial)) { setCustodial(d.custodial); localStorage.setItem('ft-custodial', JSON.stringify(d.custodial)); }
+        // cloud is now the baseline for future merges (use cloud where present, else keep current)
+        syncedRef.current = {
+          txs:     d.txs     ? d.txs     : txsRef.current,
+          assets:  d.assets  ? d.assets  : assetsRef.current,
+          wallets: d.wallets ? d.wallets : walletsRef.current,
+          debts:   Array.isArray(d.debts) ? d.debts : debtsRef.current,
+          custodial: Array.isArray(d.custodial) ? d.custodial : custodialRef.current,
+          trash:   Array.isArray(d.trash) ? d.trash : trashRef.current,
+        };
+        setDataL(false);
+        setDataKey(k=>k+1);
+        // Daily backup (ครั้งแรกของวัน)
+        const today = new Date().toISOString().slice(0,10);
+        if (localStorage.getItem('ft-last-backup') !== today) {
+          db.collection('users').doc(user.uid).collection('backups').doc(today)
+            .set({ ...d, savedAt: new Date().toISOString() })
+            .then(async()=>{
+              localStorage.setItem('ft-last-backup', today);
+              const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-7);
+              const old = await db.collection('users').doc(user.uid).collection('backups')
+                .where(firebase.firestore.FieldPath.documentId(), '<', cutoff.toISOString().slice(0,10)).get();
+              old.docs.forEach(doc=>doc.ref.delete());
+            }).catch(()=>{});
+        }
+      } catch (err) {
+        // Deliberately swallowed after logging. The alternative is a blank
+        // page, and everything this handler writes is a copy of what is
+        // already in state or storage.
+        try{ console.error('[sync] failed to apply snapshot', err); }catch{}
+      } finally {
+        setDataL(false);
+        setDataKey(k=>k+1);
       }
     }, ()=>setDataL(false));
     return ()=>{ if(firestoreUnsub.current){ firestoreUnsub.current(); firestoreUnsub.current=null; } };
@@ -12687,6 +12728,10 @@ const App = () => {
       theme:        localStorage.getItem('ft-theme') || 'light',
       colorTheme:   localStorage.getItem('ft-color-theme') || 'terminal',
       walletOrder:  JSON.parse(localStorage.getItem('ft-wallet-order') || 'null') || [],
+      // Everything else the app remembers about how you like it. These were
+      // per-browser, which is why the rail read ฿9,569,712 on one machine and
+      // ฿ ••••• on another: the same account, two masking states.
+      prefs: (()=>{ const o={}; SYNCED_PREFS.forEach(k=>{ const v=localStorage.getItem(k); if(v!=null) o[k]=v; }); return o; })(),
       lock: (()=>{ const on=localStorage.getItem('ft-lock-on'), salt=localStorage.getItem('ft-lock-salt'), hash=localStorage.getItem('ft-lock-hash');
                    return (on==='1'&&salt&&hash) ? {on:true,salt,hash} : {on:false}; })(),
       updatedAt,
