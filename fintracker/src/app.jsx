@@ -12622,6 +12622,19 @@ const App = () => {
       if (d.usdrate)   localStorage.setItem('ft-usdrate',   String(d.usdrate));
       if (d.theme)     { setTheme(d.theme); localStorage.setItem('ft-theme', d.theme); }
       if (d.walletOrder){ setWalletOrder(d.walletOrder); localStorage.setItem('ft-wallet-order',JSON.stringify(d.walletOrder)); }
+      // Applied to state as well as storage: _locked is read once when the
+      // module loads, which is long before the first download arrives.
+      if (d.lock) {
+        if (d.lock.on && d.lock.salt && d.lock.hash) {
+          localStorage.setItem('ft-lock-on','1');
+          localStorage.setItem('ft-lock-salt', d.lock.salt);
+          localStorage.setItem('ft-lock-hash', d.lock.hash);
+          setLockOn(true);
+        } else if (d.lock.on === false) {
+          ['ft-lock-on','ft-lock-salt','ft-lock-hash'].forEach(k=>{ try{localStorage.removeItem(k);}catch{} });
+          setLockOn(false);
+        }
+      }
       if (Array.isArray(d.debts)) { setDebts(d.debts); localStorage.setItem('ft-debts', JSON.stringify(d.debts)); }
       if (Array.isArray(d.custodial)) { setCustodial(d.custodial); localStorage.setItem('ft-custodial', JSON.stringify(d.custodial)); }
       // cloud is now the baseline for future merges (use cloud where present, else keep current)
@@ -12667,6 +12680,8 @@ const App = () => {
       theme:        localStorage.getItem('ft-theme') || 'light',
       colorTheme:   localStorage.getItem('ft-color-theme') || 'terminal',
       walletOrder:  JSON.parse(localStorage.getItem('ft-wallet-order') || 'null') || [],
+      lock: (()=>{ const on=localStorage.getItem('ft-lock-on'), salt=localStorage.getItem('ft-lock-salt'), hash=localStorage.getItem('ft-lock-hash');
+                   return (on==='1'&&salt&&hash) ? {on:true,salt,hash} : {on:false}; })(),
       updatedAt,
     };
     const localBudgetsNow = (()=>{try{return JSON.parse(localStorage.getItem('ft-budgets')||'null')||{};}catch{return {};}})();
@@ -14078,8 +14093,8 @@ const App = () => {
           if(what==='change'){ setPinGate('set'); return; }   // straight on to choosing the new one
           setPinGate(null);
           if(what==='unlock') applyPrivacy(false);
-          if(what==='set'){ setLockOn(true); applyPrivacy(true); addToast('🔒 Passcode set — amounts hidden on every launch'); }
-          if(what==='off'){ setLockOn(false); addToast('🔓 Passcode removed'); }
+          if(what==='set'){ setLockOn(true); applyPrivacy(true); syncToCloud(); addToast('🔒 Passcode set — amounts hidden on every launch'); }
+          if(what==='off'){ setLockOn(false); syncToCloud(); addToast('🔓 Passcode removed'); }
         }}/>
       <UnifiedTransferModal open={unifiedOpen.open} presetFrom={unifiedOpen.from} presetTo={unifiedOpen.to} onClose={()=>setUnifiedOpen({open:false,from:null,to:null})} onSave={saveUnifiedTransfer} wallets={wallets} assets={assets} txs={txs} theme={theme}/>
       <DCAModal open={dcaModal.open} onClose={()=>setDcaModal({open:false,asset:null})} asset={dcaModal.asset} usdRate={35} theme={theme}/>
