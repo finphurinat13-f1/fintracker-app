@@ -1,5 +1,5 @@
 // Bump CACHE on every shippable change so the activate step purges old caches.
-const CACHE = 'fintracker-v13';
+const CACHE = 'fintracker-v14';
 
 // Stable, versioned runtime libs — safe to precache. The app HTML is NOT here:
 // it must always come network-first so new deploys reach users immediately.

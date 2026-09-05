@@ -625,7 +625,40 @@ const db   = firebase.firestore();
 <script>
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    // Whether a worker was already driving this page. controllerchange fires on
+    // the very first install too, and reloading then would refresh a page that
+    // is already current.
+    var hadController = !!navigator.serviceWorker.controller;
+    var reloaded = false;
+
+    navigator.serviceWorker.register('/sw.js').then(function(reg){
+      // Ask on every launch, and again hourly for a tab left open. Left to
+      // itself the browser re-checks sw.js on its own schedule, and a phone
+      // that keeps the tab alive can sit on one build for days — which is how
+      // the wallets page went on folding the gold total into two other buckets
+      // for a week after that was fixed.
+      var poke = function(){ try{ reg.update(); }catch(e){} };
+      poke();
+      setInterval(poke, 60*60*1000);
+      document.addEventListener('visibilitychange', function(){
+        if(document.visibilityState === 'visible') poke();
+      });
+    }).catch(function(){});
+
+    // sw.js calls skipWaiting and clients.claim, so a new worker takes over as
+    // soon as it installs. Reload once at that moment so the page matches the
+    // worker that is now serving it.
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if(!hadController || reloaded) return;
+      reloaded = true;
+      // Once per tab. If an update somehow never settles, a loop would make the
+      // app unusable, and sessionStorage forgets when the tab closes.
+      try{
+        if(sessionStorage.getItem('ft-sw-reloaded') === '1') return;
+        sessionStorage.setItem('ft-sw-reloaded','1');
+      }catch(e){}
+      location.reload();
+    });
   });
 }
 </script>
