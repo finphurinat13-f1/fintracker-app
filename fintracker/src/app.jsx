@@ -5919,13 +5919,19 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
           รายรับ minus รายจ่าย is คงเหลือ, and อัตราออม is that remainder over
           รายรับ — laid out as four equal rules so nothing said which of them
           the page was for. The bar says all four and says which. */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 lg:gap-7 items-stretch">
+          {/* Bar and chart together: both are about the same figure, and
+              the chart had a band of its own under a band whose right half
+              ended early — a full row spent on five points, with the space
+              beside the facts column empty above it. Stacked here, the facts
+              column finally has something to be as tall as. */}
+        <div className="lg:col-span-3 flex flex-col gap-5">
         {(()=>{
           const over = totExp > totInc;
           const pctE = totInc > 0 ? Math.min(totExp / totInc * 100, 100) : (totExp > 0 ? 100 : 0);
           const tone = over ? '#c9726a' : '#7aab8a';
           return (
-            <div className="lg:col-span-3">
+            <div>
               <div className="flex items-baseline gap-3 flex-wrap">
                 <span className={`text-[10px] font-medium uppercase ${dk?'text-slate-400':'text-slate-500'}`}
                   style={{letterSpacing:'0.16em'}}>รายรับรวม</span>
@@ -5965,11 +5971,21 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
             </div>
           );
         })()}
+        <div className={`${card} p-5 flex flex-col`}>
+          <div className="flex items-baseline gap-2.5 flex-wrap mb-3">
+            <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>คงเหลือ &amp; อัตราออม</h3>
+            <p className={`text-xs ${sub}`}>แท่ง = เงินที่เหลือ · เส้น = เก็บได้กี่ % ของรายรับ</p>
+          </div>
+          <div className="flex-1" style={{minHeight:'200px'}}>
+            <NetRateChart rows={data} theme={theme} hide={false}/>
+          </div>
+        </div>
+        </div>
 
-        {/* The facts that are not part of that sum, which used to be a band of
-            their own beside the chart. The chart takes the full width below
-            instead — twelve points read better across the page than in three
-            fifths of it, and this page now opens the way the rest do. */}
+        {/* The facts that are not part of that sum: dividends, month on month,
+            the runway. They sit beside the bar and the chart rather than under
+            them, which is what makes the column worth its width — three short
+            figures on their own would have been a strip. */}
         <div className={`${card} p-5 lg:col-span-2 flex flex-col`}>
           <div className="flex flex-col gap-2">
             {[{label:'รายรับ MoM',val:curInc,mom:momInc,good:true},{label:'รายจ่าย MoM',val:curExp,mom:momExp,good:false}].map(({label,val,mom,good})=>(
@@ -6055,22 +6071,6 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
           )}
         </div>
       </div>
-
-      {/* The chart takes the whole width. It shared a band with the four short
-          facts beside it — dividends, month on month, the runway — and those
-          have moved up into the opening, where they are the supporting half of
-          the figure they support. Twelve points read better across the page
-          than in three fifths of it. */}
-      <div className={`${card} p-5 flex flex-col`}>
-        <div className="flex items-baseline gap-2.5 flex-wrap mb-3">
-          <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>คงเหลือ &amp; อัตราออม</h3>
-          <p className={`text-xs ${sub}`}>แท่ง = เงินที่เหลือ · เส้น = เก็บได้กี่ % ของรายรับ</p>
-        </div>
-        <div className="flex-1" style={{minHeight:'230px'}}>
-          <NetRateChart rows={data} theme={theme} hide={false}/>
-        </div>
-      </div>
-
       {/* Table */}
       <div className={`${card} overflow-hidden`}>
         {/* Same fix as the assets table: the wrapper must be the scroll
