@@ -2541,11 +2541,17 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
   const [fCat,setFCat]=useState(savedF.fCat||'all');
   const [fWallet,setFWallet]=useState(savedF.fWallet||'all');
   const [views,setViews]=useState(()=>{ try { return JSON.parse(localStorage.getItem('ft-tx-views')||'null')||[]; } catch { return []; } });
-  // Which stretch of time the page opens on. Stored as the choice ("today"),
+  // Which stretch of time the page opens on. Stored as the choice ("month"),
   // never as the date itself — a saved 2026-08-08 would still say 2026-08-08
   // tomorrow, and the page would open on a day that has quietly become
   // yesterday. Resolved to real dates below, on every load.
-  const [dRange,setDRange]=useState(()=>{ try { return localStorage.getItem('ft-tx-range') || 'today'; } catch { return 'today'; } });
+  //
+  // The first-run default was today, which on a device that has never opened
+  // this page shows a handful of rows at most and reads as a filter somebody
+  // left on — Fin had to clear it before the list looked like a list. The
+  // month is the span the summary bar above it is worth reading for, and it
+  // is still narrow enough to arrive quickly.
+  const [dRange,setDRange]=useState(()=>{ try { return localStorage.getItem('ft-tx-range') || 'month'; } catch { return 'month'; } });
   const initDates = (() => {
     const d = new Date().toISOString().slice(0,10);
     if (dRange==='today') return [d, d];
@@ -2557,7 +2563,8 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
   useEffect(()=>{ try { localStorage.setItem('ft-tx-range', dRange); } catch {} },[dRange]);
   useEffect(()=>{ try { localStorage.setItem('ft-tx-filters', JSON.stringify({fType,fCat,fWallet})); } catch {} },[fType,fCat,fWallet]);
   useEffect(()=>{ try { localStorage.setItem('ft-tx-views', JSON.stringify(views)); } catch {} },[views]);
-  const filterOn = fType!=='all'||fCat!=='all'||fWallet!=='all';
+  const dateOn   = dRange!=='all' || !!fDateFrom || !!fDateTo;
+  const filterOn = fType!=='all'||fCat!=='all'||fWallet!=='all'||dateOn;
   const applyView = v => { setFType(v.fType||'all'); setFCat(v.fCat||'all'); setFWallet(v.fWallet||'all'); if(v.dRange) setDRange(v.dRange); };
   const saveView = () => {
     const name = (window.prompt('ตั้งชื่อมุมมองนี้','')||'').trim();
@@ -2788,7 +2795,7 @@ const TxPage = ({ txs, theme, onEdit, onRepeat, onAdd, onDelete, onBulkDelete, o
                   className={`px-2.5 py-1 rounded-full text-xs font-medium border border-dashed transition-colors ${dk?'border-white/20 text-slate-400 hover:text-gold-300 hover:border-gold-500/40':'border-slate-300 text-slate-500 hover:text-gold-700'}`}>
                   + บันทึกมุมมองนี้
                 </button>
-                <button onClick={()=>{setFType('all');setFCat('all');setFWallet('all');}}
+                <button onClick={()=>{setFType('all');setFCat('all');setFWallet('all');clearDates();}}
                   className={`px-2.5 py-1 rounded-full text-xs font-medium ${dk?'text-slate-500 hover:text-rose-300':'text-slate-400 hover:text-rose-500'}`}>
                   ล้างตัวกรอง
                 </button>
