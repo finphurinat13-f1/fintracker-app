@@ -5971,12 +5971,12 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
             </div>
           );
         })()}
-        <div className={`${card} p-5 flex flex-col flex-1`}>
+        <div className={`${card} p-5 flex flex-col`}>
           <div className="flex items-baseline gap-2.5 flex-wrap mb-3">
             <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>คงเหลือ &amp; อัตราออม</h3>
             <p className={`text-xs ${sub}`}>แท่ง = เงินที่เหลือ · เส้น = เก็บได้กี่ % ของรายรับ</p>
           </div>
-          <div className="flex-1" style={{minHeight:'290px'}}>
+          <div className="flex-1" style={{minHeight:'210px'}}>
             <NetRateChart rows={data} theme={theme} hide={false}/>
           </div>
         </div>
@@ -6069,6 +6069,53 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
               )}
             </div>
           )}
+          {/* Below the dividends, in the space the column had spare. This was a
+              full-width card of its own; a list of categories does not need the
+              page, and the column had a hole under it. */}
+          <div className={`mt-3.5 pt-3.5 border-t ${dk?'border-white/5':'border-slate-100'}`}>
+          <h3 className={`text-[10px] font-medium uppercase mb-2.5 ${dk?'text-slate-400':'text-slate-500'}`}>รายจ่ายตามหมวด ({view==='yearly'?'ปีนี้':'เดือนนี้'})</h3>
+          {topCats.length===0
+            ? <div className={`text-sm ${sub}`}>ยังไม่มีรายจ่าย{view==='yearly'?'ปีนี้':'เดือนนี้'}</div>
+            : <>
+                {/* The stacked bar is gone and the percentage moved to the front.
+                    The bar was drawing the same proportions the percentages state
+                    exactly, in thirteen segments most of which were a few pixels
+                    wide — a chart nobody can read is decoration.
+  
+                    Percentages lead because that is the column being compared. On
+                    the right they were a ragged edge at the end of thirteen names
+                    of different lengths; on the left they line up, and the eye can
+                    run down them without reading a single category. */}
+                <div className="grid grid-cols-1 gap-y-1">
+                  {topCats.map(([cat,amt])=>{
+                    const pct = topCatsExpTotal>0 ? (amt/topCatsExpTotal*100) : 0;
+                    return (
+                      <div key={cat} className="flex items-baseline gap-2.5 min-w-0">
+                        {/* Fixed width, or the capsules end at thirteen different
+                            places and the column stops being a column. The swatch
+                            that used to sit beside this is gone: the capsule is
+                            already tinted with the category's colour, and a
+                            coloured dot next to it states that twice.
+  
+                            The figure is NOT in the category colour. It was, and
+                            the darkest steps of the ramp came out at 1.25 against
+                            their own tint — invisible. A colour cannot be both the
+                            identity of a thing and the thing you read off it; the
+                            tint carries the identity and the ink stays legible, at
+                            6.15 or better across every step. */}
+                        <span className={`w-14 flex-shrink-0 text-center text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full self-center ${dk?'text-slate-100':'text-slate-700'}`}
+                          style={{background:catClr(cat)+(dk?'47':'2e')}}>
+                          {pct.toFixed(1)}%
+                        </span>
+                        <span className={`text-sm truncate ${dk?'text-slate-400':'text-slate-600'}`}>{cat}</span>
+                        <span className={`ml-auto text-sm font-medium tabular-nums whitespace-nowrap ${dk?'text-slate-200':'text-slate-700'}`}>{fmt(amt)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+          }
+          </div>
         </div>
       </div>
       {/* Table */}
@@ -6202,52 +6249,6 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
           })()}
         </div>
       )}
-
-      {/* Top spending categories */}
-      <div className={`${card} p-5`}>
-        <h3 className={`text-sm font-semibold mb-4 ${dk?'text-gold-300':'text-gold-700'}`}>รายจ่ายตามหมวด ({view==='yearly'?'ปีนี้':'เดือนนี้'})</h3>
-        {topCats.length===0
-          ? <div className={`text-sm ${sub}`}>ยังไม่มีรายจ่าย{view==='yearly'?'ปีนี้':'เดือนนี้'}</div>
-          : <>
-              {/* The stacked bar is gone and the percentage moved to the front.
-                  The bar was drawing the same proportions the percentages state
-                  exactly, in thirteen segments most of which were a few pixels
-                  wide — a chart nobody can read is decoration.
-
-                  Percentages lead because that is the column being compared. On
-                  the right they were a ragged edge at the end of thirteen names
-                  of different lengths; on the left they line up, and the eye can
-                  run down them without reading a single category. */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1.5">
-                {topCats.map(([cat,amt])=>{
-                  const pct = topCatsExpTotal>0 ? (amt/topCatsExpTotal*100) : 0;
-                  return (
-                    <div key={cat} className="flex items-baseline gap-2.5 min-w-0">
-                      {/* Fixed width, or the capsules end at thirteen different
-                          places and the column stops being a column. The swatch
-                          that used to sit beside this is gone: the capsule is
-                          already tinted with the category's colour, and a
-                          coloured dot next to it states that twice.
-
-                          The figure is NOT in the category colour. It was, and
-                          the darkest steps of the ramp came out at 1.25 against
-                          their own tint — invisible. A colour cannot be both the
-                          identity of a thing and the thing you read off it; the
-                          tint carries the identity and the ink stays legible, at
-                          6.15 or better across every step. */}
-                      <span className={`w-14 flex-shrink-0 text-center text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full self-center ${dk?'text-slate-100':'text-slate-700'}`}
-                        style={{background:catClr(cat)+(dk?'47':'2e')}}>
-                        {pct.toFixed(1)}%
-                      </span>
-                      <span className={`text-sm truncate ${dk?'text-slate-400':'text-slate-600'}`}>{cat}</span>
-                      <span className={`ml-auto text-sm font-medium tabular-nums whitespace-nowrap ${dk?'text-slate-200':'text-slate-700'}`}>{fmt(amt)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-        }
-      </div>
 
       {/* The goal and the category trend, side by side rather than stacked. The
           trend gave the case away on its own: six bars stretched across the whole
