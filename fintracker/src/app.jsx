@@ -5971,12 +5971,12 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
             </div>
           );
         })()}
-        <div className={`${card} p-5 flex flex-col`}>
+        <div className={`${card} p-5 flex flex-col flex-1`}>
           <div className="flex items-baseline gap-2.5 flex-wrap mb-3">
             <h3 className={`text-sm font-semibold ${dk?'text-gold-300':'text-gold-700'}`}>คงเหลือ &amp; อัตราออม</h3>
             <p className={`text-xs ${sub}`}>แท่ง = เงินที่เหลือ · เส้น = เก็บได้กี่ % ของรายรับ</p>
           </div>
-          <div className="flex-1" style={{minHeight:'200px'}}>
+          <div className="flex-1" style={{minHeight:'290px'}}>
             <NetRateChart rows={data} theme={theme} hide={false}/>
           </div>
         </div>
@@ -6004,7 +6004,7 @@ const SummaryPage = ({ txs, assets=[], theme }) => {
               <div className={sub}>ถ้าหยุดมีรายได้ เงินเก็บปัจจุบันอยู่ได้นานแค่ไหน</div>
             </div>
             <div className="text-right">
-              <div className={`text-xl font-bold ${runwayMonths>=12?'text-emerald-400':runwayMonths>=6?'text-amber-400':'text-rose-400'}`}>{yrMo(runwayMonths)}</div>
+              <div className={`text-base font-semibold ${runwayMonths>=12?'text-emerald-400':runwayMonths>=6?'text-amber-400':'text-rose-400'}`}>{yrMo(runwayMonths)}</div>
               <div className={sub}>รายจ่ายเฉลี่ย {fmt(avgExpMo)}/เดือน</div>
             </div>
           </div>
